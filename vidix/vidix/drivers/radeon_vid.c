@@ -12,6 +12,8 @@
 #include <math.h>
 #include <inttypes.h>
 #include <sys/mman.h>
+#include "../../config.h"
+#include "../../bswap.h"
 #include "../../libdha/pci_ids.h"
 #include "../../libdha/pci_names.h"
 #include "../vidix.h"
@@ -58,11 +60,13 @@ typedef struct
 
 #define VERBOSE_LEVEL 0
 static int __verbose = 0;
-static int is_shift_required;
+#ifndef RAGE128
+static int is_shift_required=0;
 #define CKEY_UNK	0
 #define CKEY_RAGE	1
 #define CKEY_RADEON	2
 static int ckey_model=0;
+#endif
 typedef struct bes_registers_s
 {
   /* base address of yuv framebuffer */
@@ -274,8 +278,11 @@ static uint32_t radeon_ram_size = 0;
 
 #define INREG8(addr)		GETREG(uint8_t,(uint32_t)(radeon_mmio_base),addr)
 #define OUTREG8(addr,val)	SETREG(uint8_t,(uint32_t)(radeon_mmio_base),addr,val)
-#define INREG(addr)		GETREG(uint32_t,(uint32_t)(radeon_mmio_base),addr)
-#define OUTREG(addr,val)	SETREG(uint32_t,(uint32_t)(radeon_mmio_base),addr,val)
+static inline uint32_t INREG (uint32_t addr) {
+    uint32_t tmp = GETREG(uint32_t,(uint32_t)(radeon_mmio_base),addr);
+    return le2me_32(tmp);
+}
+#define OUTREG(addr,val)	SETREG(uint32_t,(uint32_t)(radeon_mmio_base),addr,me2le_32(val))
 #define OUTREGP(addr,val,mask)						\
 	do {								\
 		unsigned int _tmp = INREG(addr);			\
@@ -283,6 +290,7 @@ static uint32_t radeon_ram_size = 0;
 		_tmp |= (val);						\
 		OUTREG(addr, _tmp);					\
 	} while (0)
+
 
 static __inline__ uint32_t INPLL(uint32_t addr)
 {
@@ -482,7 +490,7 @@ static void radeon_engine_restore( void )
 				  (pitch64 << 22));
 
     radeon_fifo_wait(1);
-#if defined(__BIG_ENDIAN)
+#if defined(WORDS_BIGENDIAN)
     OUTREGP(DP_DATATYPE,
 	    HOST_BIG_ENDIAN_EN, ~HOST_BIG_ENDIAN_EN);
 #else
@@ -924,7 +932,7 @@ static int find_chip(unsigned chip_id)
   return -1;
 }
 
-pciinfo_t pci_info;
+static pciinfo_t pci_info;
 static int probed=0;
 
 vidix_capability_t def_cap = 
@@ -3274,7 +3282,9 @@ static void set_gr_key( void )
     }
     else
     {
+#ifndef RAGE128
 	def_key:
+#endif
 	besr.ckey_on=0;
 	besr.graphics_key_msk=0;
 	besr.graphics_key_clr=0;
