@@ -18,11 +18,10 @@
 #include <sys/mman.h> /* for m(un)lock */
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
+#endif
 #ifdef HAVE_MEMALIGN
 #define MACH64_ENABLE_BM 1
 #endif
-#endif
-
 
 #include "../../config.h"
 #include "../../bswap.h"
@@ -647,6 +646,7 @@ int VIDIX_NAME(vixInit)(const char *args)
 		OUTREG(BUS_CNTL,INREG(BUS_CNTL)|BUS_MSTR_RESET);
   if(bm_open() == 0)
   {
+        int i;
 	mach64_cap.flags |= FLAG_DMA | FLAG_EQ_DMA;
 	if((dma_phys_addrs = malloc(mach64_ram_size*sizeof(unsigned long)/4096)) == 0)
 	{
@@ -681,6 +681,7 @@ int VIDIX_NAME(vixInit)(const char *args)
 
 void VIDIX_NAME(vixDestroy)(void)
 {
+  int i;
   restore_regs();
 #ifdef MACH64_ENABLE_BM
   mach64_engine_reset();
