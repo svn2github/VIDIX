@@ -108,7 +108,7 @@ extern int	vixQueryFourcc(vidix_fourcc_t *);
 
 typedef struct vidix_yuv_s
 {
-	unsigned y,u,v;
+	unsigned y,u,v,a;
 }vidix_yuv_t;
 
 typedef struct vidix_rect_s
