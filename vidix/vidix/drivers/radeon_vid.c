@@ -1187,13 +1187,13 @@ fourcc_desc_t supported_fourcc[] =
   { IMGFMT_RGB16, 1551 },
   { IMGFMT_BGR16, 1551 },
   { IMGFMT_RGB32, 775 },
-  { IMGFMT_BGR32, 775 },
+  { IMGFMT_BGR32, 775 }
 };
 
 __inline__ static int is_supported_fourcc(uint32_t fourcc,unsigned srcw)
 {
   unsigned i;
-  for(i=0;i<sizeof(supported_fourcc)/sizeof(uint32_t);i++)
+  for(i=0;i<sizeof(supported_fourcc)/sizeof(fourcc_desc_t);i++)
   {
     if(fourcc==supported_fourcc[i].fourcc &&
 	srcw <=supported_fourcc[i].max_srcw) return 1;
