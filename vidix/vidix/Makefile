@@ -56,6 +56,8 @@ uninstall:
 	$(DO_MAKE)
 	rm -f $(BINDIR)/$(LIBNAME)
 	rmdir -p --ignore-fail-on-non-empty $(BINDIR)
+	rm -f $(INCDIR)/*
+	rmdir -p --ignore-fail-on-non-empty $(INCDIR)
 
 #
 # include dependency files if they exist
