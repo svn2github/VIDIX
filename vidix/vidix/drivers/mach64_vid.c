@@ -605,7 +605,7 @@ int VIDIX_NAME(vixInit)(const char *args)
 	if((dma_phys_addrs = malloc(mach64_ram_size*sizeof(unsigned long)/4096)) == 0)
 	{
 	    out_mem:
-	    printf("[mach64] Can't allocate temopary buffer for DMA\n");
+	    printf("[mach64] Can't allocate temporary buffer for DMA\n");
 	    mach64_cap.flags &= ~FLAG_DMA & ~FLAG_EQ_DMA;
 	    return 0;
 	}
@@ -628,6 +628,9 @@ void VIDIX_NAME(vixDestroy)(void)
 {
   unsigned i;
   restore_regs();
+#ifdef MACH64_ENABLE_BM
+  mach64_engine_reset();
+#endif
   unmap_phys_mem(mach64_mem_base,mach64_ram_size);
   unmap_phys_mem(mach64_mmio_base,0x4000);
 #ifdef MACH64_ENABLE_BM
@@ -1278,6 +1281,7 @@ int VIDIX_NAME(vixPlaybackCopyFrame)( vidix_dma_t * dmai )
 {
     int retval;
     if(!(dmai->flags & BM_DMA_FIXED_BUFFS)) if(bm_lock_mem(dmai->src,dmai->size) != 0) return errno;
+    mach64_engine_reset();
     retval = mach64_setup_frame(dmai);
     VIRT_TO_CARD(mach64_dma_desc_base[dmai->idx],1,&bus_addr_dma_desc);
     if(retval == 0) retval = mach64_transfer_frame(bus_addr_dma_desc);
