@@ -225,6 +225,7 @@ static void mach64_engine_reset( void )
 {
   /* Kill off bus mastering with extreme predjudice... */
   OUTREG(BUS_CNTL, INREG(BUS_CNTL) | BUS_MASTER_DIS);
+  OUTREG(CRTC_INT_CNTL,INREG(CRTC_INT_CNTL)&~(CRTC_BUSMASTER_EOL_INT|CRTC_BUSMASTER_EOL_INT_EN));
   /* Reset engine -- This is accomplished by setting bit 8 of the GEN_TEST_CNTL
    register high, then low (per the documentation, it's on high to low transition
    that the GUI engine gets reset...) */
