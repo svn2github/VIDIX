@@ -1683,6 +1683,7 @@ This means that this sources don't support ISA and VLB cards */
 #define IDCT_BLOCK_GUI_INITIATOR	0x00020000ul	/* XL/XC */
 /*	?				0xfffc0000ul */
 /*	?			BlockIOTag(0x15fu) */
+/* BUS MASTERING */
 #define BM_FRAME_BUF_OFFSET	BlockIOTag(0x160u)	/* VTB/GTB */
 #define BM_SYSTEM_MEM_ADDR	BlockIOTag(0x161u)	/* VTB/GTB */
 #define BM_COMMAND		BlockIOTag(0x162u)	/* VTB/GTB */
@@ -1699,6 +1700,14 @@ This means that this sources don't support ISA and VLB cards */
 /*	?			BlockIOTag(0x16du) */
 #define BM_GUI_TABLE		BlockIOTag(0x16eu)	/* VTB/GTB */
 #define BM_SYSTEM_TABLE		BlockIOTag(0x16fu)	/* VTB/GTB */
+#	define DMA_GUI_COMMAND__BYTE_COUNT_MASK			0x001fffff
+#	define DMA_GUI_COMMAND__HOLD_VIDEO_OFFSET		0x40000000
+#	define DMA_GUI_COMMAND__EOL				0x80000000
+#	define SYSTEM_TRIGGER_SYSTEM_TO_VIDEO				0x0
+#	define SYSTEM_TRIGGER_VIDEO_TO_SYSTEM				0x1
+#	define SYSTEM_TRIGGER_VIDEO_TO_SYSTEM_AFTER_BUF0_READY		0x2
+#	define SYSTEM_TRIGGER_VIDEO_TO_SYSTEM_AFTER_BUF1_READY		0x3
+#	define SYSTEM_TRIGGER_VIDEO_TO_SYSTEM_AFTER_SNAPSHOT_READY	0x4
 /*	?			BlockIOTag(0x170u) */
 /*	?			BlockIOTag(0x171u) */
 /*	?			BlockIOTag(0x172u) */
