@@ -24,14 +24,10 @@
 #include <dlfcn.h> /* GLIBC specific. Exists under cygwin too! */
 #include <dirent.h>
 
-#if defined(__OpenBSD__) && !defined(__ELF__)
-#define dlsym(h,s) dlsym(h, "_" s)
-#endif
-
 #include "vidixlib.h"
 #include "../bswap.h"
 
-static char drv_name[FILENAME_MAX];
+#define t_vdl(p) (((vdl_stream_t *)p))
 
 typedef struct vdl_stream_s
 {
@@ -58,34 +54,65 @@ typedef struct vdl_stream_s
 	int 	(*set_fx)( const vidix_oem_fx_t * );
 }vdl_stream_t;
 
-#define t_vdl(p) (((vdl_stream_t *)p))
+static char drv_name[FILENAME_MAX];
+static int dl_idx = -1;
+/* currently available driver for static linking */
+static const char* const drv_snames[] = {
+#ifdef VIDIX_BUILD_STATIC
+  "genfb_",
+  "mach64_",
+  "mga_crtc2_",
+  "mga_",
+  "nvidia_",
+  "pm2_",
+  "pm3_",
+  "radeo_",
+  "rage128_",
+#endif
+  NULL
+};
 
 extern unsigned   vdlGetVersion( void )
 {
    return VIDIX_VERSION;
 }
 
+static void* dlsymm(void* handle, const char* fce)
+{
+  char b[100];
+#if defined(__OpenBSD__) && !defined(__ELF__)
+  b[0] = '_';
+  b[1] = 0;
+#else
+  b[0] = 0;
+#endif
+  if (dl_idx >= 0) strcat(b, drv_snames[dl_idx]);
+  strcat(b, fce);
+  //printf("Handle %p  %s\n", handle, b);
+  return dlsym(handle, b);
+}
+
 static int vdl_fill_driver(VDL_HANDLE stream)
 {
-  t_vdl(stream)->init		= dlsym(t_vdl(stream)->handle,"vixInit");
-  t_vdl(stream)->destroy	= dlsym(t_vdl(stream)->handle,"vixDestroy");
-  t_vdl(stream)->get_caps	= dlsym(t_vdl(stream)->handle,"vixGetCapability");
-  t_vdl(stream)->query_fourcc	= dlsym(t_vdl(stream)->handle,"vixQueryFourcc");
-  t_vdl(stream)->config_playback= dlsym(t_vdl(stream)->handle,"vixConfigPlayback");
-  t_vdl(stream)->playback_on	= dlsym(t_vdl(stream)->handle,"vixPlaybackOn");
-  t_vdl(stream)->playback_off	= dlsym(t_vdl(stream)->handle,"vixPlaybackOff");
-  t_vdl(stream)->frame_sel	= dlsym(t_vdl(stream)->handle,"vixPlaybackFrameSelect");
-  t_vdl(stream)->get_eq	= dlsym(t_vdl(stream)->handle,"vixPlaybackGetEq");
-  t_vdl(stream)->set_eq	= dlsym(t_vdl(stream)->handle,"vixPlaybackSetEq");
-  t_vdl(stream)->get_gkey	= dlsym(t_vdl(stream)->handle,"vixGetGrKeys");
-  t_vdl(stream)->set_gkey	= dlsym(t_vdl(stream)->handle,"vixSetGrKeys");
-  t_vdl(stream)->get_deint	= dlsym(t_vdl(stream)->handle,"vixPlaybackGetDeint");
-  t_vdl(stream)->set_deint	= dlsym(t_vdl(stream)->handle,"vixPlaybackSetDeint");
-  t_vdl(stream)->copy_frame	= dlsym(t_vdl(stream)->handle,"vixPlaybackCopyFrame");
-  t_vdl(stream)->query_dma	= dlsym(t_vdl(stream)->handle,"vixQueryDMAStatus");
-  t_vdl(stream)->get_num_fx	= dlsym(t_vdl(stream)->handle,"vixQueryNumOemEffects");
-  t_vdl(stream)->get_fx		= dlsym(t_vdl(stream)->handle,"vixGetOemEffect");
-  t_vdl(stream)->set_fx		= dlsym(t_vdl(stream)->handle,"vixSetOemEffect");
+  t_vdl(stream)->init		= dlsymm(t_vdl(stream)->handle,"vixInit");
+  t_vdl(stream)->destroy	= dlsymm(t_vdl(stream)->handle,"vixDestroy");
+  t_vdl(stream)->get_caps	= dlsymm(t_vdl(stream)->handle,"vixGetCapability");
+  t_vdl(stream)->query_fourcc	= dlsymm(t_vdl(stream)->handle,"vixQueryFourcc");
+  t_vdl(stream)->config_playback= dlsymm(t_vdl(stream)->handle,"vixConfigPlayback");
+  t_vdl(stream)->playback_on	= dlsymm(t_vdl(stream)->handle,"vixPlaybackOn");
+  t_vdl(stream)->playback_off	= dlsymm(t_vdl(stream)->handle,"vixPlaybackOff");
+  t_vdl(stream)->frame_sel	= dlsymm(t_vdl(stream)->handle,"vixPlaybackFrameSelect");
+  t_vdl(stream)->get_eq	= dlsymm(t_vdl(stream)->handle,"vixPlaybackGetEq");
+  t_vdl(stream)->set_eq	= dlsymm(t_vdl(stream)->handle,"vixPlaybackSetEq");
+  t_vdl(stream)->get_gkey	= dlsymm(t_vdl(stream)->handle,"vixGetGrKeys");
+  t_vdl(stream)->set_gkey	= dlsymm(t_vdl(stream)->handle,"vixSetGrKeys");
+  t_vdl(stream)->get_deint	= dlsymm(t_vdl(stream)->handle,"vixPlaybackGetDeint");
+  t_vdl(stream)->set_deint	= dlsymm(t_vdl(stream)->handle,"vixPlaybackSetDeint");
+  t_vdl(stream)->copy_frame	= dlsymm(t_vdl(stream)->handle,"vixPlaybackCopyFrame");
+  t_vdl(stream)->query_dma	= dlsymm(t_vdl(stream)->handle,"vixQueryDMAStatus");
+  t_vdl(stream)->get_num_fx	= dlsymm(t_vdl(stream)->handle,"vixQueryNumOemEffects");
+  t_vdl(stream)->get_fx		= dlsymm(t_vdl(stream)->handle,"vixGetOemEffect");
+  t_vdl(stream)->set_fx		= dlsymm(t_vdl(stream)->handle,"vixSetOemEffect");
   /* check driver viability */
   if(!( t_vdl(stream)->get_caps && t_vdl(stream)->query_fourcc &&
 	t_vdl(stream)->config_playback && t_vdl(stream)->playback_on &&
@@ -113,22 +140,34 @@ static int vdl_probe_driver(VDL_HANDLE stream,const char *path,const char *name,
   strcpy(drv_name,path);
   strcat(drv_name,name);
   if(verbose) printf("vidixlib: PROBING: %s\n",drv_name);
-  if(!(t_vdl(stream)->handle = dlopen(drv_name,RTLD_LAZY|RTLD_GLOBAL)))
+
   {
-    if(verbose) printf("vidixlib: %s not driver: %s\n",drv_name,dlerror());
-    return 0;
+    const char* slash = strrchr(drv_name, '/');
+    if (slash) {
+      for (dl_idx = 0; drv_snames[dl_idx]; dl_idx++) {
+	if (!strncmp(slash + 1, drv_snames[dl_idx], strlen(drv_snames[dl_idx])))
+	  break; // locate the name
+      }
+      if (!drv_snames[dl_idx]) dl_idx = -1;
+    }
   }
-  _ver = dlsym(t_vdl(stream)->handle,"vixGetVersion");
-  _probe = dlsym(t_vdl(stream)->handle,"vixProbe");
-  _cap = dlsym(t_vdl(stream)->handle,"vixGetCapability");
-  if(_ver) 
+  if (dl_idx < 0)
+    if(!(t_vdl(stream)->handle = dlopen(drv_name,RTLD_LAZY|RTLD_GLOBAL))) {
+      if(verbose) printf("vidixlib: %s not driver: %s\n",drv_name,dlerror());
+      return 0;
+    }
+  _ver = dlsymm(t_vdl(stream)->handle,"vixGetVersion");
+  _probe = dlsymm(t_vdl(stream)->handle,"vixProbe");
+  _cap = dlsymm(t_vdl(stream)->handle,"vixGetCapability");
+  if(_ver)
   {
-    if((*_ver)() != VIDIX_VERSION) 
-    { 
+    if((*_ver)() != VIDIX_VERSION)
+    {
       if(verbose) printf("vidixlib: %s has wrong version\n",drv_name);
       err:
       dlclose(t_vdl(stream)->handle);
       t_vdl(stream)->handle = 0;
+      dl_idx = -1;
       return 0;
      }
   }
@@ -160,10 +199,10 @@ static int vdl_find_driver(VDL_HANDLE stream,const char *path,unsigned cap,int v
   while(!done)
   {
     name = readdir(dstream);
-    if(name) 
-    { 
+    if(name)
+    {
       if(name->d_name[0] != '.')
-	if(vdl_probe_driver(stream,path,name->d_name,cap,verbose)) break; 
+	if(vdl_probe_driver(stream,path,name->d_name,cap,verbose)) break;
     }
     else done = 1;
   }
@@ -184,27 +223,34 @@ VDL_HANDLE vdlOpen(const char *path,const char *name,unsigned cap,int verbose)
     unsigned version = 0;
     strcpy(drv_name,path);
     strcat(drv_name,name);
-    if(!(t_vdl(stream)->handle = dlopen(drv_name,RTLD_NOW|RTLD_GLOBAL)))
     {
-      if (verbose)
-	printf("vidixlib: dlopen error: %s\n", dlerror());
-      err:
-      free(stream);
-      return NULL;
+      const char* slash = strrchr(drv_name, '/');
+      if (slash) {
+	for (dl_idx = 0; drv_snames[dl_idx]; dl_idx++) {
+	  if (!strncmp(slash + 1, drv_snames[dl_idx], strlen(drv_snames[dl_idx])))
+	    break; // locate the name
+	}
+	if (!drv_snames[dl_idx]) dl_idx = -1;
+      }
     }
-    ver = dlsym(t_vdl(stream)->handle,"vixGetVersion");
+    if (dl_idx < 0)
+      if(!(t_vdl(stream)->handle = dlopen(drv_name,RTLD_NOW|RTLD_GLOBAL)))
+      {
+	if (verbose)
+	  printf("vidixlib: dlopen error: %s\n", dlerror());
+	err:
+          vdlClose(stream);
+	  return NULL;
+      }
+    ver = dlsymm(t_vdl(stream)->handle,"vixGetVersion");
     if(ver) version = (*ver)();
     if(version != VIDIX_VERSION)
-    {
-      drv_err:
-      if(t_vdl(stream)->handle) dlclose(t_vdl(stream)->handle);
       goto err;
-    }
-    probe = dlsym(t_vdl(stream)->handle,"vixProbe");
-    if(probe) { if((*probe)(verbose,PROBE_FORCE)!=0) goto drv_err; }
-    else goto drv_err;
+    probe = dlsymm(t_vdl(stream)->handle,"vixProbe");
+    if(probe) { if((*probe)(verbose,PROBE_FORCE)!=0) goto err; }
+    else goto err;
     fill:
-    if(!vdl_fill_driver(stream)) goto drv_err;
+    if(!vdl_fill_driver(stream)) goto err;
     goto ok;
   }
   else
@@ -212,7 +258,7 @@ VDL_HANDLE vdlOpen(const char *path,const char *name,unsigned cap,int verbose)
     {
       if(verbose) printf("vidixlib: will use %s driver\n",drv_name);
       goto fill;
-    }  
+    }
     else goto err;
   ok:
   if(t_vdl(stream)->init)
@@ -221,9 +267,9 @@ VDL_HANDLE vdlOpen(const char *path,const char *name,unsigned cap,int verbose)
    if((errcode=t_vdl(stream)->init())!=0)
    {
     if(verbose) printf("vidixlib: Can't init driver: %s\n",strerror(errcode));
-    goto drv_err;
+    goto err;
    }
-  } 
+  }
   if(verbose) printf("vidixlib: '%s'successfully loaded\n",drv_name);
   return stream;
 }
@@ -231,9 +277,10 @@ VDL_HANDLE vdlOpen(const char *path,const char *name,unsigned cap,int verbose)
 void vdlClose(VDL_HANDLE stream)
 {
   if(t_vdl(stream)->destroy) t_vdl(stream)->destroy();
-  dlclose(t_vdl(stream)->handle);
+  if(t_vdl(stream)->handle) dlclose(t_vdl(stream)->handle);
   memset(stream,0,sizeof(vdl_stream_t)); /* <- it's not stupid */
   free(stream);
+  dl_idx = -1;
 }
 
 int  vdlGetCapability(VDL_HANDLE handle, vidix_capability_t *cap)

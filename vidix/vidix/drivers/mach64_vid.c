@@ -33,6 +33,7 @@
 
 #define UNUSED(x) ((void)(x)) /**< Removes warning about unused arguments */
 
+#define VIDIX_STATIC mach64_
 
 #ifdef MACH64_ENABLE_BM
 
@@ -390,7 +391,7 @@ static void mach64_vid_dump_regs( void )
 }
 
 
-unsigned int vixGetVersion(void)
+unsigned int VIDIX_NAME(vixGetVersion)(void)
 {
     return(VIDIX_VERSION);
 }
@@ -447,7 +448,7 @@ static int find_chip(unsigned chip_id)
   return -1;
 }
 
-int vixProbe(int verbose,int force)
+int VIDIX_NAME(vixProbe)(int verbose,int force)
 {
   pciinfo_t lst[MAX_PCI_DEVICES];
   unsigned i,num_pci;
@@ -501,7 +502,7 @@ static void reset_regs( void )
   }
 }
 
-int vixInit(void)
+int VIDIX_NAME(vixInit)(void)
 {
   int err;
   unsigned i;
@@ -591,7 +592,7 @@ int vixInit(void)
   return 0;
 }
 
-void vixDestroy(void)
+void VIDIX_NAME(vixDestroy)(void)
 {
   unsigned i;
   unmap_phys_mem(mach64_mem_base,mach64_ram_size);
@@ -606,7 +607,7 @@ void vixDestroy(void)
 #endif
 }
 
-int vixGetCapability(vidix_capability_t *to)
+int VIDIX_NAME(vixGetCapability)(vidix_capability_t *to)
 {
     memcpy(to, &mach64_cap, sizeof(vidix_capability_t));
     return 0;
@@ -954,7 +955,7 @@ static int is_supported_fourcc(uint32_t fourcc)
     }
 }
 
-int vixQueryFourcc(vidix_fourcc_t *to)
+int VIDIX_NAME(vixQueryFourcc)(vidix_fourcc_t *to)
 {
     if(is_supported_fourcc(to->fourcc))
     {
@@ -970,7 +971,7 @@ int vixQueryFourcc(vidix_fourcc_t *to)
     return ENOSYS;
 }
 
-int vixConfigPlayback(vidix_playback_t *info)
+int VIDIX_NAME(vixConfigPlayback)(vidix_playback_t *info)
 {
   unsigned rgb_size,nfr;
   uint32_t mach64_video_size;
@@ -1010,7 +1011,7 @@ int vixConfigPlayback(vidix_playback_t *info)
   return 0;
 }
 
-int vixPlaybackOn(void)
+int VIDIX_NAME(vixPlaybackOn)(void)
 {
   int err;
   unsigned dw,dh;
@@ -1028,13 +1029,13 @@ int vixPlaybackOn(void)
   return err;
 }
 
-int vixPlaybackOff(void)
+int VIDIX_NAME(vixPlaybackOff)(void)
 {
   mach64_vid_stop_video();
   return 0;
 }
 
-int vixPlaybackFrameSelect(unsigned int frame)
+int VIDIX_NAME(vixPlaybackFrameSelect)(unsigned int frame)
 {
     uint32_t off[6];
     int i;
@@ -1079,14 +1080,14 @@ vidix_video_eq_t equal =
  ,
  0, 0, 0, 0, 0, 0, 0, 0 };
 
-int 	vixPlaybackGetEq( vidix_video_eq_t * eq)
+int 	VIDIX_NAME(vixPlaybackGetEq)( vidix_video_eq_t * eq)
 {
   memcpy(eq,&equal,sizeof(vidix_video_eq_t));
   if(!supports_colour_adj) eq->cap = VEQ_CAP_BRIGHTNESS;
   return 0;
 }
 
-int 	vixPlaybackSetEq( const vidix_video_eq_t * eq)
+int 	VIDIX_NAME(vixPlaybackSetEq)( const vidix_video_eq_t * eq)
 {
   int br,sat;
     if(eq->cap & VEQ_CAP_BRIGHTNESS) equal.brightness = eq->brightness;
@@ -1125,13 +1126,13 @@ int 	vixPlaybackSetEq( const vidix_video_eq_t * eq)
   return 0;
 }
 
-int vixGetGrKeys(vidix_grkey_t *grkey)
+int VIDIX_NAME(vixGetGrKeys)(vidix_grkey_t *grkey)
 {
     memcpy(grkey, &mach64_grkey, sizeof(vidix_grkey_t));
     return(0);
 }
 
-int vixSetGrKeys(const vidix_grkey_t *grkey)
+int VIDIX_NAME(vixSetGrKeys)(const vidix_grkey_t *grkey)
 {
     memcpy(&mach64_grkey, grkey, sizeof(vidix_grkey_t));
 
@@ -1240,7 +1241,7 @@ static int mach64_transfer_frame( unsigned long ba_dma_desc )
 }
 
 
-int vixPlaybackCopyFrame( vidix_dma_t * dmai )
+int VIDIX_NAME(vixPlaybackCopyFrame)( vidix_dma_t * dmai )
 {
     int retval;
     if(!(dmai->flags & BM_DMA_FIXED_BUFFS)) if(bm_lock_mem(dmai->src,dmai->size) != 0) return errno;
@@ -1251,7 +1252,7 @@ int vixPlaybackCopyFrame( vidix_dma_t * dmai )
     return retval;
 }
 
-int	vixQueryDMAStatus( void )
+int VIDIX_NAME(vixQueryDMAStatus)( void )
 {
     int bm_off;
     bm_off = INREG(CRTC_INT_CNTL) & CRTC_BUSMASTER_EOL_INT;

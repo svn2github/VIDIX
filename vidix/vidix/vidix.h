@@ -290,6 +290,12 @@ extern int	vixGetOemEffect( vidix_oem_fx_t * );
 			/* Returns 0 if ok else errno */
 extern int	vixSetOemEffect( const vidix_oem_fx_t * );
 
+#ifdef VIDIX_BUILD_STATIC
+#define VIDIX_NAME(name) VIDIX_STATIC##name
+#else
+#define VIDIX_NAME(name) name
+#endif
+
 #ifdef __cplusplus
 }
 #endif

@@ -35,6 +35,8 @@
 
 #include "glint_regs.h"
 
+#define VIDIX_STATIC pm2_
+
 /* MBytes of video memory to use */
 #define PM2_VIDMEM 6
 
@@ -76,7 +78,7 @@ static vidix_capability_t pm2_cap =
 };
 
 
-unsigned int vixGetVersion(void)
+unsigned int VIDIX_NAME(vixGetVersion)(void)
 {
     return(VIDIX_VERSION);
 }
@@ -97,7 +99,7 @@ static int find_chip(u_int vendor, u_int chip_id)
     return -1;
 }
 
-int vixProbe(int verbose, int force)
+int VIDIX_NAME(vixProbe)(int verbose, int force)
 {
     pciinfo_t lst[MAX_PCI_DEVICES];
     unsigned i,num_pci;
@@ -138,7 +140,7 @@ int vixProbe(int verbose, int force)
     printf("[pm2] " #reg " (%x) = %#lx (%li)\n", reg, _foo, _foo);	\
 }
 
-int vixInit(void)
+int VIDIX_NAME(vixInit)(void)
 {
     char *vm;
     pm2_reg_base = map_phys_mem(pci_info.base0, 0x10000);
@@ -149,13 +151,13 @@ int vixInit(void)
     return 0;
 }
 
-void vixDestroy(void)
+void VIDIX_NAME(vixDestroy)(void)
 {
     unmap_phys_mem(pm2_reg_base, 0x10000);
     unmap_phys_mem(pm2_mem, 1 << 23);
 }
 
-int vixGetCapability(vidix_capability_t *to)
+int VIDIX_NAME(vixGetCapability)(vidix_capability_t *to)
 {
     memcpy(to, &pm2_cap, sizeof(vidix_capability_t));
     return 0;
@@ -171,7 +173,7 @@ static int is_supported_fourcc(uint32_t fourcc)
     }
 }
 
-int vixQueryFourcc(vidix_fourcc_t *to)
+int VIDIX_NAME(vixQueryFourcc)(vidix_fourcc_t *to)
 {
     if(is_supported_fourcc(to->fourcc))
     {
@@ -229,7 +231,7 @@ static u_int ppcodes[][2] = {
 
 static int frames[VID_PLAY_MAXFRAMES];
 
-int vixConfigPlayback(vidix_playback_t *info)
+int VIDIX_NAME(vixConfigPlayback)(vidix_playback_t *info)
 {
     u_int src_w, drw_w;
     u_int src_h, drw_h;
@@ -330,7 +332,7 @@ int vixConfigPlayback(vidix_playback_t *info)
     return 0;
 }
 
-int vixPlaybackOn(void)
+int VIDIX_NAME(vixPlaybackOn)(void)
 {
     TRACE_ENTER();
 
@@ -338,7 +340,7 @@ int vixPlaybackOn(void)
     return 0;
 }
 
-int vixPlaybackOff(void)
+int VIDIX_NAME(vixPlaybackOff)(void)
 {
     WRITE_REG(YUVMode, 0);
     WRITE_REG(TextureColorMode, 0);
@@ -347,7 +349,7 @@ int vixPlaybackOff(void)
     return 0;
 }
 
-int vixPlaybackFrameSelect(unsigned int frame)
+int VIDIX_NAME(vixPlaybackFrameSelect)(unsigned int frame)
 {
     WRITE_REG(PMTextureBaseAddress, frames[frame]);
     WRITE_REG(Render, PrimitiveRectangle | XPositive | YPositive |

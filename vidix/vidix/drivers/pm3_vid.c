@@ -34,6 +34,8 @@
 
 #include "pm3_regs.h"
 
+#define VIDIX_STATIC pm3_
+
 /* MBytes of video memory to use */
 #define PM3_VIDMEM 24
 
@@ -70,7 +72,7 @@ static vidix_capability_t pm3_cap =
 };
 
 
-unsigned int vixGetVersion(void)
+unsigned int VIDIX_NAME(vixGetVersion)(void)
 {
     return(VIDIX_VERSION);
 }
@@ -90,7 +92,7 @@ static int find_chip(unsigned chip_id)
   return -1;
 }
 
-int vixProbe(int verbose, int force)
+int VIDIX_NAME(vixProbe)(int verbose, int force)
 {
     pciinfo_t lst[MAX_PCI_DEVICES];
     unsigned i,num_pci;
@@ -134,7 +136,7 @@ int vixProbe(int verbose, int force)
     printf("[pm3] " #reg " (%x) = %#lx (%li)\n", reg, _foo, _foo);	\
 }
 
-int vixInit(void)
+int VIDIX_NAME(vixInit)(void)
 {
     char *vm;
     pm3_reg_base = map_phys_mem(pci_info.base0, 0x20000);
@@ -145,13 +147,13 @@ int vixInit(void)
     return 0;
 }
 
-void vixDestroy(void)
+void VIDIX_NAME(vixDestroy)(void)
 {
     unmap_phys_mem(pm3_reg_base, 0x20000);
     unmap_phys_mem(pm3_mem, 0x2000000);
 }
 
-int vixGetCapability(vidix_capability_t *to)
+int VIDIX_NAME(vixGetCapability)(vidix_capability_t *to)
 {
     memcpy(to, &pm3_cap, sizeof(vidix_capability_t));
     return 0;
@@ -168,7 +170,7 @@ static int is_supported_fourcc(uint32_t fourcc)
     }
 }
 
-int vixQueryFourcc(vidix_fourcc_t *to)
+int VIDIX_NAME(vixQueryFourcc)(vidix_fourcc_t *to)
 {
     if(is_supported_fourcc(to->fourcc))
     {
@@ -232,7 +234,7 @@ static int frames[VID_PLAY_MAXFRAMES];
 
 static long overlay_mode, overlay_control;
 
-int vixConfigPlayback(vidix_playback_t *info)
+int VIDIX_NAME(vixConfigPlayback)(vidix_playback_t *info)
 {
     int shrink, zoom;
     short src_w, drw_w;
@@ -349,7 +351,7 @@ int vixConfigPlayback(vidix_playback_t *info)
     return 0;
 }
 
-int vixPlaybackOn(void)
+int VIDIX_NAME(vixPlaybackOn)(void)
 {
     TRACE_ENTER();
 
@@ -364,7 +366,7 @@ int vixPlaybackOn(void)
     return 0;
 }
 
-int vixPlaybackOff(void)
+int VIDIX_NAME(vixPlaybackOff)(void)
 {
     RAMDAC_SET_REG(PM3RD_VideoOverlayControl,
 		   PM3RD_VideoOverlayControl_DISABLE);
@@ -378,7 +380,7 @@ int vixPlaybackOff(void)
     return 0;
 }
 
-int vixPlaybackFrameSelect(unsigned int frame)
+int VIDIX_NAME(vixPlaybackFrameSelect)(unsigned int frame)
 {
     WRITE_REG(PM3VideoOverlayBase0, frames[frame]);
 /*     WRITE_REG(PM3Aperture0, frames[frame]); */

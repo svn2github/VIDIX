@@ -30,6 +30,12 @@
 #endif
 #endif
 
+#ifdef RAGE128
+#define VIDIX_STATIC rage128_
+#else
+#define VIDIX_STATIC radeo_
+#endif
+
 //#undef RADEON_ENABLE_BM /* unfinished stuff. May corrupt your filesystem ever */
 #define RADEON_ENABLE_BM 1
 
@@ -795,7 +801,7 @@ static void radeon_vid_make_default(void)
 }
 
 
-unsigned vixGetVersion( void ) { return VIDIX_VERSION; }
+unsigned VIDIX_NAME(vixGetVersion)( void ) { return VIDIX_VERSION; }
 
 static unsigned short ati_card_ids[] = 
 {
@@ -908,7 +914,7 @@ vidix_capability_t def_cap =
 };
 
 
-int vixProbe( int verbose,int force )
+int VIDIX_NAME(vixProbe)( int verbose,int force )
 {
   pciinfo_t lst[MAX_PCI_DEVICES];
   unsigned i,num_pci;
@@ -1040,7 +1046,7 @@ static void radeon_get_moninfo (rinfo_t *rinfo)
 	}
 }
 #endif
-int vixInit( void )
+int VIDIX_NAME(vixInit)( void )
 {
   int err;
   if(!probed) 
@@ -1098,14 +1104,14 @@ int vixInit( void )
   return 0;  
 }
 
-void vixDestroy( void )
+void VIDIX_NAME(vixDestroy)( void )
 {
   unmap_phys_mem(radeon_mem_base,radeon_ram_size);
   unmap_phys_mem(radeon_mmio_base,0xFFFF);
   bm_close();
 }
 
-int vixGetCapability(vidix_capability_t *to)
+int VIDIX_NAME(vixGetCapability)(vidix_capability_t *to)
 {
   memcpy(to,&def_cap,sizeof(vidix_capability_t));
   return 0; 
@@ -1136,7 +1142,7 @@ __inline__ static int is_supported_fourcc(uint32_t fourcc)
   return 0;
 }
 
-int vixQueryFourcc(vidix_fourcc_t *to)
+int VIDIX_NAME(vixQueryFourcc)(vidix_fourcc_t *to)
 {
     if(is_supported_fourcc(to->fourcc))
     {
@@ -1608,7 +1614,7 @@ static void radeon_compute_framesize(vidix_playback_t *info)
   info->frame_size = (info->frame_size+4095)&~4095;
 }
 
-int vixConfigPlayback(vidix_playback_t *info)
+int VIDIX_NAME(vixConfigPlayback)(vidix_playback_t *info)
 {
   unsigned rgb_size,nfr;
   uint32_t radeon_video_size;
@@ -1655,7 +1661,7 @@ int vixConfigPlayback(vidix_playback_t *info)
   return 0;
 }
 
-int vixPlaybackOn( void )
+int VIDIX_NAME(vixPlaybackOn)( void )
 {
 #ifdef RAGE128
   unsigned dw,dh;
@@ -1670,13 +1676,13 @@ int vixPlaybackOn( void )
   return 0;
 }
 
-int vixPlaybackOff( void )
+int VIDIX_NAME(vixPlaybackOff)( void )
 {
   radeon_vid_stop_video();
   return 0;
 }
 
-int vixPlaybackFrameSelect(unsigned frame)
+int VIDIX_NAME(vixPlaybackFrameSelect)(unsigned frame)
 {
     uint32_t off[6];
     int prev_frame= (frame-1+besr.vid_nbufs) % besr.vid_nbufs;
@@ -1718,7 +1724,7 @@ vidix_video_eq_t equal =
  ,
  0, 0, 0, 0, 0, 0, 0, 0 };
 
-int 	vixPlaybackGetEq( vidix_video_eq_t * eq)
+int 	VIDIX_NAME(vixPlaybackGetEq)( vidix_video_eq_t * eq)
 {
   memcpy(eq,&equal,sizeof(vidix_video_eq_t));
   return 0;
@@ -1733,7 +1739,7 @@ int 	vixPlaybackGetEq( vidix_video_eq_t * eq)
 #define RTFCheckParam(a) {if((a)<-1000) (a)=-1000; if((a)>1000) (a)=1000;}
 #endif
 
-int 	vixPlaybackSetEq( const vidix_video_eq_t * eq)
+int 	VIDIX_NAME(vixPlaybackSetEq)( const vidix_video_eq_t * eq)
 {
 #ifdef RAGE128
   int br,sat;
@@ -1778,7 +1784,7 @@ int 	vixPlaybackSetEq( const vidix_video_eq_t * eq)
   return 0;
 }
 
-int 	vixPlaybackSetDeint( const vidix_deinterlace_t * info)
+int 	VIDIX_NAME(vixPlaybackSetDeint)( const vidix_deinterlace_t * info)
 {
   unsigned sflg;
   switch(info->flags)
@@ -1816,7 +1822,7 @@ int 	vixPlaybackSetDeint( const vidix_deinterlace_t * info)
   return 0;  
 }
 
-int 	vixPlaybackGetDeint( vidix_deinterlace_t * info)
+int 	VIDIX_NAME(vixPlaybackGetDeint)( vidix_deinterlace_t * info)
 {
   if(!besr.deinterlace_on) info->flags = CFG_NON_INTERLACED;
   else
@@ -1890,13 +1896,13 @@ static void set_gr_key( void )
     OUTREG(OV0_KEY_CNTL,besr.ckey_cntl);
 }
 
-int vixGetGrKeys(vidix_grkey_t *grkey)
+int VIDIX_NAME(vixGetGrKeys)(vidix_grkey_t *grkey)
 {
     memcpy(grkey, &radeon_grkey, sizeof(vidix_grkey_t));
     return(0);
 }
 
-int vixSetGrKeys(const vidix_grkey_t *grkey)
+int VIDIX_NAME(vixSetGrKeys)(const vidix_grkey_t *grkey)
 {
     memcpy(&radeon_grkey, grkey, sizeof(vidix_grkey_t));
     set_gr_key();
@@ -1960,7 +1966,7 @@ static int radeon_transfer_frame( void  )
 }
 
 
-int vixPlaybackCopyFrame( vidix_dma_t * dmai )
+int VIDIX_NAME(vixPlaybackCopyFrame)( vidix_dma_t * dmai )
 {
     int retval;
     if(mlock(dmai->src,dmai->size) != 0) return errno;
@@ -1970,7 +1976,7 @@ int vixPlaybackCopyFrame( vidix_dma_t * dmai )
     return retval;
 }
 
-int	vixQueryDMAStatus( void )
+int VIDIX_NAME(vixQueryDMAStatus)( void )
 {
     int bm_active;
 #if 1 //def RAGE128

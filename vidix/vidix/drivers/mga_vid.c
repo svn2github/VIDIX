@@ -64,6 +64,12 @@
 #define ENOTSUP EOPNOTSUPP
 #endif
 
+#ifdef CRCT2
+#define VIDIX_STATIC mga_crtc2_
+#else
+#define VIDIX_STATIC mga_
+#endif
+
 /* from radeon_vid */
 #define GETREG(TYPE,PTR,OFFZ)		(*((volatile TYPE*)((PTR)+(OFFZ))))
 #define SETREG(TYPE,PTR,OFFZ,VAL)	(*((volatile TYPE*)((PTR)+(OFFZ))))=VAL
@@ -119,7 +125,7 @@ static vidix_capability_t mga_cap =
     -1,
     FLAG_UPSCALER | FLAG_DOWNSCALER | FLAG_EQUALIZER,
     VENDOR_MATROX,
-    -1, /* will be set in vixProbe */
+    -1, /* will be set in VIDIX_NAME(vixProbe) */
     { 0, 0, 0, 0}
 };
 
@@ -339,7 +345,7 @@ case 3:
 }
 #endif
 
-int vixPlaybackFrameSelect(unsigned int frame)
+int VIDIX_NAME(vixPlaybackFrameSelect)(unsigned int frame)
 {
     mga_next_frame = frame;
     if (mga_verbose>1) printf("[mga] frameselect: %d\n", mga_next_frame);
@@ -683,7 +689,7 @@ void mga_handle_irq(int irq, void *dev_id/*, struct pt_regs *pregs*/) {
 }
 #endif /* MGA_ALLOW_IRQ */
 
-int vixConfigPlayback(vidix_playback_t *config)
+int VIDIX_NAME(vixConfigPlayback)(vidix_playback_t *config)
 {
 	int i;
 	int x, y, sw, sh, dw, dh;
@@ -720,7 +726,7 @@ int vixConfigPlayback(vidix_playback_t *config)
 	mga_src_base &= (~0xFFFF); /* 64k boundary */
 	if(mga_src_base>=0) break;
     }
-    if (mga_verbose > 1) printf("[mga] YUV buffer base: %p\n", mga_src_base);
+    if (mga_verbose > 1) printf("[mga] YUV buffer base: 0x%x\n", mga_src_base);
 
     config->dga_addr = mga_mem_base + mga_src_base;
 
@@ -1133,7 +1139,7 @@ switch(config->fourcc){
     return(0);
 }
 
-int vixPlaybackOn(void)
+int VIDIX_NAME(vixPlaybackOn)(void)
 {
     if (mga_verbose) printf("[mga] playback on\n");
 
@@ -1152,7 +1158,7 @@ int vixPlaybackOn(void)
     return(0);
 }
 
-int vixPlaybackOff(void)
+int VIDIX_NAME(vixPlaybackOff)(void)
 {
     if (mga_verbose) printf("[mga] playback off\n");
 
@@ -1168,7 +1174,7 @@ int vixPlaybackOff(void)
     return(0);
 }
 
-int vixProbe(int verbose,int force)
+int VIDIX_NAME(vixProbe)(int verbose,int force)
 {
 	pciinfo_t lst[MAX_PCI_DEVICES];
 	unsigned int i, num_pci;
@@ -1234,7 +1240,7 @@ card_found:
 	return(0);
 }
 
-int vixInit(void)
+int VIDIX_NAME(vixInit)(void)
 {
     unsigned int card_option = 0;
     int err;
@@ -1333,7 +1339,7 @@ int vixInit(void)
     mga_mem_base = map_phys_mem(pci_info.base0,mga_ram_size*1024*1024);
 
     if (mga_verbose > 1) printf("[mga] MMIO at %p, IRQ: %d, framebuffer: %p\n",
-        mga_mmio_base, mga_irq, mga_mem_base);
+				mga_mmio_base, mga_irq, mga_mem_base);
     err = mtrr_set_type(pci_info.base0,mga_ram_size*1024*1024,MTRR_TYPE_WRCOMB);
     if(!err) printf("[mga] Set write-combining type of video memory\n");
 #ifdef MGA_ALLOW_IRQ
@@ -1363,7 +1369,7 @@ int vixInit(void)
     return(0);
 }
 
-void vixDestroy(void)
+void VIDIX_NAME(vixDestroy)(void)
 {
     if (mga_verbose) printf("[mga] destroy\n");
 
@@ -1387,7 +1393,7 @@ void vixDestroy(void)
     return;
 }
 
-int vixQueryFourcc(vidix_fourcc_t *to)
+int VIDIX_NAME(vixQueryFourcc)(vidix_fourcc_t *to)
 {
     int supports=0;
     if (mga_verbose) printf("[mga] query fourcc (%x)\n", to->fourcc);
@@ -1420,30 +1426,30 @@ int vixQueryFourcc(vidix_fourcc_t *to)
     return(0);
 }
 
-unsigned int vixGetVersion(void)
+unsigned int VIDIX_NAME(vixGetVersion)(void)
 {
     return(VIDIX_VERSION);
 }
 
-int vixGetCapability(vidix_capability_t *to)
+int VIDIX_NAME(vixGetCapability)(vidix_capability_t *to)
 {
     memcpy(to, &mga_cap, sizeof(vidix_capability_t));
     return(0);
 }
 
-int vixGetGrKeys(vidix_grkey_t *grkey)
+int VIDIX_NAME(vixGetGrKeys)(vidix_grkey_t *grkey)
 {
     memcpy(grkey, &mga_grkey, sizeof(vidix_grkey_t));
     return(0);
 }
 
-int vixSetGrKeys(const vidix_grkey_t *grkey)
+int VIDIX_NAME(vixSetGrKeys)(const vidix_grkey_t *grkey)
 {
     memcpy(&mga_grkey, grkey, sizeof(vidix_grkey_t));
     return(0);
 }
 
-int vixPlaybackSetEq( const vidix_video_eq_t * eq)
+int VIDIX_NAME(vixPlaybackSetEq)( const vidix_video_eq_t * eq)
 {
    uint32_t luma = 0;
    float factor = 256.0 / 2000;
@@ -1466,7 +1472,7 @@ int vixPlaybackSetEq( const vidix_video_eq_t * eq)
     return(0);
 }
 
-int vixPlaybackGetEq( vidix_video_eq_t * eq)
+int VIDIX_NAME(vixPlaybackGetEq)( vidix_video_eq_t * eq)
 {
     uint32_t luma;
     float factor = 2000.0 / 256;
