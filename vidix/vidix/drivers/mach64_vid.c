@@ -780,7 +780,7 @@ static void mach64_vid_stop_video( void )
 
 static void mach64_vid_display_video( void )
 {
-    uint32_t vf;
+    uint32_t vf,sc,width;
     mach64_fifo_wait(14);
 
     OUTREG(OVERLAY_Y_X_START,			besr.y_x_start);
@@ -795,13 +795,25 @@ static void mach64_vid_display_video( void )
     OUTREG(SCALER_BUF1_OFFSET_U,		mach64_buffer_base[0][1]);
     OUTREG(SCALER_BUF1_OFFSET_V,		mach64_buffer_base[0][2]);
     mach64_wait_vsync();
-    
-    mach64_fifo_wait(4);
-    OUTREG(OVERLAY_SCALE_CNTL,
-		SCALE_EN | OVERLAY_EN | 
+    width = (besr.height_width >> 16 & 0x03FF);
+    sc = 	SCALE_EN | OVERLAY_EN | 
 		SCALE_BANDWIDTH | /* reset bandwidth status */
 		SCALE_PIX_EXPAND | /* dynamic range correct */
-		SCALE_Y2R_TEMP ); /* use the equal temarature for every component of RGB */
+		SCALE_Y2R_TEMP; /* use the equal temparature for every component of RGB */
+    /* Force clocks of scaler. */
+    if(width > 360 && !supports_planar && !mach64_is_interlace())
+	     sc |= SCALE_CLK_FORCE_ON;
+    /* Do we need that? And how we can improve the quality of 3dRageII scaler ?
+       3dRageII+ (non pro) is really crapped HW :(
+       ^^^^^^^^^^^^^^^^^^^
+	!!SCALER_WIDTH <= 360 provides full scaling functionality !!!!!!!!!!!!!
+	!!360 < SCALER_WIDTH <= 720 provides scaling with vertical replication (crap)
+	!!SCALER_WIDTH > 720 is illegal. (no comments)
+	
+       As for me - I would prefer to limit movie's width with 360 but it provides only
+       half of picture but with perfect quality. (NK) */
+    mach64_fifo_wait(4);
+    OUTREG(OVERLAY_SCALE_CNTL, sc);
 
     mach64_wait_for_idle();
 
@@ -825,6 +837,23 @@ static void mach64_vid_display_video( void )
     }
     OUTREG(VIDEO_FORMAT,vf);
     if(__verbose > VERBOSE_LEVEL) mach64_vid_dump_regs();
+}
+
+/* Goal of this function: hide RGB background and provide black screen around movie.
+   Useful in '-vo fbdev:vidix -fs -zoom' mode.
+   Reverse effect to colorkey */
+static void mach64_vid_exclusive( void )
+{
+    unsigned screenw,screenh;
+    screenw = mach64_get_xres();
+    screenh = mach64_get_yres();
+    OUTREG(OVERLAY_EXCLUSIVE_VERT,(((screenh-1)<<16)&EXCLUSIVE_VERT_END));
+    OUTREG(OVERLAY_EXCLUSIVE_HORZ,(((screenw/8+1)<<8)&EXCLUSIVE_HORZ_END)|EXCLUSIVE_EN);
+}
+
+static void mach64_vid_non_exclusive( void )
+{
+    OUTREG(OVERLAY_EXCLUSIVE_HORZ,0);
 }
 
 static int mach64_vid_init_video( vidix_playback_t *config )
@@ -892,11 +921,11 @@ for(i=0; i<32; i++){
     
     if(mach64_is_interlace()) v_inc<<=1;
     if(mach64_is_dbl_scan() ) v_inc>>=1;
-    v_inc>>=4; // convert 16.16 -> 20.12
     v_inc/= dest_h;
-    
+    v_inc>>=4; // convert 16.16 -> 4.12
+
     h_inc = (src_w << (12+ecp)) / dest_w;
-    /* keep everything in 16.16 */
+    /* keep everything in 4.12 */
     config->offsets[0] = 0;
     for(i=1; i<config->num_frames; i++)
         config->offsets[i] = config->offsets[i-1] + config->frame_size;
@@ -1014,6 +1043,11 @@ int vixConfigPlayback(vidix_playback_t *info)
   unsigned rgb_size,nfr;
   uint32_t mach64_video_size;
   if(!is_supported_fourcc(info->fourcc)) return ENOSYS;
+  if(info->src.h > 720 || info->src.w > 720)
+  {
+    printf("[mach64] Can't apply width or height > 720\n");
+    return EINVAL;
+  }
   if(info->num_frames>VID_PLAY_MAXFRAMES) info->num_frames=VID_PLAY_MAXFRAMES;
 
   mach64_compute_framesize(info);
@@ -1058,6 +1092,11 @@ int vixConfigPlayback(vidix_playback_t *info)
 int vixPlaybackOn(void)
 {
   int err;
+  unsigned dw,dh;
+  dw = (besr.y_x_end >> 16) - (besr.y_x_start >> 16);
+  dh = (besr.y_x_end & 0xFFFF) - (besr.y_x_start & 0xFFFF);
+  if(dw == mach64_get_xres() || dh == mach64_get_yres()) mach64_vid_exclusive();
+  else mach64_vid_non_exclusive();
   mach64_vid_display_video();
   err = INREG(SCALER_BUF_PITCH) == besr.vid_buf_pitch ? 0 : EINTR;
   if(err)
