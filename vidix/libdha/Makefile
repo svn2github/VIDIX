@@ -35,7 +35,7 @@ $(LIBNAME):     $(OBJS)
 
 all:    $(LIBNAME) $(SHORTNAME)
 
-pci_names.c:
+pci_names.c: oth/pci.db
 	$(AWK) -f pci_db2c.awk oth/pci.db
 
 test:
