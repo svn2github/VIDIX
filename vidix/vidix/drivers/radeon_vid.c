@@ -63,9 +63,10 @@ typedef struct bes_registers_s
   uint32_t yuv_base;
   uint32_t fourcc;
   uint32_t surf_id;
-  uint32_t load_prg_start;
-  uint32_t horz_pick_nearest;
-  uint32_t vert_pick_nearest;
+  int load_prg_start;
+  int horz_pick_nearest;
+  int vert_pick_nearest;
+  int swap_uv; /* for direct support of bgr fourccs */
   uint32_t dest_bpp;
   /* YUV BES registers */
   uint32_t reg_load_cntl;
@@ -1308,6 +1309,7 @@ static void radeon_vid_display_video( void )
     OUTREG(OV0_FOUR_TAP_COEF_2,besr.four_tap_coeff[2]);
     OUTREG(OV0_FOUR_TAP_COEF_3,besr.four_tap_coeff[3]);
     OUTREG(OV0_FOUR_TAP_COEF_4,besr.four_tap_coeff[4]);
+    if(besr.swap_uv) OUTREG(OV0_TEST,INREG(OV0_TEST)|OV0_SWAP_UV);
     OUTREG(OV0_REG_LOAD_CNTL,		0);
     if(__verbose > VERBOSE_LEVEL) printf(RADEON_MSG"we wanted: scaler=%08X\n",bes_flags);
     if(__verbose > VERBOSE_LEVEL) radeon_vid_dump_regs();
@@ -2370,6 +2372,7 @@ static int radeon_vid_init_video( vidix_playback_t *config )
 			  config->dest.pitch.v = best_pitch;
 			  break;
 	/* 4:2:2 */
+	
 	default: /* RGB15, RGB16, YVYU, UYVY, YUY2 */
 			  pitch = ((src_w*2) + mpitch) & ~mpitch;
 			  config->dest.pitch.y =
@@ -2378,17 +2381,21 @@ static int radeon_vid_init_video( vidix_playback_t *config )
 			  break;
     }
     besr.load_prg_start=0;
+    besr.swap_uv=0;
     switch(config->fourcc)
     {
 	case IMGFMT_RGB15:
+			   besr.swap_uv=1;
 	case IMGFMT_BGR15: besr.surf_id = SCALER_SOURCE_15BPP>>8;
 			   besr.load_prg_start = 1;
 			   break;
 	case IMGFMT_RGB16:
+			   besr.swap_uv=1;
 	case IMGFMT_BGR16: besr.surf_id = SCALER_SOURCE_16BPP>>8;
 			   besr.load_prg_start = 1;
 			   break;
 	case IMGFMT_RGB32:
+			   besr.swap_uv=1;
 	case IMGFMT_BGR32: besr.surf_id = SCALER_SOURCE_32BPP>>8;
 			   besr.load_prg_start = 1;
 			   break;
