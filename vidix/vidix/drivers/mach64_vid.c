@@ -60,6 +60,7 @@ static uint32_t mach64_ram_size = 0;
 static uint32_t mach64_buffer_base[10][3];
 static int num_mach64_buffers=-1;
 static int supports_planar=0;
+static int supports_colour_adj=0;
 static int supports_idct=0;
 static int supports_subpic=0;
 static int supports_lcd_v_stretch=0;
@@ -620,6 +621,9 @@ int vixInit(void)
 	if(INREG(SCALER_BUF0_OFFSET_U)) 	supports_planar=1;
   }
   printf("[mach64] Planar YUV formats are %s supported\n",supports_planar?"":"not");
+  supports_colour_adj=0;
+  OUTREG(SCALER_COLOUR_CNTL,-1);
+  if(INREG(SCALER_COLOUR_CNTL)) supports_colour_adj=1;
   supports_idct=0;
   OUTREG(IDCT_CONTROL,-1);
   if(INREG(IDCT_CONTROL)) supports_idct=1;
@@ -793,65 +797,33 @@ static void mach64_vid_display_video( void )
     mach64_wait_vsync();
     
     mach64_fifo_wait(4);
-    OUTREG(OVERLAY_SCALE_CNTL, 0xC4000003);
+    OUTREG(OVERLAY_SCALE_CNTL,
+		SCALE_EN | OVERLAY_EN | 
+		SCALE_BANDWIDTH | /* reset bandwidth status */
+		SCALE_PIX_EXPAND | /* dynamic range correct */
+		SCALE_Y2R_TEMP ); /* use the equal temarature for every component of RGB */
 
-/* OVERLAY_SCALE_CNTL bits:
-bit 0 scale pix expand (Pixel expansion algorithm, 0 zero extend, 1 dynamic range correct)
-bit 1 colour temparature (0 red temp: 6500K, 1 red temp: 9800K) 
-bit 2 horizontal interpolation if 0
-bit 3 vertical interpolation if 0
-bit 4 signness of UV (0 UV unsigned, 1 UV signed)
-bit 5-6 gamma correction 
-    (0- Brightness enable, 1- Gamma 2.2, 2- Gamma 1.8, 3- Gamma 1.4)
-bit 26 reset bandwidth status (1 reset)
-    read: Status (0 Normal, 1 Bandwidth exceeded)
-bit 27 YUV limiting (0 limit to CCIR 601 levels, 1 disable)
-bit 29 Dynamic Scaler Clock (0 dynamically, 1 run continuously)
-bit 30 Overlay enable (0 disable, 1 enable)
-bit 31 Scaler enable (0 reset internal states, 1 enable)
-*/
     mach64_wait_for_idle();
-    vf = INREG(VIDEO_FORMAT);
-
-// Bits 16-19 seem to select the format
-// 0x0  dunno behaves strange
-// 0x1  dunno behaves strange
-// 0x2  dunno behaves strange
-// 0x3  BGR15
-// 0x4  BGR16
-// 0x5  BGR16 (hmm, that need investigation, 2 BGR16 formats, i guess 1 will have only 5bits for green)
-// 0x6  BGR32
-// 0x7  BGR32 with somehow mixed even / odd pixels ?
-// 0x8	YYYYUVUV
-// 0x9	YVU9
-// 0xA	YV12
-// 0xB	YUY2
-// 0xC	UYVY
-// 0xD  UYVY (no difference is visible if i switch between C/D for every even/odd frame)
-// 0xE  dunno behaves strange
-// 0xF  dunno behaves strange
-// Bit 28 all values are assumed to be 7 bit with chroma=64 for black (tested with YV12 & YUY2)
-// the remaining bits seem to have no effect
-
 
     switch(besr.fourcc)
     {
 	/* BGR formats */
-	case IMGFMT_BGR15: OUTREG(VIDEO_FORMAT, 0x00030000);  break;
-	case IMGFMT_BGR16: OUTREG(VIDEO_FORMAT, 0x00040000);  break;
-	case IMGFMT_BGR32: OUTREG(VIDEO_FORMAT, 0x00060000);  break;
+	case IMGFMT_BGR15: vf = SCALER_IN_RGB15;  break;
+	case IMGFMT_BGR16: vf = SCALER_IN_RGB16;  break;
+	case IMGFMT_BGR32: vf = SCALER_IN_RGB32;  break;
         /* 4:2:0 */
 	case IMGFMT_IYUV:
 	case IMGFMT_I420:
-	case IMGFMT_YV12:  OUTREG(VIDEO_FORMAT, 0x000A0000);  break;
-
-	case IMGFMT_YVU9:  OUTREG(VIDEO_FORMAT, 0x00090000);  break;
+	case IMGFMT_YV12:  vf = SCALER_IN_YUV12;  break;
+	/* 4:1:0 */
+	case IMGFMT_YVU9:  vf = SCALER_IN_YUV9;  break;
         /* 4:2:2 */
         case IMGFMT_YVYU:
-	case IMGFMT_UYVY:  OUTREG(VIDEO_FORMAT, 0x000C0000); break;
+	case IMGFMT_UYVY:  vf = SCALER_IN_YVYU422; break;
 	case IMGFMT_YUY2:
-	default:           OUTREG(VIDEO_FORMAT, 0x000B0000); break;
+	default:           vf = SCALER_IN_VYUY422; break;
     }
+    OUTREG(VIDEO_FORMAT,vf);
     if(__verbose > VERBOSE_LEVEL) mach64_vid_dump_regs();
 }
 
@@ -1154,6 +1126,7 @@ vidix_video_eq_t equal =
 int 	vixPlaybackGetEq( vidix_video_eq_t * eq)
 {
   memcpy(eq,&equal,sizeof(vidix_video_eq_t));
+  if(!supports_colour_adj) eq->cap = VEQ_CAP_BRIGHTNESS;
   return 0;
 }
 
@@ -1170,12 +1143,29 @@ int 	vixPlaybackSetEq( const vidix_video_eq_t * eq)
       equal.green_intensity = eq->green_intensity;
       equal.blue_intensity  = eq->blue_intensity;
     }
-    equal.flags = eq->flags;
-    br = equal.brightness * 64 / 1000;
-    if(br < -64) br = -64; if(br > 63) br = 63;
-    sat = (equal.saturation + 1000) * 16 / 1000;
-    if(sat < 0) sat = 0; if(sat > 31) sat = 31;
-    OUTREG(SCALER_COLOUR_CNTL, (br & 0x7f) | (sat << 8) | (sat << 16));
+    if(supports_colour_adj)
+    {
+	equal.flags = eq->flags;
+	br = equal.brightness * 64 / 1000;
+	if(br < -64) br = -64; if(br > 63) br = 63;
+	sat = (equal.saturation + 1000) * 16 / 1000;
+	if(sat < 0) sat = 0; if(sat > 31) sat = 31;
+	OUTREG(SCALER_COLOUR_CNTL, (br & 0x7f) | (sat << 8) | (sat << 16));
+    }
+    else
+    {
+	unsigned gamma;
+	br = equal.brightness * 3 / 1000;
+	if(br < 0) br = 0;
+	switch(br)
+	{
+	    default:gamma = SCALE_GAMMA_SEL_BRIGHT; break;
+	    case 1: gamma = SCALE_GAMMA_SEL_G14; break;
+	    case 2: gamma = SCALE_GAMMA_SEL_G18; break;
+	    case 3: gamma = SCALE_GAMMA_SEL_G22; break;
+	}
+	OUTREG(OVERLAY_SCALE_CNTL,(INREG(OVERLAY_SCALE_CNTL) & ~SCALE_GAMMA_SEL_MSK) | gamma);
+    }
   return 0;
 }
 
