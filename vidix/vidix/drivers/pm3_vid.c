@@ -370,7 +370,7 @@ int VIDIX_NAME(vixConfigPlayback)(vidix_playback_t *info)
 
     if(info->num_frames > max_frames)
 	info->num_frames = max_frames;
-    vidmem_size = info->num_frames * frame_size;
+/*     vidmem_size = info->num_frames * frame_size; */
 
     /* Use end of video memory. Assume the card has 32 MB */
     vid_base = 32*1024*1024 - vidmem_size;
@@ -458,11 +458,10 @@ struct pm3_bydma_frame {
 };
 
 static struct pm3_bydma_frame *
-pm3_setup_bydma(vidix_dma_t *dma)
+pm3_setup_bydma(vidix_dma_t *dma, struct pm3_bydma_frame *bdf)
 {
     u_int size = dma->size;
     u_int pages = (size + page_size-1) / page_size;
-    struct pm3_bydma_frame *bdf;
     long baddr[pages];
     u_int i;
     uint32_t dest;
@@ -470,8 +469,13 @@ pm3_setup_bydma(vidix_dma_t *dma)
     if(bm_virt_to_bus(dma->src, dma->size, baddr))
 	return NULL;
 
-    bdf = malloc(sizeof(*bdf));
-    bdf->cmds = valloc(pages * sizeof(struct pm3_bydma_cmd));
+    if(!bdf){
+	bdf = malloc(sizeof(*bdf));
+	bdf->cmds = valloc(pages * sizeof(struct pm3_bydma_cmd));
+	if(dma->flags & BM_DMA_FIXED_BUFFS){
+	    mlock(bdf->cmds, page_size);
+	}
+    }
 
     dest = vid_base + dma->dest_offset;
     for(i = 0; i < pages; i++, dest += page_size, size -= page_size){
@@ -499,19 +503,14 @@ VIDIX_NAME(vixPlaybackCopyFrame)(vidix_dma_t *dma)
     struct pm3_bydma_frame *bdf;
     static int s = 0;
 
-    if(dma->internal[frame]){
-	bdf = dma->internal[frame];
-    } else {
-	if(!(bdf = pm3_setup_bydma(dma))){
-	    return -1;
-	} else if(dma->flags & BM_DMA_FIXED_BUFFS){
-	    if(mlock(bdf->cmds, page_size) == 0){
-		dma->internal[frame] = bdf;
-	    } else {
-		fprintf(stderr, "[pm3] Can't lock page @ %p\n", bdf->cmds);
-	    }
-	}
-    }
+    bdf = dma->internal[frame];
+    if(!bdf || !(dma->flags & BM_DMA_FIXED_BUFFS))
+	bdf = pm3_setup_bydma(dma, bdf);
+    if(!bdf)
+	return -1;
+
+    if(!dma->internal[frame])
+	dma->internal[frame] = bdf;
 
     if(dma->flags & BM_DMA_SYNC){
 	if(s){
