@@ -30,7 +30,8 @@
 #endif
 #endif
 
-#undef RADEON_ENABLE_BM /* unfinished stuff. May corrupt your filesystem ever */
+//#undef RADEON_ENABLE_BM /* unfinished stuff. May corrupt your filesystem ever */
+#define RADEON_ENABLE_BM 1
 
 #ifdef RADEON_ENABLE_BM
 static void * radeon_dma_desc_base = 0;
@@ -39,10 +40,10 @@ static unsigned long *dma_phys_addrs = 0;
 #pragma pack(1)
 typedef struct
 {
-uint32_t frame_addr;
-uint32_t sys_addr;
-uint32_t command;
-uint32_t reserved;
+	uint32_t framebuf_offset;
+	uint32_t sys_addr;
+	uint32_t command;
+	uint32_t reserved;
 } bm_list_descriptor;
 #pragma pack()
 #endif
@@ -206,9 +207,8 @@ static video_registers_t vregs[] =
   DECLARE_VREG(IDCT_LEVELS),
   DECLARE_VREG(IDCT_AUTH_CONTROL),
   DECLARE_VREG(IDCT_AUTH),
-  DECLARE_VREG(IDCT_CONTROL)
+  DECLARE_VREG(IDCT_CONTROL),
 #ifdef RAGE128
-,
   DECLARE_VREG(BM_FRAME_BUF_OFFSET),
   DECLARE_VREG(BM_SYSTEM_MEM_ADDR),
   DECLARE_VREG(BM_COMMAND),
@@ -217,11 +217,32 @@ static video_registers_t vregs[] =
   DECLARE_VREG(BM_QUEUE_FREE_STATUS),
   DECLARE_VREG(BM_CHUNK_0_VAL),
   DECLARE_VREG(BM_CHUNK_1_VAL),
+  DECLARE_VREG(BM_VIP0_BUF),
+  DECLARE_VREG(BM_VIP0_ACTIVE),
+  DECLARE_VREG(BM_VIP1_BUF),
+  DECLARE_VREG(BM_VIP1_ACTIVE),
+  DECLARE_VREG(BM_VIP2_BUF),
+  DECLARE_VREG(BM_VIP2_ACTIVE),
+  DECLARE_VREG(BM_VIP3_BUF),
+  DECLARE_VREG(BM_VIP3_ACTIVE),
   DECLARE_VREG(BM_VIDCAP_BUF0),
   DECLARE_VREG(BM_VIDCAP_BUF1),
   DECLARE_VREG(BM_VIDCAP_BUF2),
   DECLARE_VREG(BM_VIDCAP_ACTIVE),
-  DECLARE_VREG(BM_GUI)
+  DECLARE_VREG(BM_GUI),
+  DECLARE_VREG(BM_ABORT)
+#else
+  DECLARE_VREG(DMA_GUI_TABLE_ADDR),
+  DECLARE_VREG(DMA_GUI_SRC_ADDR),
+  DECLARE_VREG(DMA_GUI_DST_ADDR),
+  DECLARE_VREG(DMA_GUI_COMMAND),
+  DECLARE_VREG(DMA_GUI_STATUS),
+  DECLARE_VREG(DMA_GUI_ACT_DSCRPTR),
+  DECLARE_VREG(DMA_VID_SRC_ADDR),
+  DECLARE_VREG(DMA_VID_DST_ADDR),
+  DECLARE_VREG(DMA_VID_COMMAND),
+  DECLARE_VREG(DMA_VID_STATUS),
+  DECLARE_VREG(DMA_VID_ACT_DSCRPTR),
 #endif
 };
 
@@ -1607,8 +1628,7 @@ int vixConfigPlayback(vidix_playback_t *info)
 	Note: probably it's ont good idea to locate them in video memory
 	but as initial release it's OK */
 	radeon_video_size -= radeon_ram_size * sizeof(bm_list_descriptor) / 4096;
-	radeon_dma_desc_base = (char *)radeon_mem_base + radeon_video_size;
-	bm_virt_to_bus(radeon_dma_desc_base,1,&bus_addr_dma_desc);
+	radeon_dma_desc_base = pci_info.base0 + radeon_video_size;
   }
 #endif
   for(;nfr>0; nfr--)
@@ -1894,16 +1914,19 @@ static int radeon_setup_frame( const vidix_dma_t * dmai )
     n = dmai->size / 4096;
     if(dmai->size % 4096) n++;
     if((retval = bm_virt_to_bus(dmai->src,dmai->size,dma_phys_addrs)) != 0) return retval;
-//    bm_virt_to_bus(radeon_mem_base+dmai->dest_offset,1,&dest_ptr);
     dest_ptr = dmai->dest_offset;
     count = dmai->size;
     for(i=0;i<n;i++)
     {
-	list[i].frame_addr = dma_phys_addrs[i];
-	list[i].sys_addr = dest_ptr; 
-	list[i].command = (count > 4096 ? 4096 : count | DMA_GUI_COMMAND__EOL)/*|DMA_GUI_COMMAND__HOLD_VIDEO_OFFSET*/;
+	list[i].framebuf_offset = radeon_overlay_off + dest_ptr;
+	list[i].sys_addr = dma_phys_addrs[i]; 
+#ifdef RAGE128
+	list[i].command = (count > 4096 ? 4096 : count | BM_END_OF_LIST)|BM_FORCE_TO_PCI;
+#else
+	list[i].command = (count > 4096 ? 4096 : count | DMA_GUI_COMMAND__EOL);
+#endif
 	list[i].reserved = 0;
-printf("RADEON_DMA_TABLE[%i] %X %X %X %X\n",i,list[i].frame_addr,list[i].sys_addr,list[i].command,list[i].reserved);
+printf("RADEON_DMA_TABLE[%i] %X %X %X %X\n",i,list[i].framebuf_offset,list[i].sys_addr,list[i].command,list[i].reserved);
 	dest_ptr += 4096;
 	count -= 4096;
     }
@@ -1912,22 +1935,27 @@ printf("RADEON_DMA_TABLE[%i] %X %X %X %X\n",i,list[i].frame_addr,list[i].sys_add
 
 static int radeon_transfer_frame( void  )
 {
-    unsigned i,status;
+    unsigned i;
     radeon_engine_idle();
-#ifndef RAGE128
-    /* wait for at least one available queue */
-    do {
-	status=INREG(DMA_GUI_STATUS);
-    } while (!(status & 0x1f));
-#endif
     for(i=0;i<1000;i++) INREG(BUS_CNTL); /* FlushWriteCombining */
     OUTREG(BUS_CNTL,(INREG(BUS_CNTL) | BUS_STOP_REQ_DIS)&(~BUS_MASTER_DIS));
-    OUTREG(DMA_GUI_TABLE_ADDR,bus_addr_dma_desc);
-    /*
-     * To start the DMA transfer, we need to initiate a GUI operation.  We can
-     * write any value to the register, as it is only used to start the engine.
-     */
-//    OUTREG( DST_HEIGHT_WIDTH, 0 );
+#ifdef RAGE128
+    OUTREG(BM_CHUNK_0_VAL,0x000000FF | BM_GLOBAL_FORCE_TO_PCI);
+    OUTREG(BM_CHUNK_1_VAL,0x0F0F0F0F);
+    OUTREG(BM_VIP0_BUF,bus_addr_dma_desc|SYSTEM_TRIGGER_SYSTEM_TO_VIDEO);
+//    OUTREG(GEN_INT_STATUS,INREG(GEN_INT_STATUS)|0x00010000);
+#else
+    OUTREG(MC_FB_LOCATION,
+	    ((pci_info.base0>>16)&0xffff)|
+	    ((pci_info.base0+INREG(CONFIG_APER_SIZE)-1)&0xffff0000));
+    if((INREG(MC_AGP_LOCATION)&0xffff)!=
+      (((pci_info.base0+INREG(CONFIG_APER_SIZE))>>16)&0xffff))
+    /*Radeon memory controller is misconfigured*/
+	    return EINVAL;
+    OUTREG(DMA_VID_ACT_DSCRPTR,bus_addr_dma_desc);
+//    OUTREG(GEN_INT_STATUS,INREG(GEN_INT_STATUS)|(1<<30));
+#endif
+    OUTREG(GEN_INT_STATUS,INREG(GEN_INT_STATUS)|0x00010000);
     return 0;
 }
 
@@ -1945,10 +1973,10 @@ int vixPlaybackCopyFrame( const vidix_dma_t * dmai )
 int	vixQueryDMAStatus( void )
 {
     int bm_active;
-#ifdef RAGE128
-    bm_active = INREG(GUI_STAT) & GUI_ACTIVE;
+#if 1 //def RAGE128
+    bm_active=(INREG(GEN_INT_STATUS)&0x00010000)==0?1:0;
 #else
-    bm_active = INREG(RBBM_STATUS) & RBBM_ACTIVE;
+    bm_active=(INREG(GEN_INT_STATUS)&(1<<30))==0?1:0;
 #endif
     return bm_active?1:0;
 }
