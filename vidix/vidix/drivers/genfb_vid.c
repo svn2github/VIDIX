@@ -97,7 +97,7 @@ int VIDIX_NAME(vixProbe)(int verbose,int force)
 #endif
 }
 
-int VIDIX_NAME(vixInit)(void)
+int VIDIX_NAME(vixInit)(const char *args)
 {
     printf(GENFB_MSG"init\n");
     

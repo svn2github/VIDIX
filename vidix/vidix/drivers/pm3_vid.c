@@ -136,7 +136,7 @@ int VIDIX_NAME(vixProbe)(int verbose, int force)
     printf("[pm3] " #reg " (%x) = %#lx (%li)\n", reg, _foo, _foo);	\
 }
 
-int VIDIX_NAME(vixInit)(void)
+int VIDIX_NAME(vixInit)(const char *args)
 {
     char *vm;
     pm3_reg_base = map_phys_mem(pci_info.base0, 0x20000);

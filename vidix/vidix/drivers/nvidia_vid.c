@@ -160,7 +160,7 @@ int VIDIX_NAME(vixProbe)(int verbose,int force)
     return(err);
 }
 
-int VIDIX_NAME(vixInit)(void)
+int VIDIX_NAME(vixInit)(const char *args)
 {
     int card_option;
     

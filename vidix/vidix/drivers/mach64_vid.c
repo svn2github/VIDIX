@@ -502,7 +502,7 @@ static void reset_regs( void )
   }
 }
 
-int VIDIX_NAME(vixInit)(void)
+int VIDIX_NAME(vixInit)(const char *args)
 {
   int err;
   unsigned i;
@@ -512,7 +512,7 @@ int VIDIX_NAME(vixInit)(void)
     return EINTR;
   }
   if(__verbose>0) printf("[mach64] version %s\n", VERSION);
-  
+
   if((mach64_mmio_base = map_phys_mem(pci_info.base2,0x4000))==(void *)-1) return ENOMEM;
   mach64_wait_for_idle();
   mach64_ram_size = INREG(MEM_CNTL) & CTL_MEM_SIZEB;

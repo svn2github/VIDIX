@@ -1251,7 +1251,7 @@ card_found:
     return(0);
 }
 
-int VIDIX_NAME(vixInit)(void)
+int VIDIX_NAME(vixInit)(const char *args)
 {
     unsigned int card_option = 0;
     int err;

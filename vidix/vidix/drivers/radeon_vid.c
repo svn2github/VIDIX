@@ -1048,7 +1048,7 @@ static void radeon_get_moninfo (rinfo_t *rinfo)
 	}
 }
 #endif
-int VIDIX_NAME(vixInit)( void )
+int VIDIX_NAME(vixInit)( const char *args )
 {
   int err;
   if(!probed) 
