@@ -1350,6 +1350,8 @@ int VIDIX_NAME(vixQueryDMAStatus)( void )
 {
     int bm_off;
     unsigned crtc_int_cntl;
+    mach64_wait_for_idle();
+    mach64_fifo_wait(2);
     crtc_int_cntl = INREG(CRTC_INT_CNTL);
     bm_off = crtc_int_cntl & CRTC_BUSMASTER_EOL_INT;
 //    if(bm_off) OUTREG(CRTC_INT_CNTL,crtc_int_cntl | CRTC_BUSMASTER_EOL_INT);
