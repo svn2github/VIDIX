@@ -30,6 +30,8 @@
 #endif
 #endif
 
+#define RADEON_ASSERT(msg) printf(RADEON_MSG"################# FATAL:"msg);
+
 #ifdef RAGE128
 #define VIDIX_STATIC rage128_
 #else
@@ -1163,29 +1165,45 @@ int VIDIX_NAME(vixGetCapability)(vidix_capability_t *to)
   YUY2, UYVY, DDES, OGLT, OGL2, OGLS, OGLB, OGNT, OGNZ, OGNS,
   IF09, YVU9, IMC4, M2IA, IYUV, VBID, DXT1, DXT2, DXT3, DXT4, DXT5
 */
-uint32_t supported_fourcc[] = 
+typedef struct fourcc_desc_s
 {
-  IMGFMT_Y800, IMGFMT_YVU9, IMGFMT_IF09,
-  IMGFMT_YV12, IMGFMT_I420, IMGFMT_IYUV, 
-  IMGFMT_UYVY, IMGFMT_YUY2, IMGFMT_YVYU,
-  IMGFMT_RGB15, IMGFMT_BGR15,
-  IMGFMT_RGB16, IMGFMT_BGR16,
-  IMGFMT_RGB32, IMGFMT_BGR32
+    uint32_t fourcc;
+    unsigned max_srcw;
+}fourcc_desc_t;
+
+fourcc_desc_t supported_fourcc[] = 
+{
+  { IMGFMT_Y800, 1567 },
+  { IMGFMT_YVU9, 1567 },
+  { IMGFMT_IF09, 1567 },
+  { IMGFMT_YV12, 1567 },
+  { IMGFMT_I420, 1567 },
+  { IMGFMT_IYUV, 1567 }, 
+  { IMGFMT_UYVY, 1551 },
+  { IMGFMT_YUY2, 1551 },
+  { IMGFMT_YVYU, 1551 },
+  { IMGFMT_RGB15, 1551 },
+  { IMGFMT_BGR15, 1551 },
+  { IMGFMT_RGB16, 1551 },
+  { IMGFMT_BGR16, 1551 },
+  { IMGFMT_RGB32, 775 },
+  { IMGFMT_BGR32, 775 },
 };
 
-__inline__ static int is_supported_fourcc(uint32_t fourcc)
+__inline__ static int is_supported_fourcc(uint32_t fourcc,unsigned srcw)
 {
   unsigned i;
   for(i=0;i<sizeof(supported_fourcc)/sizeof(uint32_t);i++)
   {
-    if(fourcc==supported_fourcc[i]) return 1;
+    if(fourcc==supported_fourcc[i].fourcc &&
+	srcw <=supported_fourcc[i].max_srcw) return 1;
   }
   return 0;
 }
 
 int VIDIX_NAME(vixQueryFourcc)(vidix_fourcc_t *to)
 {
-    if(is_supported_fourcc(to->fourcc))
+    if(is_supported_fourcc(to->fourcc,to->srcw))
     {
 	to->depth = VID_DEPTH_1BPP | VID_DEPTH_2BPP |
 		    VID_DEPTH_4BPP | VID_DEPTH_8BPP |
@@ -1199,6 +1217,7 @@ int VIDIX_NAME(vixQueryFourcc)(vidix_fourcc_t *to)
     return ENOSYS;
 }
 
+static double H_scale_ratio;
 static void radeon_vid_dump_regs( void )
 {
   size_t i;
@@ -1208,6 +1227,7 @@ static void radeon_vid_dump_regs( void )
   printf(RADEON_MSG"radeon_overlay_off=%08X\n",radeon_overlay_off);
   printf(RADEON_MSG"radeon_ram_size=%08X\n",radeon_ram_size);
   printf(RADEON_MSG"video mode: %ux%u@%u\n",radeon_get_xres(),radeon_get_yres(),radeon_vid_get_dbpp());
+  printf(RADEON_MSG"H_scale_ratio=%8.2f\n",H_scale_ratio);
   printf(RADEON_MSG"*** Begin of OV0 registers dump ***\n");
   for(i=0;i<sizeof(vregs)/sizeof(video_registers_t);i++)
 	printf(RADEON_MSG"%s = %08X\n",vregs[i].sname,INREG(vregs[i].name));
@@ -2051,6 +2071,7 @@ static void ComputeXStartEnd(
 		    val_OV0_P2_X_END = (int)((val_OV0_P1_X_START + SourceWidthInPixels - 1) / P23StepSize) * P23StepSize;
 		    break;
 	default:    /* insert debug statement here. */
+		    RADEON_ASSERT("unknown fourcc\n");
 		    break;
     }
     val_OV0_P3_X_START = val_OV0_P2_X_START;
@@ -2307,7 +2328,7 @@ const double MinHScaleHard=0.75;
 
 static int radeon_vid_init_video( vidix_playback_t *config )
 {
-    double H_scale_ratio,V_scale_ratio;
+    double V_scale_ratio;
     uint32_t i,src_w,src_h,dest_w,dest_h,pitch,left,leftUV,top,h_inc;
     uint32_t val_OV0_P1_H_INC,val_OV0_P1_H_STEP_BY,val_OV0_P23_H_INC,val_OV0_P23_H_STEP_BY;
     uint32_t val_OV0_P1_X_START,val_OV0_P2_X_START;
@@ -2515,7 +2536,7 @@ static int radeon_vid_init_video( vidix_playback_t *config )
 	case 9:
 	case 10:    if ((ceil(SourceWidthInMemWords/2)-1) * 2 > OV0LB_Rows-1)
 		    {
-			/* insert debug statement here.	 Illegal value. */
+			RADEON_ASSERT("ceil(SourceWidthInMemWords/2)-1) * 2 > OV0LB_Rows-1\n");
 		    }
 		    else if ((SourceWidthInMemWords-1) * 2 > OV0LB_Rows-1)
 		    {
@@ -2543,7 +2564,7 @@ static int radeon_vid_init_video( vidix_playback_t *config )
 	case 13:
 	case 14:    if ((ceil(SourceWidthInMemWords/2)-1) * 2 > OV0LB_Rows-1)
 		    {
-			/* insert debug statement here. Illegal value. */
+			RADEON_ASSERT("ceil(SourceWidthInMemWords/2)-1) * 2 > OV0LB_Rows-1\n");
 		    }
 		    else if ((SourceWidthInMemWords-1) * 2 > OV0LB_Rows-1)
 		    {
@@ -2565,7 +2586,7 @@ static int radeon_vid_init_video( vidix_playback_t *config )
 	case 11:
 	case 12:    if ((ceil(SourceWidthInMemWords/2)-1) > OV0LB_Rows-1)
 		    {
-			/* insert debug statement here. Illegal value. */
+			RADEON_ASSERT("(ceil(SourceWidthInMemWords/2)-1) > OV0LB_Rows-1\n")
 		    }
 		    else if ((SourceWidthInMemWords-1) > OV0LB_Rows-1)
 		    {
@@ -2846,7 +2867,7 @@ int VIDIX_NAME(vixConfigPlayback)(vidix_playback_t *info)
 {
   unsigned rgb_size,nfr;
   uint32_t radeon_video_size;
-  if(!is_supported_fourcc(info->fourcc)) return ENOSYS;
+  if(!is_supported_fourcc(info->fourcc,info->src.w)) return ENOSYS;
   if(info->num_frames>VID_PLAY_MAXFRAMES) info->num_frames=VID_PLAY_MAXFRAMES;
   if(info->num_frames==1) besr.double_buff=0;
   else			  besr.double_buff=1;
