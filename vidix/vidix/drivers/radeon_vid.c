@@ -1241,20 +1241,19 @@ static void radeon_compute_framesize(vidix_playback_t *info)
     case IMGFMT_YV12:
     case IMGFMT_IYUV:
 		awidth = (info->src.w + (pitch-1)) & ~(pitch-1);
-		info->frame_size = (awidth*(info->src.h+info->src.h/2)+dbpp-1)/dbpp;
+		info->frame_size = awidth*(info->src.h+info->src.h/2);
 		break;
     case IMGFMT_RGB32:
     case IMGFMT_BGR32:
 		awidth = (info->src.w*4 + (pitch-1)) & ~(pitch-1);
-		info->frame_size = ((awidth*info->src.h)+dbpp-1)/dbpp;
+		info->frame_size = awidth*info->src.h;
 		break;
     /* YUY2 YVYU, RGB15, RGB16 */
     default:	
 		awidth = (info->src.w*2 + (pitch-1)) & ~(pitch-1);
-		info->frame_size = ((awidth*info->src.h)+dbpp-1)/dbpp;
+		info->frame_size = awidth*info->src.h;
 		break;
   }
-  info->frame_size *= dbpp;
 }
 
 int vixConfigPlayback(vidix_playback_t *info)
