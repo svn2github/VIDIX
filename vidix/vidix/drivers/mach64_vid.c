@@ -40,7 +40,7 @@
 #ifdef MACH64_ENABLE_BM
 
 #define cpu_to_le32(a) (a)
-#define VIRT_TO_CARD(a,b,c) bm_virt_to_bus(a,b,c)
+#define VIRT_TO_CARD(a,b,c) bm_virt_to_phys(a,b,c)
 #pragma pack(1)
 typedef struct
 {
@@ -387,6 +387,7 @@ static void mach64_vid_dump_regs( void )
   for(i=0;i<sizeof(vregs)/sizeof(video_registers_t);i++)
   {
 	mach64_wait_for_idle();
+	mach64_fifo_wait(2);
 	printf("[mach64] %s = %08X\n",vregs[i].sname,INREG(vregs[i].name));
   }
   printf("[mach64] *** End of OV0 registers dump ***\n");
@@ -398,54 +399,62 @@ unsigned int VIDIX_NAME(vixGetVersion)(void)
     return(VIDIX_VERSION);
 }
 
-static unsigned short ati_card_ids[] = 
+typedef struct ati_chip_id_s
 {
- DEVICE_ATI_215CT_MACH64_CT,
- DEVICE_ATI_210888CX_MACH64_CX,
- DEVICE_ATI_210888ET_MACH64_ET,
- DEVICE_ATI_MACH64_VT,
- DEVICE_ATI_210888GX_MACH64_GX,
- DEVICE_ATI_264LT_MACH64_LT,
- DEVICE_ATI_264VT_MACH64_VT,
- DEVICE_ATI_264VT3_MACH64_VT3,
- DEVICE_ATI_264VT4_MACH64_VT4,
+    unsigned short	id;
+    unsigned short	is_agp;
+}ati_chip_id_t;
+
+static ati_chip_id_t ati_card_ids[] = 
+{
+ { DEVICE_ATI_215CT_MACH64_CT, 0 },
+ { DEVICE_ATI_210888CX_MACH64_CX, 0 },
+ { DEVICE_ATI_210888ET_MACH64_ET, 0 },
+ { DEVICE_ATI_MACH64_VT, 0 },
+ { DEVICE_ATI_210888GX_MACH64_GX, 0 },
+ { DEVICE_ATI_264LT_MACH64_LT, 0 },
+ { DEVICE_ATI_264VT_MACH64_VT, 0 },
+ { DEVICE_ATI_264VT3_MACH64_VT3, 0 },
+ { DEVICE_ATI_264VT4_MACH64_VT4, 0 },
  /**/
- DEVICE_ATI_3D_RAGE_PRO,
- DEVICE_ATI_3D_RAGE_PRO2,
- DEVICE_ATI_3D_RAGE_PRO3,
- DEVICE_ATI_3D_RAGE_PRO4,
- DEVICE_ATI_RAGE_XC,
- DEVICE_ATI_RAGE_XL_AGP,
- DEVICE_ATI_RAGE_XC_AGP,
- DEVICE_ATI_RAGE_XL,
- DEVICE_ATI_3D_RAGE_PRO5,
- DEVICE_ATI_3D_RAGE_PRO6,
- DEVICE_ATI_RAGE_XL2,
- DEVICE_ATI_RAGE_XC2,
- DEVICE_ATI_3D_RAGE_I_II,
- DEVICE_ATI_3D_RAGE_II,
- DEVICE_ATI_3D_RAGE_IIC,
- DEVICE_ATI_3D_RAGE_IIC2,
- DEVICE_ATI_3D_RAGE_IIC3,
- DEVICE_ATI_3D_RAGE_IIC4,
- DEVICE_ATI_3D_RAGE_LT,
- DEVICE_ATI_3D_RAGE_LT2,
- DEVICE_ATI_3D_RAGE_LT_G,
- DEVICE_ATI_3D_RAGE_LT3,
- DEVICE_ATI_RAGE_MOBILITY_P_M,
- DEVICE_ATI_RAGE_MOBILITY_L,
- DEVICE_ATI_3D_RAGE_LT4,
- DEVICE_ATI_3D_RAGE_LT5,
- DEVICE_ATI_RAGE_MOBILITY_P_M2,
- DEVICE_ATI_RAGE_MOBILITY_L2
+ { DEVICE_ATI_3D_RAGE_PRO, 1 },
+ { DEVICE_ATI_3D_RAGE_PRO2, 1 },
+ { DEVICE_ATI_3D_RAGE_PRO3, 0 },
+ { DEVICE_ATI_3D_RAGE_PRO4, 0 },
+ { DEVICE_ATI_RAGE_XC, 0 },
+ { DEVICE_ATI_RAGE_XL_AGP, 1 },
+ { DEVICE_ATI_RAGE_XC_AGP, 1 },
+ { DEVICE_ATI_RAGE_XL, 0 },
+ { DEVICE_ATI_3D_RAGE_PRO5, 0 },
+ { DEVICE_ATI_3D_RAGE_PRO6, 0 },
+ { DEVICE_ATI_RAGE_XL2, 0 },
+ { DEVICE_ATI_RAGE_XC2, 0 },
+ { DEVICE_ATI_3D_RAGE_I_II, 0 },
+ { DEVICE_ATI_3D_RAGE_II, 0 },
+ { DEVICE_ATI_3D_RAGE_IIC, 1 },
+ { DEVICE_ATI_3D_RAGE_IIC2, 0 },
+ { DEVICE_ATI_3D_RAGE_IIC3, 0 },
+ { DEVICE_ATI_3D_RAGE_IIC4, 1 },
+ { DEVICE_ATI_3D_RAGE_LT, 1 },
+ { DEVICE_ATI_3D_RAGE_LT2, 1 },
+ { DEVICE_ATI_3D_RAGE_LT_G, 0 },
+ { DEVICE_ATI_3D_RAGE_LT3, 0 },
+ { DEVICE_ATI_RAGE_MOBILITY_P_M, 1 },
+ { DEVICE_ATI_RAGE_MOBILITY_L, 1 },
+ { DEVICE_ATI_3D_RAGE_LT4, 0 },
+ { DEVICE_ATI_3D_RAGE_LT5, 0 },
+ { DEVICE_ATI_RAGE_MOBILITY_P_M2, 0 },
+ { DEVICE_ATI_RAGE_MOBILITY_L2, 0 }
 };
+
+static int is_agp;
 
 static int find_chip(unsigned chip_id)
 {
   unsigned i;
-  for(i = 0;i < sizeof(ati_card_ids)/sizeof(unsigned short);i++)
+  for(i = 0;i < sizeof(ati_card_ids)/sizeof(ati_chip_id_t);i++)
   {
-    if(chip_id == ati_card_ids[i]) return i;
+    if(chip_id == ati_card_ids[i].id) return i;
   }
   return -1;
 }
@@ -482,6 +491,7 @@ int VIDIX_NAME(vixProbe)(int verbose,int force)
 	    if(idx == -1)
 		printf("[mach64] Assuming it as Mach64\n");
 	}
+	if(idx != -1) is_agp = ati_card_ids[idx].is_agp;
 	mach64_cap.device_id = lst[i].device;
 	err = 0;
 	memcpy(&pci_info,&lst[i],sizeof(pciinfo_t));
@@ -608,6 +618,8 @@ int VIDIX_NAME(vixInit)(const char *args)
   mach64_vid_make_default();
   if(__verbose > VERBOSE_LEVEL) mach64_vid_dump_regs();
 #ifdef MACH64_ENABLE_BM
+  if(!(INREG(BUS_CNTL) & BUS_MASTER_DIS))
+		OUTREG(BUS_CNTL,INREG(BUS_CNTL)|BUS_MSTR_RESET);
   if(bm_open() == 0)
   {
 	mach64_cap.flags |= FLAG_DMA | FLAG_EQ_DMA;
@@ -637,6 +649,15 @@ int VIDIX_NAME(vixInit)(const char *args)
 				 "[mach64]irq_param: line=%u pin=%u gnt=%u lat=%u\n"
 				 ,strerror(errno)
 				 ,pci_info.irq,pci_info.ipin,pci_info.gnt,pci_info.lat);
+#if 0
+	if(!is_agp)
+	{
+	    long tst;
+	    if(pci_config_read(pci_info.bus,pci_info.card,pci_info.func,4,4,&pci_command) == 0)
+		pci_config_write(pci_info.bus,pci_info.card,pci_info.func,4,4,pci_command|0x14);
+	    pci_config_read(pci_info.bus,pci_info.card,pci_info.func,4,4,&tst);
+	}
+#endif
   }
   else
     if(__verbose) printf("[mach64] Can't initialize busmastering: %s\n",strerror(errno));
@@ -1285,6 +1306,7 @@ printf("MACH64_DMA_TABLE[%i] fboff=%X pa=%X cmd=%X rsrvd=%X\n",i,list[i].framebu
 	    dest_ptr += 4096;
 	    count -= 4096;
 	}
+	cpu_flush(list,4096);
     }
     return 0;
 }
@@ -1292,18 +1314,33 @@ printf("MACH64_DMA_TABLE[%i] fboff=%X pa=%X cmd=%X rsrvd=%X\n",i,list[i].framebu
 static int mach64_transfer_frame( unsigned long ba_dma_desc )
 {
     mach64_wait_for_idle();
-    mach64_fifo_wait(4);
-    OUTREG(BUS_CNTL,(INREG(BUS_CNTL)|BUS_EXT_REG_EN)&(~BUS_MASTER_DIS));
-    OUTREG(CRTC_INT_CNTL,INREG(CRTC_INT_CNTL)|CRTC_BUSMASTER_EOL_INT|CRTC_BUSMASTER_EOL_INT_EN);
+    mach64_fifo_wait(10);
+    OUTREG(BUS_CNTL,(INREG(BUS_CNTL)|BUS_EXT_REG_EN));
+    OUTREG(BUS_CNTL,(INREG(BUS_CNTL))&(~BUS_MASTER_DIS));
+    OUTREG(CRTC_INT_CNTL,INREG(CRTC_INT_CNTL)|CRTC_BUSMASTER_EOL_INT/*|CRTC_BUSMASTER_EOL_INT_EN*/);
     OUTREG(BM_SYSTEM_TABLE,ba_dma_desc|SYSTEM_TRIGGER_SYSTEM_TO_VIDEO);
     if(__verbose > VERBOSE_LEVEL) mach64_vid_dump_regs();    
+#if 0
+    mach64_fifo_wait(4);
+    mach64_fifo_wait(16);
+    printf("MACH64_DMA_DBG: bm_fb_off=%08X bm_sysmem_addr=%08X bm_cmd=%08X bm_status=%08X bm_agp_base=%08X bm_agp_cntl=%08X\n",
+	    INREG(BM_FRAME_BUF_OFFSET),
+	    INREG(BM_SYSTEM_MEM_ADDR),
+	    INREG(BM_COMMAND),
+	    INREG(BM_STATUS),
+	    INREG(AGP_BASE),
+	    INREG(AGP_CNTL));
+#endif
     return 0;
 }
 
 int VIDIX_NAME(vixQueryDMAStatus)( void )
 {
     int bm_off;
-    bm_off = INREG(CRTC_INT_CNTL) & CRTC_BUSMASTER_EOL_INT;
+    unsigned crtc_int_cntl;
+    crtc_int_cntl = INREG(CRTC_INT_CNTL);
+    bm_off = crtc_int_cntl & CRTC_BUSMASTER_EOL_INT;
+    if(bm_off) OUTREG(CRTC_INT_CNTL,crtc_int_cntl | CRTC_BUSMASTER_EOL_INT);
     return bm_off?0:1;
 }
 
