@@ -31,8 +31,8 @@ typedef struct pciinfo_s
 {
   int		bus,card,func;			/* PCI/AGP bus:card:func */
   unsigned short vendor,device;			/* Card vendor+device ID */
-  unsigned	base0,base1,base2,baserom;	/* Memory and I/O base addresses */
-  unsigned	base3,base4,base5;		/* Memory and I/O base addresses */
+  unsigned long base0,base1,base2,baserom;	/* Memory and I/O base addresses */
+  unsigned long base3,base4,base5;		/* Memory and I/O base addresses */
   unsigned char irq,ipin,gnt,lat;		/* assigned IRQ parameters for this card */
 //  unsigned	base0_limit, base1_limit, base2_limit, baserom_limit;
 }pciinfo_t;
