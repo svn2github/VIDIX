@@ -59,7 +59,13 @@ MGA_CRTC2_OBJS=mga_crtc2_vid.o
 MGA_CRTC2_LIBS=-L../../libdha -ldha -lm
 MGA_CRTC2_CFLAGS=$(OPTFLAGS) -fPIC -I. -I.. -Wall -W -DCRTC2
 
-all:    $(RADEON_VID) $(RAGE128_VID) $(MACH64_VID) $(NVIDIA_VID) $(GENFB_VID) $(MGA_VID) $(MGA_CRTC2_VID) $(PM3_VID) $(PM2_VID)
+SIS_VID=sis_vid.so
+SIS_SRCS=sis_vid.c sis_bridge.c
+SIS_OBJS=sis_vid.o sis_bridge.o
+SIS_LIBS=-L../../libdha -ldha
+SIS_CFLAGS=$(OPTFLAGS) -fPIC -I. -I..
+
+all:    $(RADEON_VID) $(RAGE128_VID) $(MACH64_VID) $(NVIDIA_VID) $(GENFB_VID) $(MGA_VID) $(MGA_CRTC2_VID) $(PM3_VID) $(PM2_VID) $(SIS_VID)
 
 
 .SUFFIXES: .c .o
@@ -120,6 +126,12 @@ $(MGA_CRTC2_OBJS):    $(MGA_CRTC2_SRCS)
 $(MGA_CRTC2_VID):     $(MGA_CRTC2_OBJS)
 	$(LD) $(MGA_CRTC2_LIBS) -shared -soname $(MGA_CRTC2_VID) -o $(MGA_CRTC2_VID) $(MGA_CRTC2_OBJS)
 
+$(SIS_OBJS):    $(SIS_SRCS)
+	$(CC) -c $(SIS_CFLAGS) -o $@ $(basename $@).c
+
+$(SIS_VID):     $(SIS_OBJS)
+	$(CC) -shared $(SIS_OBJS) $(SIS_LIBS) -Wl,-soname,$(SIS_VID) -o $(SIS_VID) 
+
 clean:
 	rm -f *.o *.so *~
 
@@ -133,7 +145,7 @@ depend:
 
 install:
 	mkdir -p $(BINDIR)
-	install -m 755 -s -p *.so $(BINDIR)
+	install -m 755 -p *.so $(BINDIR)
 	if test -d $(OLDBINDIR) ; then rm -f $(OLDBINDIR)/*.so ; rmdir -p --ignore-fail-on-non-empty $(OLDBINDIR) ; fi
 uninstall:
 	rm -f $(BINDIR)/*.so
