@@ -283,8 +283,8 @@ static void radeon_wait_vsync(void)
 #ifdef RAGE128
 static void _radeon_engine_idle(void);
 static void _radeon_fifo_wait(unsigned);
-#define radeon_engine_idle()		//_radeon_engine_idle()
-#define radeon_fifo_wait(entries)	//_radeon_fifo_wait(entries)
+#define radeon_engine_idle()		_radeon_engine_idle()
+#define radeon_fifo_wait(entries)	_radeon_fifo_wait(entries)
 /* Flush all dirty data in the Pixel Cache to memory. */
 static __inline__ void radeon_engine_flush ( void )
 {
@@ -459,7 +459,7 @@ static void _radeon_engine_idle ( void )
     for(;;)
     {
 	for (i=0; i<2000000; i++) {
-		if ((INREG(GUI_STAT) & GUI_FIFOCNT_MASK) == 0) {
+		if ((INREG(GUI_STAT) & GUI_ACTIVE) == 0) {
 			radeon_engine_flush ();
 			return;
 		}
@@ -967,11 +967,7 @@ int vixQueryFourcc(vidix_fourcc_t *to)
 		    VID_DEPTH_12BPP| VID_DEPTH_15BPP|
 		    VID_DEPTH_16BPP| VID_DEPTH_24BPP|
 		    VID_DEPTH_32BPP;
-	to->flags = VID_CAP_EXPAND | VID_CAP_SHRINK
-#ifndef RAGE128
-	| VID_CAP_COLORKEY
-#endif
-	;
+	to->flags = VID_CAP_EXPAND | VID_CAP_SHRINK | VID_CAP_COLORKEY;
 	return 0;
     }
     else  to->depth = to->flags = 0;
@@ -1547,9 +1543,10 @@ static void set_gr_key( void )
 {
     if(radeon_grkey.ckey.op == CKEY_TRUE)
     {
+	int dbpp=radeon_vid_get_dbpp();
 	besr.ckey_on=1;
 
-	switch(radeon_vid_get_dbpp())
+	switch(dbpp)
 	{
 	case 15:
 		besr.graphics_key_clr=
@@ -1580,8 +1577,13 @@ static void set_gr_key( void )
 		besr.graphics_key_msk=0;
 		besr.graphics_key_clr=0;
 	}
-	besr.graphics_key_msk = besr.graphics_key_clr;
+#ifdef RAGE128
+	besr.graphics_key_msk=(1<<dbpp)-1;
+	besr.ckey_cntl = VIDEO_KEY_FN_TRUE|GRAPHIC_KEY_FN_NE|CMP_MIX_AND;
+#else
+	besr.graphics_key_msk=besr.graphics_key_clr;
 	besr.ckey_cntl = VIDEO_KEY_FN_TRUE|GRAPHIC_KEY_FN_EQ|CMP_MIX_AND;
+#endif
     }
     else
     {
