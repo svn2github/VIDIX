@@ -1035,6 +1035,7 @@ int VIDIX_NAME(vixProbe)( int verbose,int force )
 	dname = pci_device_name(VENDOR_ATI,lst[i].device);
 	dname = dname ? dname : "Unknown chip";
 	printf(RADEON_MSG" Found chip: %s\n",dname);
+	memset(&besr,0,sizeof(bes_registers_t));
 	if(force > PROBE_NORMAL)
 	{
 	    printf(RADEON_MSG" Driver was forced. Was found %sknown chip\n",idx == -1 ? "un" : "");
@@ -1180,8 +1181,26 @@ int VIDIX_NAME(vixInit)( const char *args )
   radeon_ram_size = INREG(CONFIG_MEMSIZE);
   /* mem size is bits [28:0], mask off the rest. Range: from 1Mb up to 512 Mb */
   radeon_ram_size &=  CONFIG_MEMSIZE_MASK;
+#ifdef RADEON
+  /* according to XFree86 4.2.0, some production M6's return 0 for 8MB */
+  if (radeon_ram_size == 0 &&
+      (def_cap.device_id == DEVICE_ATI_RADEON_MOBILITY_M6 ||
+       def_cap.device_id == DEVICE_ATI_RADEON_MOBILITY_M62))
+  {
+      printf(RADEON_MSG" Workarounding buggy Radeon Mobility M6 (0 vs. 8MB ram)\n");
+      radeon_ram_size = 8192*1024;
+  }
+#else
+  /* Rage Mobility (rage128) also has memsize bug */
+  if (radeon_ram_size == 0 &&
+      (def_cap.device_id == DEVICE_ATI_RAGE_MOBILITY_M3 ||
+       def_cap.device_id == DEVICE_ATI_RAGE_MOBILITY_M32))
+  {
+      printf(RADEON_MSG" Workarounding buggy Rage Mobility M3 (0 vs. 8MB ram)\n");
+      radeon_ram_size = 8192*1024;
+  }
+#endif
   if((radeon_mem_base = map_phys_mem(pci_info.base0,radeon_ram_size))==(void *)-1) return ENOMEM;
-  memset(&besr,0,sizeof(bes_registers_t));
   radeon_vid_make_default();
   printf(RADEON_MSG" Video memory = %uMb\n",radeon_ram_size/0x100000);
   err = mtrr_set_type(pci_info.base0,radeon_ram_size,MTRR_TYPE_WRCOMB);
@@ -3203,11 +3222,6 @@ static void set_gr_key( void )
 			| ((radeon_grkey.ckey.red  &0xF8)<<8);
 		break;
 	case 24:
-		besr.graphics_key_clr=
-			  ((radeon_grkey.ckey.blue &0xFF))
-			| ((radeon_grkey.ckey.green&0xFF)<<8)
-			| ((radeon_grkey.ckey.red  &0xFF)<<16);
-		break;
 	case 32:
 		besr.graphics_key_clr=
 			  ((radeon_grkey.ckey.blue &0xFF))
