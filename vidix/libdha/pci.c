@@ -500,6 +500,7 @@ int pci_scan(pciinfo_t *pci_list,unsigned *num_pci)
     int ret = -1;
     
     pci_lst = pci_list;
+    pcicards = 0;
  
     ret = enable_app_io();
     if (ret != 0)
