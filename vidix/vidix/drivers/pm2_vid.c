@@ -282,7 +282,7 @@ int VIDIX_NAME(vixConfigPlayback)(vidix_playback_t *info)
     base0 = (8 - pm2_vidmem)*1024*1024;
     info->dga_addr = pm2_mem + base0;
 
-    info->dest.pitch.y = 256;
+    info->dest.pitch.y = pitch*2;
     info->dest.pitch.u = 0;
     info->dest.pitch.v = 0;
     info->offset.y = 0;
