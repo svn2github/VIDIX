@@ -1270,6 +1270,9 @@ static int mach64_setup_frame( vidix_dma_t * dmai )
 	dmai->internal[dmai->idx] = mach64_dma_desc_base[dmai->idx];
 	dest_ptr = dmai->dest_offset;
 	count = dmai->size;
+#if 0
+printf("MACH64_DMA_REQUEST va=%X size=%X\n",dmai->src,dmai->size);
+#endif
 	for(i=0;i<n;i++)
 	{
 	    list[i].framebuf_offset = mach64_overlay_offset + dest_ptr; /* offset within of video memory */
@@ -1277,7 +1280,7 @@ static int mach64_setup_frame( vidix_dma_t * dmai )
 	    list[i].command = (count > 4096 ? 4096 : (count | DMA_GUI_COMMAND__EOL));
 	    list[i].reserved = 0;
 #if 0
-printf("MACH64_DMA_TABLE[%i] %X %X %X %X\n",i,list[i].framebuf_offset,list[i].sys_addr,list[i].command,list[i].reserved);
+printf("MACH64_DMA_TABLE[%i] fboff=%X pa=%X cmd=%X rsrvd=%X\n",i,list[i].framebuf_offset,list[i].sys_addr,list[i].command,list[i].reserved);
 #endif
 	    dest_ptr += 4096;
 	    count -= 4096;
@@ -1289,9 +1292,9 @@ printf("MACH64_DMA_TABLE[%i] %X %X %X %X\n",i,list[i].framebuf_offset,list[i].sy
 static int mach64_transfer_frame( unsigned long ba_dma_desc )
 {
     mach64_wait_for_idle();
-    OUTREG(BUS_CNTL,(INREG(BUS_CNTL)|BUS_MSTR_RESET));
+    mach64_fifo_wait(4);
+    OUTREG(BUS_CNTL,(INREG(BUS_CNTL)|BUS_EXT_REG_EN)&(~BUS_MASTER_DIS));
     OUTREG(CRTC_INT_CNTL,INREG(CRTC_INT_CNTL)|CRTC_BUSMASTER_EOL_INT|CRTC_BUSMASTER_EOL_INT_EN);
-    OUTREG(BUS_CNTL,(INREG(BUS_CNTL)|BUS_EXT_REG_EN|BUS_READ_BURST|BUS_PCI_READ_RETRY_EN) &(~BUS_MASTER_DIS));
     OUTREG(BM_SYSTEM_TABLE,ba_dma_desc|SYSTEM_TRIGGER_SYSTEM_TO_VIDEO);
     if(__verbose > VERBOSE_LEVEL) mach64_vid_dump_regs();    
     return 0;
