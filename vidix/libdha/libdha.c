@@ -27,6 +27,9 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#ifdef ARCH_ALPHA
+#include <sys/io.h>
+#endif
 #include <unistd.h>
 
 /* instead exit() use libdha_exit, and do the 'mother-application' deinit
@@ -69,6 +72,10 @@ void libdha_exit(const char *message, int level)
 static int mem=-1;
 void *map_phys_mem(unsigned base, unsigned size)
 {
+#ifdef ARCH_ALPHA
+/* TODO: move it in sysdep */
+  base += bus_base();
+#endif
   if ( (mem = open("/dev/dhahelper",O_RDWR)) < 0)
   {
     if ( (mem = open(DEV_MEM,O_RDWR)) == -1) {
@@ -97,6 +104,10 @@ void *map_phys_mem(unsigned base, unsigned size)
 static int mem=-1;
 void *map_phys_mem(unsigned base, unsigned size)
 {    
+#ifdef ARCH_ALPHA
+/* TODO: move it in sysdep */
+  base += bus_base();
+#endif
   if ( (mem = open(DEV_MEM,O_RDWR)) == -1) {
     perror("libdha: open(/dev/mem) failed") ; exit(1) ;
   }
