@@ -50,6 +50,13 @@
 
 #define MGA_DEFAULT_FRAMES 64
 
+#define BES
+
+#ifdef MGA_TV
+#undef BES
+#define CRTC2
+#endif
+
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -359,6 +366,7 @@ int VIDIX_NAME(vixPlaybackFrameSelect)(unsigned int frame)
     if (mga_irq == -1)
 #endif
     {
+#ifdef BES
 	//we don't need the vcount protection as we're only hitting
 	//one register (and it doesn't seem to be double buffered)
 	regs.besctl = (regs.besctl & ~0x07000000) + (mga_next_frame << 25);
@@ -366,6 +374,7 @@ int VIDIX_NAME(vixPlaybackFrameSelect)(unsigned int frame)
 
 	// writel( regs.besglobctl + ((readl(VCOUNT)+2)<<16),
 	writel(BESGLOBCTL, regs.besglobctl + (MGA_VSYNC_POS<<16));
+#endif
 #ifdef CRTC2
 	crtc2_frame_sel(mga_next_frame);
 #endif
@@ -377,6 +386,7 @@ int VIDIX_NAME(vixPlaybackFrameSelect)(unsigned int frame)
 
 static void mga_vid_write_regs(int restore)
 {
+#ifdef BES
     //Make sure internal registers don't get updated until we're done
     writel(BESGLOBCTL, (readl(VCOUNT)-1)<<16);
 
@@ -546,6 +556,8 @@ static void mga_vid_write_regs(int restore)
 	printf("[mga] BESGLOBCTL = 0x%08x\n", readl(BESGLOBCTL));
 	printf("[mga] BESSTATUS= 0x%08x\n", readl(BESSTATUS));
     }
+#endif
+
 #ifdef CRTC2
 #if 0
     if (cregs_save.c2ctl == 0)
@@ -1524,8 +1536,9 @@ int VIDIX_NAME(vixPlaybackSetEq)( const vidix_video_eq_t * eq)
     }
 
     regs.beslumactl = luma;
-
+#ifdef BES
     writel(BESLUMACTL, regs.beslumactl);
+#endif
     return(0);
 }
 

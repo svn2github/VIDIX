@@ -59,6 +59,12 @@ MGA_CRTC2_OBJS=mga_crtc2_vid.o
 MGA_CRTC2_LIBS=-L../../libdha -ldha -lm
 MGA_CRTC2_CFLAGS=$(OPTFLAGS) -fPIC -I. -I.. -Wall -W -DCRTC2
 
+MGA_TV_VID=mga_tv_vid.so
+MGA_TV_SRCS=mga_vid.c
+MGA_TV_OBJS=mga_tv_vid.o
+MGA_TV_LIBS=-L../../libdha -ldha -lm
+MGA_TV_CFLAGS=$(OPTFLAGS) -fPIC -I. -I.. -Wall -W -DMGA_TV
+
 SIS_VID=sis_vid.so
 SIS_SRCS=sis_vid.c sis_bridge.c
 SIS_OBJS=sis_vid.o sis_bridge.o
@@ -71,7 +77,7 @@ UNICHROME_OBJS=unichrome_vid.o
 UNICHROME_LIBS=-L../../libdha -ldha
 UNICHROME_CFLAGS=$(OPTFLAGS) -fPIC -I. -I..
 
-all:    $(RADEON_VID) $(RAGE128_VID) $(MACH64_VID) $(NVIDIA_VID) $(GENFB_VID) $(MGA_VID) $(MGA_CRTC2_VID) $(PM3_VID) $(PM2_VID) $(SIS_VID) $(UNICHROME_VID)
+all:    $(RADEON_VID) $(RAGE128_VID) $(MACH64_VID) $(NVIDIA_VID) $(GENFB_VID) $(MGA_VID) $(MGA_CRTC2_VID) $(MGA_TV_VID) $(PM3_VID) $(PM2_VID) $(SIS_VID) $(UNICHROME_VID)
 
 
 .SUFFIXES: .c .o
@@ -131,6 +137,12 @@ $(MGA_CRTC2_OBJS):    $(MGA_CRTC2_SRCS)
 
 $(MGA_CRTC2_VID):     $(MGA_CRTC2_OBJS)
 	$(LD) $(MGA_CRTC2_LIBS) -shared -soname $(MGA_CRTC2_VID) -o $(MGA_CRTC2_VID) $(MGA_CRTC2_OBJS)
+
+$(MGA_TV_OBJS):    $(MGA_TV_SRCS)
+	$(CC) -c $(MGA_TV_CFLAGS) -o $@ $<
+
+$(MGA_TV_VID):     $(MGA_TV_OBJS)
+	$(LD) $(MGA_TV_LIBS) -shared -soname $(MGA_TV_VID) -o $(MGA_TV_VID) $(MGA_TV_OBJS)
 
 $(SIS_OBJS):    $(SIS_SRCS)
 	$(CC) -c $(SIS_CFLAGS) -o $@ $(basename $@).c
