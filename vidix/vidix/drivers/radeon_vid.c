@@ -283,8 +283,8 @@ static void radeon_wait_vsync(void)
 #ifdef RAGE128
 static void _radeon_engine_idle(void);
 static void _radeon_fifo_wait(unsigned);
-#define radeon_engine_idle()		_radeon_engine_idle()
-#define radeon_fifo_wait(entries)	_radeon_fifo_wait(entries)
+#define radeon_engine_idle()		//_radeon_engine_idle()
+#define radeon_fifo_wait(entries)	//_radeon_fifo_wait(entries)
 /* Flush all dirty data in the Pixel Cache to memory. */
 static __inline__ void radeon_engine_flush ( void )
 {
@@ -967,7 +967,11 @@ int vixQueryFourcc(vidix_fourcc_t *to)
 		    VID_DEPTH_12BPP| VID_DEPTH_15BPP|
 		    VID_DEPTH_16BPP| VID_DEPTH_24BPP|
 		    VID_DEPTH_32BPP;
-	to->flags = VID_CAP_EXPAND | VID_CAP_SHRINK | VID_CAP_COLORKEY;
+	to->flags = VID_CAP_EXPAND | VID_CAP_SHRINK
+#ifndef RAGE128
+	| VID_CAP_COLORKEY
+#endif
+	;
 	return 0;
     }
     else  to->depth = to->flags = 0;
@@ -1206,11 +1210,16 @@ static int radeon_vid_init_video( vidix_playback_t *config )
     dest_w = config->dest.w;
     dest_h = config->dest.h;
     if(radeon_is_dbl_scan()) dest_h *= 2;
+#ifndef RAGE128
     else
     if(radeon_is_interlace()) dest_h /= 2;
+#endif
     besr.dest_bpp = radeon_vid_get_dbpp();
     besr.fourcc = config->fourcc;
     besr.v_inc = (src_h << 20) / dest_h;
+#ifdef RAGE128
+    if(radeon_is_interlace()) besr.v_inc *= 2;
+#endif
     h_inc = (src_w << 12) / dest_w;
     step_by = 1;
     while(h_inc >= (2 << 12)) {
