@@ -749,9 +749,6 @@ int VIDIX_NAME(vixConfigPlayback)(vidix_playback_t *config)
     dw = config->dest.w;
     dh = config->dest.h;
 
-    config->dest.pitch.y=32;
-    config->dest.pitch.u=config->dest.pitch.v=16;
-
     if (mga_verbose) printf("[mga] Setting up a %dx%d-%dx%d video window (src %dx%d) format %X\n",
 			    dw, dh, x, y, sw, sh, config->fourcc);
 
@@ -772,11 +769,14 @@ int VIDIX_NAME(vixConfigPlayback)(vidix_playback_t *config)
     case IMGFMT_IYUV:
     case IMGFMT_YV12:
 	sh+=sh&1;
+	config->dest.pitch.y=config->dest.pitch.u=config->dest.pitch.v=32;
 	config->frame_size = ((sw + 31) & ~31) * sh + (((sw + 31) & ~31) * sh) / 2;
 	break;
     case IMGFMT_YUY2:
     case IMGFMT_UYVY:
-	config->frame_size = ((sw + 31) & ~31) * sh * 2;
+	config->dest.pitch.y=16;
+	config->dest.pitch.u=config->dest.pitch.v=0;
+	config->frame_size = ((sw + 8) & ~8) * sh * 2;
 	break;
     default:
 	printf("[mga] Unsupported pixel format: %x\n", config->fourcc);
@@ -875,7 +875,18 @@ int VIDIX_NAME(vixConfigPlayback)(vidix_playback_t *config)
 
     //Setup source dimensions
     regs.beshsrclst = (sw - 1) << 16;
-    regs.bespitch = (sw + 31) & ~31 ;
+    switch(config->fourcc)
+    {
+    case IMGFMT_YV12:
+    case IMGFMT_I420:
+    case IMGFMT_IYUV:
+	regs.bespitch = (sw + 31) & ~31;
+	break;
+    case IMGFMT_YUY2:
+    case IMGFMT_UYVY:
+	regs.bespitch = (sw + 8) & ~8;
+	break;
+    }
 
     //Setup horizontal scaling
     ifactor = ((sw-1)<<14)/(dw-1);
