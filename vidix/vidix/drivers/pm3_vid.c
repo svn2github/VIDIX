@@ -1,7 +1,7 @@
 /**
     Driver for 3DLabs GLINT R3 and Permedia3 chips.
 
-    Copyright (C) 2002  Måns Rullgård
+    Copyright (C) 2002, 2003  Måns Rullgård
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -56,6 +56,8 @@ static void *pm3_mem;
 static int pm3_vidmem = PM3_VIDMEM;
 static int pm3_blank = 0;
 static int pm3_dma = 0;
+
+static int pm3_ckey_red, pm3_ckey_green, pm3_ckey_blue;
 
 static u_int page_size;
 
@@ -170,7 +172,7 @@ int VIDIX_NAME(vixInit)(const char *args)
     pm3_mem = map_phys_mem(pci_info.base1, 0x2000000);
 
     if(bm_open() == 0){
-	fprintf(stderr, "[pm3] Using DMA.\n");
+	fprintf(stderr, "[pm3] DMA available.\n");
 	pm3_cap.flags |= FLAG_DMA;
 	page_size = sysconf(_SC_PAGESIZE);
 	hwirq_install(pci_info.bus, pci_info.card, pci_info.func,
@@ -178,11 +180,22 @@ int VIDIX_NAME(vixInit)(const char *args)
 	pm3_dma = 1;
     }
 
+    RAMDAC_GET_REG(PM3RD_VideoOverlayKeyR, pm3_ckey_red);
+    RAMDAC_GET_REG(PM3RD_VideoOverlayKeyG, pm3_ckey_green);
+    RAMDAC_GET_REG(PM3RD_VideoOverlayKeyB, pm3_ckey_blue);
+
     return 0;
 }
 
 void VIDIX_NAME(vixDestroy)(void)
 {
+    if(pm3_dma)
+	WRITE_REG(PM3IntEnable, 0);
+
+    RAMDAC_SET_REG(PM3RD_VideoOverlayKeyR, pm3_ckey_red);
+    RAMDAC_SET_REG(PM3RD_VideoOverlayKeyG, pm3_ckey_green);
+    RAMDAC_SET_REG(PM3RD_VideoOverlayKeyB, pm3_ckey_blue);
+
     unmap_phys_mem(pm3_reg_base, 0x20000);
     unmap_phys_mem(pm3_mem, 0x2000000);
     hwirq_uninstall(pci_info.bus, pci_info.card, pci_info.func);
@@ -290,6 +303,7 @@ pm3_setup_overlay(vidix_playback_t *info)
 
     compute_scale_factor(&sw, &drw_w, &shrink, &zoom);
 
+    WAIT_FIFO(9);
     WRITE_REG(PM3VideoOverlayBase0, vid_base >> 1);
     WRITE_REG(PM3VideoOverlayStride, PM3VideoOverlayStride_STRIDE(src_w));
     WRITE_REG(PM3VideoOverlayWidth, PM3VideoOverlayWidth_WIDTH(sw));
@@ -327,10 +341,6 @@ pm3_setup_overlay(vidix_playback_t *info)
     RAMDAC_SET_REG(PM3RD_VideoOverlayYEndHigh,
 		   ((drw_y+drw_h) & 0xf00)>>8);
 
-    RAMDAC_SET_REG(PM3RD_VideoOverlayKeyR, 0xff);
-    RAMDAC_SET_REG(PM3RD_VideoOverlayKeyG, 0x00);
-    RAMDAC_SET_REG(PM3RD_VideoOverlayKeyB, 0xff);
-
     overlay_mode =
 	1 << 5 |
 	format |
@@ -344,7 +354,37 @@ pm3_setup_overlay(vidix_playback_t *info)
 	PM3RD_VideoOverlayControl_DIRECTCOLOR_ENABLED;
 }
 
-int VIDIX_NAME(vixConfigPlayback)(vidix_playback_t *info)
+extern int
+VIDIX_NAME(vixSetGrKeys)(const vidix_grkey_t *key)
+{
+    if(key->ckey.op == CKEY_TRUE){
+	RAMDAC_SET_REG(PM3RD_VideoOverlayKeyR, key->ckey.red);
+	RAMDAC_SET_REG(PM3RD_VideoOverlayKeyG, key->ckey.green);
+	RAMDAC_SET_REG(PM3RD_VideoOverlayKeyB, key->ckey.blue);
+	overlay_control =
+	    (overlay_control & ~PM3RD_VideoOverlayControl_MODE_MASK) |
+	    PM3RD_VideoOverlayControl_MODE_MAINKEY;
+    } else {
+	overlay_control =
+	    (overlay_control & ~PM3RD_VideoOverlayControl_MODE_MASK) |
+	    PM3RD_VideoOverlayControl_MODE_ALWAYS;
+    }
+    RAMDAC_SET_REG(PM3RD_VideoOverlayControl, overlay_control);
+
+    return 0;
+}
+
+extern int
+VIDIX_NAME(vixGetGrKeys)(vidix_grkey_t *key)
+{
+    RAMDAC_GET_REG(PM3RD_VideoOverlayKeyR, key->ckey.red);
+    RAMDAC_GET_REG(PM3RD_VideoOverlayKeyG, key->ckey.green);
+    RAMDAC_GET_REG(PM3RD_VideoOverlayKeyB, key->ckey.blue);
+    return 0;
+}
+
+extern int
+VIDIX_NAME(vixConfigPlayback)(vidix_playback_t *info)
 {
     unsigned int i;
     u_int frame_size;
@@ -370,7 +410,7 @@ int VIDIX_NAME(vixConfigPlayback)(vidix_playback_t *info)
 
     if(info->num_frames > max_frames)
 	info->num_frames = max_frames;
-/*     vidmem_size = info->num_frames * frame_size; */
+    vidmem_size = info->num_frames * frame_size;
 
     /* Use end of video memory. Assume the card has 32 MB */
     vid_base = 32*1024*1024 - vidmem_size;
@@ -404,10 +444,9 @@ int VIDIX_NAME(vixPlaybackOn)(void)
 
     WRITE_REG(PM3VideoOverlayMode,
 	      overlay_mode | PM3VideoOverlayMode_ENABLE);
-    RAMDAC_SET_REG(PM3RD_VideoOverlayControl,
-		   overlay_control | PM3RD_VideoOverlayControl_ENABLE);
-    WRITE_REG(PM3VideoOverlayUpdate,
-	      PM3VideoOverlayUpdate_ENABLE);
+    overlay_control |= PM3RD_VideoOverlayControl_ENABLE;
+    RAMDAC_SET_REG(PM3RD_VideoOverlayControl, overlay_control);
+    WRITE_REG(PM3VideoOverlayUpdate, PM3VideoOverlayUpdate_ENABLE);
 
     if(pm3_blank)
 	WRITE_REG(PM3VideoControl,
@@ -419,20 +458,15 @@ int VIDIX_NAME(vixPlaybackOn)(void)
 
 int VIDIX_NAME(vixPlaybackOff)(void)
 {
+    overlay_control &= ~PM3RD_VideoOverlayControl_ENABLE;
     RAMDAC_SET_REG(PM3RD_VideoOverlayControl,
 		   PM3RD_VideoOverlayControl_DISABLE);
     WRITE_REG(PM3VideoOverlayMode,
 	      PM3VideoOverlayMode_DISABLE);
 
-    RAMDAC_SET_REG(PM3RD_VideoOverlayKeyR, 0x01);
-    RAMDAC_SET_REG(PM3RD_VideoOverlayKeyG, 0x01);
-    RAMDAC_SET_REG(PM3RD_VideoOverlayKeyB, 0xfe);
-
     if(video_control)
-	WRITE_REG(PM3VideoControl, video_control);
-
-    if(pm3_dma)
-	WRITE_REG(PM3IntEnable, 0);
+	WRITE_REG(PM3VideoControl,
+		  video_control & ~PM3VideoControl_DISPLAY_ENABLE);
 
     return 0;
 }
