@@ -57,7 +57,7 @@ static void *mach64_mmio_base = 0;
 static void *mach64_mem_base = 0;
 static int32_t mach64_overlay_offset = 0;
 static uint32_t mach64_ram_size = 0;
-static uint32_t mach64_buffer_base[10][3];
+static uint32_t mach64_buffer_base[64][3];
 static int num_mach64_buffers=-1;
 static int supports_planar=0;
 static int supports_colour_adj=0;
@@ -1024,7 +1024,7 @@ int vixConfigPlayback(vidix_playback_t *info)
   if(mach64_cap.flags & FLAG_DMA)
   {
      /* every descriptor describes one 4K page and takes 16 bytes in memory 
-	Note: probably it's ont good idea to locate them in video memory
+	Note: probably it's not good idea to locate them in video memory
 	but as initial release it's OK */
 	mach64_video_size -= mach64_ram_size * sizeof(bm_list_descriptor) / 4096;
 	mach64_dma_desc_base = (char *)mach64_mem_base + mach64_video_size;
@@ -1282,7 +1282,7 @@ static int mach64_transfer_frame( void  )
      * To start the DMA transfer, we need to initiate a GUI operation.  We can
      * write any value to the register, as it is only used to start the engine.
      */
-    OUTREG(DST_HEIGHT_WIDTH, 0);
+//    OUTREG(DST_HEIGHT_WIDTH, 0);
     if(__verbose > VERBOSE_LEVEL) mach64_vid_dump_regs();    
     return 0;
 }

@@ -45,7 +45,7 @@
 
 #undef MGA_PCICONFIG_MEMDETECT
 
-#define MGA_DEFAULT_FRAMES 4
+#define MGA_DEFAULT_FRAMES 64
 
 #include <errno.h>
 #include <stdio.h>
@@ -706,12 +706,23 @@ int vixConfigPlayback(vidix_playback_t *config)
 	unsigned int vtotal = vsyncend + upper_margin;
 #endif 
 
-    if ((config->num_frames < 1) || (config->num_frames > 4))
+    if ((config->num_frames < 1) || (config->num_frames > MGA_DEFAULT_FRAMES))
     {
 	printf("[mga] illegal num_frames: %d, setting to %d\n",
 	    config->num_frames, MGA_DEFAULT_FRAMES);
 	config->num_frames = MGA_DEFAULT_FRAMES;
     }
+    for(;config->num_frames>0;config->num_frames--)
+    {
+	/*FIXME: this driver can use more frames but we need to apply
+	  some tricks to avoid RGB-memory hits*/
+	mga_src_base = ((mga_ram_size/2)*0x100000-config->num_frames*config->frame_size);
+	mga_src_base &= (~0xFFFF); /* 64k boundary */
+	if(mga_src_base>=0) break;
+    }
+    if (mga_verbose > 1) printf("[mga] YUV buffer base: %p\n", mga_src_base);
+
+    config->dga_addr = mga_mem_base + mga_src_base;
 
     x = config->dest.x;
     y = config->dest.y;
@@ -770,16 +781,6 @@ int vixConfigPlayback(vidix_playback_t *config)
     //mga_src_base = mga_mem_base + (MGA_VIDMEM_SIZE-2) * 0x100000;
     //mga_src_base = (MGA_VIDMEM_SIZE-3) * 0x100000;
 
-    mga_src_base = (mga_ram_size*0x100000-config->num_frames*config->frame_size);
-    if (mga_src_base < 0)
-    {
-    	printf("[mga] not enough memory for frames!\n");
-    	return(EFAULT);
-    }
-    mga_src_base &= (~0xFFFF); /* 64k boundary */
-    if (mga_verbose > 1) printf("[mga] YUV buffer base: %p\n", mga_src_base);
-
-    config->dga_addr = mga_mem_base + mga_src_base;
 
     /* for G200 set Interleaved UV planes */
     if (!is_g400)
@@ -1388,6 +1389,7 @@ void vixDestroy(void)
 
 int vixQueryFourcc(vidix_fourcc_t *to)
 {
+    int supports=0;
     if (mga_verbose) printf("[mga] query fourcc (%x)\n", to->fourcc);
 
     switch(to->fourcc)
@@ -1395,14 +1397,22 @@ int vixQueryFourcc(vidix_fourcc_t *to)
 	case IMGFMT_YV12:
 	case IMGFMT_IYUV:
 	case IMGFMT_I420:
+		supports = is_g400 ? 1 : 0;
+	case IMGFMT_NV12:
+		supports = is_g400 ? 0 : 1;
 	case IMGFMT_YUY2:
 	case IMGFMT_UYVY:
+		supports = 1;
 	    break;
 	default:
-	    to->depth = to->flags = 0;
-	    return(ENOTSUP);
+		supports = 0;
     }
     
+    if(!supports)
+    {
+	to->depth = to->flags = 0;
+	return(ENOTSUP);
+    }
     to->depth = VID_DEPTH_12BPP |
 		VID_DEPTH_15BPP | VID_DEPTH_16BPP |
 		VID_DEPTH_24BPP | VID_DEPTH_32BPP;
