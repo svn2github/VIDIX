@@ -1,0 +1,270 @@
+#!/bin/sh
+# The simplest configure for the vidix
+
+for parm in "$@" ; do
+  if test "$parm" = "--help" || test "$parm" = "-help" || test "$parm" = "-h" ; then
+    cat << EOF
+
+Usage: $0 [OPTIONS]...
+
+Configuration:
+  -h, --help               display this help and exit
+
+Installation directories:
+  --prefix=DIR           use this prefix for installing mplayer [/usr/local]
+  --datadir=DIR          use this prefix for installing machine independent
+                         data files (fonts, skins) [PREFIX/share/mplayer]
+  --confdir=DIR          use this prefix for installing configuration files
+                         [same as datadir]
+
+Use these options if autodetection fails:
+  --with-extraincdir=DIR   extra headers (png, dvb, mad, sdl, css, ...) in DIR
+  --with-extralibdir=DIR   extra library files (png, SDL, ...) in DIR
+
+Miscellaneous options:
+  --cc=COMPILER          use this C compiler to build MPlayer [gcc]
+  --target=PLATFORM      target platform (i386-linux, arm-linux, etc)
+
+EOF
+    exit 0
+  fi
+done # for parm in ...
+
+
+# LGB: temporary files
+for I in "$TMPDIR" "$TEMPDIR" "/tmp" ; do
+  test "$I" && break
+done
+
+TMPLOG="configure.log"
+rm -f "$TMPLOG"
+TMPC="$I/vidix-conf-$RANDOM-$$.c"
+TMPCPP="$I/vidix-conf-$RANDOM-$$.cpp"
+TMPO="$I/vidix-conf-$RANDOM-$$.o"
+TMPS="$I/vidix-conf-$RANDOM-$$.S"
+
+_cc=gcc
+_prefix="/usr/local"
+
+# Check how echo works in this /bin/sh
+case `echo -n` in
+  -n)	_echo_n=	_echo_c='\c'	;;	# SysV echo
+  *)	_echo_n='-n '	_echo_c=	;;	# BSD echo
+esac
+
+# checking for OS name
+if test -z "$system_name" ; then
+  # OS name
+  system_name=`( uname -s ) 2>&1`
+  case "$system_name" in
+  Linux|FreeBSD|NetBSD|BSD/OS|OpenBSD|SunOS|QNX)
+    ;;
+  IRIX*)
+    system_name=IRIX
+    ;;
+  [cC][yY][gG][wW][iI][nN]*)
+    system_name=CYGWIN
+    ;;
+  *)
+    system_name="$system_name-UNKNOWN"
+    ;;
+  esac
+fi
+
+# host's CPU/instruction set
+if test -z "$host_arch" ; then
+host_arch=`( uname -p ) 2>&1`
+case "$host_arch" in
+   i386|sparc|ppc|alpha|arm|mips)
+     ;;
+
+   *) # uname -p on Linux returns 'unknown' for the processor type,
+      # OpenBSD returns 'Intel Pentium/MMX ("Genuine Intel" 586-class)'
+
+      # Maybe uname -m (machine hardware name) returns something we
+      # recognize.
+
+      case "`( uname -m ) 2>&1`" in
+      i[3-9]86|x86*) host_arch=i386 ;;
+      ppc) host_arch=ppc ;;
+      alpha) host_arch=alpha ;;
+      sparc*) host_arch=sparc ;;
+      arm*) host_arch=arm ;;
+      *) host_arch=UNKNOWN ;;
+    esac
+    ;;
+esac
+fi
+
+# Printout architecture
+case "$host_arch" in
+  i[3-9]86|x86*)
+  _def_arch="#define ARCH_X86 1"
+  _target_arch="TARGET_ARCH_X86 = yes"
+  _def_words_endian="#undef WORDS_BIGENDIAN"
+    ;;
+
+  sparc)
+    _def_arch='#define ARCH_SPARC 1'
+    _target_arch='TARGET_ARCH_SPARC = yes'
+    _def_words_endian='#define WORDS_BIGENDIAN 1'
+    ;;
+
+  arm)
+    _def_arch="#define ARCH_ARM 1"
+    _target_arch='TARGET_ARCH_ARM = yes'
+    _def_words_endian='#undef WORDS_BIGENDIAN'
+    ;;
+
+  ppc)
+    _def_arch='#define ARCH_PPC 1'
+    _target_arch='TARGET_ARCH_PPC = yes'
+    _def_words_endian='#define WORDS_BIGENDIAN 1'
+    ;;
+
+  alpha)
+    _def_arch='#define ARCH_ALPHA 1'
+    _target_arch='TARGET_ARCH_ALPHA = yes'
+    _def_words_endian='#undef WORDS_BIGENDIAN'
+    ;;
+
+  mips)
+    _def_arch="#define ARCH_SGI_MIPS 1"
+    _target_arch="TARGET_ARCH_SGI_MIPS = yes"
+    _def_words_endian='#define WORDS_BIGENDIAN 1'
+    ;;
+
+  *)
+    echo "The architecture of your CPU ($host_arch) is not supported by this configure script"
+    echo "It seems noone has ported MPlayer to your OS or CPU type yet."
+    echo "unsupported architecture $host_arch"
+    exit 1
+    ;;
+esac
+
+cat >> config.h << EOF
+$_def_arch
+/* Define if your processor stores words with the most significant
+   byte first (like Motorola and SPARC, unlike Intel and VAX).  */
+$_def_words_endian
+EOF
+cat >> config.mak << EOF
+$_target_arch
+EOF
+
+# return result to parent script
+for ac_option do
+  case "$ac_option" in
+  --prefix=*)
+    _prefix=`echo $ac_option | cut -d '=' -f 2`
+    ;;
+  --datadir=*)
+    _datadir=`echo $ac_option | cut -d '=' -f 2`
+    ;;
+  --confdir=*)
+    _confdir=`echo $ac_option | cut -d '=' -f 2`
+    ;;
+  --with-extraincdir=*)
+    _inc_extra=-I`echo $ac_option | cut -d '=' -f 2 | sed 's,:, -I,g'`
+    ;;
+  --with-extralibdir=*)
+    _ld_extra=-L`echo $ac_option | cut -d '=' -f 2 | sed 's,:, -L,g'`
+    ;;
+  --target=*)
+    _target=`echo $ac_option | cut -d '=' -f 2`
+    ;;
+  --cc=*)
+    _cc=`echo $ac_option | cut -d '=' -f 2`
+    ;;
+  *)
+    ;;
+  esac
+done
+
+# Determine our OS name and CPU architecture
+if test -n "$_target" ; then
+  system_name=`echo $_target | cut -d '-' -f 2`
+  host_arch=`echo $_target | cut -d '-' -f 1`
+fi
+
+echo "Detected operating system: $system_name"
+echo "Detected host architecture: $host_arch"
+
+# Atmos: moved this here, to be correct, if --prefix is specified
+test -z "$_datadir" && _datadir="$_prefix/share/vidix"
+test -z "$_confdir" && _confdir="$_datadir"
+test -z "$_libdir" && _libdir="$_prefix/lib/vidix"
+
+# Checking for CFLAGS
+if test -z "$CFLAGS" ; then
+    CFLAGS="-O2"
+fi
+
+# Checking for mman
+echo -n "Checking for mman.h ... "
+cat > $TMPC << EOF
+#include <sys/types.h>
+#include <sys/mman.h>
+int main(void) { (void) mmap(0, 0, 0, 0, 0, 0); return 0; }
+EOF
+_mman=yes
+if "$_cc" -o $TMPO $TMPC 2> /dev/null ; then
+  _def_mman='#define HAVE_SYS_MMAN_H 1'
+else
+  _def_mman='#undef HAVE_SYS_MMAN_H'
+  _mman=no
+fi
+echo "$_mman"
+
+# checking for a working awk, I'm using mawk first, because it's fastest - atmos
+_awk=
+_awk_verc_fail=yes
+echo ${_echo_n} "Checking for "awk" ... ${_echo_c}"
+for _awk in mawk gawk nawk awk; do
+  if ( $_awk 'BEGIN{testme();}function testme(){print"";}' ) >> "$TMPLOG" 2>&1; then
+    _awk_verc_fail=no
+    break
+  fi
+done
+test "$_awk_verc_fail" = yes && _awk=no
+echo "$_awk"
+if test "$_awk_verc_fail" = yes; then
+echo "VIDIX needs Awk, but there was no working implementation found!"
+echo "Try the GNU implementation, which can be downloaded from:"
+echo "ftp://ftp.gnu.org/gnu/gawk/"
+echo "If you don't need vidix, you can use configure --disable-vidix instead."
+exit
+fi
+
+#############################################################################
+echo "Creating config.mak"
+cat > config.mak << EOF
+# -------- Generated by configure -----------
+
+prefix = $_prefix
+DATADIR = $_datadir
+LIBDIR = $_libdir
+CONFDIR = $_confdir
+OPTFLAGS = $CFLAGS
+AWK = $_awk
+
+EOF
+
+
+#############################################################################
+echo "Creating config.h"
+cat > config.h << EOF
+/* -------- This file has been automatically generated by configure --------- */
+
+/* Common data directory (for fonts, etc) */
+#define DATADIR "$_datadir"
+#define CONFDIR "$_confdir"
+#define LIBDIR "$_libdir"
+
+/* Define this if your system has the "sys/mman.h" header file */
+$_def_mman
+
+EOF
+
+# Last move:
+rm -f "$TMPO" "$TMPC" "$TMPS" "$TMPCPP"
