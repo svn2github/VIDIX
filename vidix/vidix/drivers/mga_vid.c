@@ -1235,6 +1235,7 @@ int VIDIX_NAME(vixProbe)(int verbose,int force)
 		printf("[mga] Found MGA G400/G450\n");
 		is_g400 = 1;
 		goto card_found;
+#ifndef CRTC2
 	    case DEVICE_MATROX_MGA_G200_AGP:
 		printf("[mga] Found MGA G200 AGP\n");
 		is_g400 = 0;
@@ -1243,6 +1244,7 @@ int VIDIX_NAME(vixProbe)(int verbose,int force)
 		printf("[mga] Found MGA G200 PCI\n");
 		is_g400 = 0;
 		goto card_found;
+#endif
 	    }
 	}
     }
