@@ -266,12 +266,12 @@ int vixConfigPlayback(vidix_playback_t *info)
     base0 = 0x1000000;
     info->dga_addr = pm3_mem + base0;
 
-    info->dest.pitch.y = pitch;
-    info->dest.pitch.u = pitch >> 1;
-    info->dest.pitch.v = pitch >> 1;
+    info->dest.pitch.y = 2;
+    info->dest.pitch.u = 0;
+    info->dest.pitch.v = 0;
     info->offset.y = 0;
-    info->offset.v = src_h * pitch;
-    info->offset.u = info->offset.v + pitch * src_h / 2;
+    info->offset.v = 0;
+    info->offset.u = 0;
     info->frame_size = pitch * src_h * 2;
     for(i = 0; i < info->num_frames; i++){
 	info->offsets[i] = info->frame_size * i;
