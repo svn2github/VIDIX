@@ -691,7 +691,6 @@ static int dhahelper_ack_irq(dhahelper_irq_t *arg)
 	if(!dha_irqs[irq.num].handled) return -ESRCH;
 	add_wait_queue(&dha_irqs[irq.num].wait, &wait);
 	set_current_state(TASK_INTERRUPTIBLE);
-	dha_irqs[irq.num].rcvd = 0;
 	for(;;){
 		int r;
 		spin_lock_irqsave(&dha_irqs[irq.num].lock,

@@ -1,6 +1,6 @@
 KERNEL_INCLUDES = /usr/src/linux/include
 INCLUDES = -I$(KERNEL_INCLUDES)
-CFLAGS = -O2 -Wall -D__KERNEL__ -DMODULE -include $(KERNEL_INCLUDES)/linux/modversions.h
+CFLAGS = -O2 -Wall -D__KERNEL__ -DMODULE -include $(KERNEL_INCLUDES)/linux/modversions.h -fomit-frame-pointer -fno-common -fno-strict-aliasing
 CONFIG_SHELL=/bin/sh -c
 KERNEL_VERSION=$(shell $(CONFIG_SHELL) 'uname -r')
 MDIR = /lib/modules/$(KERNEL_VERSION)/misc
