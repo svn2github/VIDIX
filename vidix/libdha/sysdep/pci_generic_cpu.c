@@ -47,3 +47,33 @@ static long pci_config_read_byte(
     printf("pci_config_read_byte: generic function call\n");
     return 0;
 }
+
+static void pci_config_write_long(
+          unsigned char bus,
+          unsigned char dev,
+          int func, 
+          unsigned cmd,
+	  long val)
+{
+    printf("pci_config_write_long: generic function call\n");
+}
+
+static void pci_config_write_word(
+          unsigned char bus,
+          unsigned char dev,
+          int func, 
+          unsigned cmd,
+	  long val)
+{
+    printf("pci_config_write_word: generic function call\n");
+}
+
+static void pci_config_write_byte(
+          unsigned char bus,
+          unsigned char dev,
+          int func, 
+          unsigned cmd,
+	  long val)
+{
+    printf("pci_config_write_byte: generic function call\n");
+}

@@ -93,8 +93,8 @@ static long pci_config_read_word(
     if (fd == -1) {
 	    retval=0;
     }
-    else if (pread(fd, &retval, 2, cmd) == 4) {
-	    retval = bswap_32(retval);
+    else if (pread(fd, &retval, 2, cmd) == 2) {
+	    retval = bswap_16(retval);
     } else {
 	    retval = 0;
     }   
@@ -118,11 +118,73 @@ static long pci_config_read_byte(
     if (fd == -1) {
 	    retval=0;
     }
-    else if (pread(fd, &retval, 1, cmd) == 4) {
-	    retval = bswap_32(retval);
-    } else {
+    else if (pread(fd, &retval, 1, cmd) != 1) {
 	    retval = 0;
     }   
+    if (fd > 0) {
+	    close(fd);
+    }
+    return retval;
+}
+
+static void pci_config_write_long(
+	  unsigned char bus,
+	  unsigned char dev,
+	  int func, 
+	  unsigned cmd,
+	  long val)
+{
+    char path[100];
+    int fd;
+    val = bswap_32(val);
+    sprintf(path,"/proc/bus/pci/%02d/%02x.0", bus, dev);
+    fd = open(path,O_RDONLY|O_SYNC);
+    if (fd == -1) {
+	    retval=0;
+    }
+    else pwrite(fd, &val, 4, cmd);
+    if (fd > 0) {
+	    close(fd);
+    }
+}
+
+static void pci_config_write_word(
+	  unsigned char bus,
+	  unsigned char dev,
+	  int func, 
+	  unsigned cmd,
+	  long val)
+{
+    char path[100];
+    int fd;
+    val = bswap_16(val);
+    sprintf(path,"/proc/bus/pci/%02d/%02x.0", bus, dev);
+    fd = open(path,O_RDONLY|O_SYNC);
+    if (fd == -1) {
+	    retval=0;
+    }
+    else pwrite(fd, &val, 2, cmd);
+    if (fd > 0) {
+	    close(fd);
+    }
+    return retval;
+}
+
+static void pci_config_write_byte(
+	  unsigned char bus,
+	  unsigned char dev,
+	  int func, 
+	  unsigned cmd,
+	  long val)
+{
+    char path[100];
+    int fd;
+    sprintf(path,"/proc/bus/pci/%02d/%02x.0", bus, dev);
+    fd = open(path,O_RDONLY|O_SYNC);
+    if (fd == -1) {
+	    retval=0;
+    }
+    else pwrite(fd, &retval, 1, cmd);
     if (fd > 0) {
 	    close(fd);
     }
@@ -159,6 +221,42 @@ static long pci_config_read_byte(
 {
     long retval;
     pciconfig_read(bus, dev<<3, cmd, 1, &retval);
+    return retval;
+}
+
+static void pci_config_write_long(
+          unsigned char bus,
+          unsigned char dev,
+          int func, 
+          unsigned cmd,
+	  long val)
+{
+    long retval;
+    pciconfig_write(bus, dev<<3, cmd, 4, val);
+    return retval;
+}
+
+static void pci_config_write_word(
+          unsigned char bus,
+          unsigned char dev,
+          int func, 
+          unsigned cmd,
+	  long val)
+{
+    long retval;
+    pciconfig_write(bus, dev<<3, cmd, 2, val);
+    return retval;
+}
+
+static void pci_config_write_byte(
+          unsigned char bus,
+          unsigned char dev,
+          int func, 
+          unsigned cmd,
+	  long val)
+{
+    long retval;
+    pciconfig_write(bus, dev<<3, cmd, 1, val);
     return retval;
 }
 #endif

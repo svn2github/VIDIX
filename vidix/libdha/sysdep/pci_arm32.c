@@ -82,3 +82,42 @@ static long pci_config_read_byte(
     OUTPORT32(PCI_MODE1_ADDRESS_REG, config_cmd | cmd);
     return INPORT8(PCI_MODE1_DATA_REG);
 }
+
+static void pci_config_write_long(
+          unsigned char bus,
+          unsigned char dev,
+          int func, 
+          unsigned cmd,
+	  long val)
+{
+    unsigned long config_cmd;
+    config_cmd = PCI_EN | (bus<<16) | (dev<<11) | (func<<8);
+    OUTPORT32(PCI_MODE1_ADDRESS_REG, config_cmd | cmd);
+    OUTPORT32(PCI_MODE1_DATA_REG,val);
+}
+
+static void pci_config_write_word(
+          unsigned char bus,
+          unsigned char dev,
+          int func, 
+          unsigned cmd,
+	  unsigned val)
+{
+    unsigned long config_cmd;
+    config_cmd = PCI_EN | (bus<<16) | (dev<<11) | (func<<8);
+    OUTPORT32(PCI_MODE1_ADDRESS_REG, config_cmd | cmd);
+    OUTPORT16(PCI_MODE1_DATA_REG,val);
+}
+
+static void pci_config_write_byte(
+          unsigned char bus,
+          unsigned char dev,
+          int func, 
+          unsigned cmd,
+	  long val)
+{
+    unsigned long config_cmd;
+    config_cmd = PCI_EN | (bus<<16) | (dev<<11) | (func<<8);
+    OUTPORT32(PCI_MODE1_ADDRESS_REG, config_cmd | cmd);
+    OUTPORT8(PCI_MODE1_DATA_REG,val);
+}
