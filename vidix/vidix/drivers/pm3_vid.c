@@ -236,7 +236,8 @@ int VIDIX_NAME(vixQueryFourcc)(vidix_fourcc_t *to)
 }
 
 static int frames[VID_PLAY_MAXFRAMES], vid_base;
-static long overlay_mode, overlay_control, video_control, int_enable;
+static int overlay_mode, overlay_control, video_control, int_enable;
+static int rdoverlay_mode;
 static int src_w, drw_w;
 static int src_h, drw_h;
 static int drw_x, drw_y;
@@ -350,7 +351,6 @@ pm3_setup_overlay(vidix_playback_t *info)
 
     overlay_control = 
 	PM3RD_VideoOverlayControl_KEY_COLOR |
-	PM3RD_VideoOverlayControl_MODE_ALWAYS |
 	PM3RD_VideoOverlayControl_DIRECTCOLOR_ENABLED;
 }
 
@@ -361,15 +361,12 @@ VIDIX_NAME(vixSetGrKeys)(const vidix_grkey_t *key)
 	RAMDAC_SET_REG(PM3RD_VideoOverlayKeyR, key->ckey.red);
 	RAMDAC_SET_REG(PM3RD_VideoOverlayKeyG, key->ckey.green);
 	RAMDAC_SET_REG(PM3RD_VideoOverlayKeyB, key->ckey.blue);
-	overlay_control =
-	    (overlay_control & ~PM3RD_VideoOverlayControl_MODE_MASK) |
-	    PM3RD_VideoOverlayControl_MODE_MAINKEY;
+	rdoverlay_mode = PM3RD_VideoOverlayControl_MODE_MAINKEY;
     } else {
-	overlay_control =
-	    (overlay_control & ~PM3RD_VideoOverlayControl_MODE_MASK) |
-	    PM3RD_VideoOverlayControl_MODE_ALWAYS;
+	rdoverlay_mode = PM3RD_VideoOverlayControl_MODE_ALWAYS;
     }
-    RAMDAC_SET_REG(PM3RD_VideoOverlayControl, overlay_control);
+    RAMDAC_SET_REG(PM3RD_VideoOverlayControl,
+		   overlay_control | rdoverlay_mode);
 
     return 0;
 }
@@ -445,7 +442,8 @@ int VIDIX_NAME(vixPlaybackOn)(void)
     WRITE_REG(PM3VideoOverlayMode,
 	      overlay_mode | PM3VideoOverlayMode_ENABLE);
     overlay_control |= PM3RD_VideoOverlayControl_ENABLE;
-    RAMDAC_SET_REG(PM3RD_VideoOverlayControl, overlay_control);
+    RAMDAC_SET_REG(PM3RD_VideoOverlayControl,
+		   overlay_control | rdoverlay_mode);
     WRITE_REG(PM3VideoOverlayUpdate, PM3VideoOverlayUpdate_ENABLE);
 
     if(pm3_blank)
