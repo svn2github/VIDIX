@@ -3,7 +3,7 @@
 include ../../config.mak
 
 BINDIR = $(prefix)/lib/vidix
-
+OLDBINDIR = $(prefix)/lib/mplayerxp/vidix
 
 RADEON_VID=radeon_vid.so
 RADEON_SRCS=radeon_vid.c
@@ -122,6 +122,7 @@ depend:
 install:
 	mkdir -p $(BINDIR)
 	install -m 755 -s -p *.so $(BINDIR)
+	if test -d $(OLDBINDIR) ; then rm -f $(OLDBINDIR)/*.so ; rmdir -p --ignore-fail-on-non-empty $(OLDBINDIR) ; fi
 uninstall:
 	rm -f $(BINDIR)/*.so
 	rmdir -p --ignore-fail-on-non-empty $(BINDIR)
