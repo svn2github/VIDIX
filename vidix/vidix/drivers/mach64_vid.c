@@ -29,7 +29,6 @@
 #include "../../libdha/pci_names.h"
 
 #include "mach64.h"
-#include "../../version.h"
 
 #define UNUSED(x) ((void)(x)) /**< Removes warning about unused arguments */
 
@@ -511,7 +510,7 @@ int VIDIX_NAME(vixInit)(const char *args)
     printf("[mach64] Driver was not probed but is being initializing\n");
     return EINTR;
   }
-  if(__verbose>0) printf("[mach64] version %s\n", VERSION);
+  if(__verbose>0) printf("[mach64] version %d\n", VIDIX_VERSION);
 
   if((mach64_mmio_base = map_phys_mem(pci_info.base2,0x4000))==(void *)-1) return ENOMEM;
   mach64_wait_for_idle();
