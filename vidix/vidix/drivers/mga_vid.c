@@ -1398,20 +1398,25 @@ void vixDestroy(void)
 
 int vixQueryFourcc(vidix_fourcc_t *to)
 {
+    int planar=0;
     printf("[mga] query fourcc (%x)\n", to->fourcc);
+    to->depth = to->flags = 0;
 
     switch(to->fourcc)
     {
 	case IMGFMT_YV12:
 	case IMGFMT_IYUV:
 	case IMGFMT_I420:
+		    planar=1;
+	case IMGFMT_NV12:
 	case IMGFMT_YUY2:
 	case IMGFMT_UYVY:
 	    break;
 	default:
-	    to->depth = to->flags = 0;
 	    return(ENOTSUP);
     }
+    if (!is_g400 && planar) return ENOTSUP;
+    if (is_g400 && to->fourcc == IMGFMT_NV12) return ENOTSUP;
     
     to->depth = VID_DEPTH_12BPP |
 		VID_DEPTH_15BPP | VID_DEPTH_16BPP |
