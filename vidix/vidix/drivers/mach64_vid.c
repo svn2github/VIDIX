@@ -574,7 +574,7 @@ static void init_irq(void)
 int VIDIX_NAME(vixInit)(const char *args)
 {
   int err;
-  unsigned i;
+
   if(!probed)
   {
     printf("[mach64] Driver was not probed but is being initializing\n");
@@ -681,7 +681,6 @@ int VIDIX_NAME(vixInit)(const char *args)
 
 void VIDIX_NAME(vixDestroy)(void)
 {
-  unsigned i;
   restore_regs();
 #ifdef MACH64_ENABLE_BM
   mach64_engine_reset();
