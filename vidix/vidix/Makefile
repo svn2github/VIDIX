@@ -1,4 +1,6 @@
-LIBNAME = libvidix.a
+LIBNAME = libvidix.so
+BINDIR = $(prefix)/lib
+INCDIR = $(prefix)/include/vidix
 SUBDIRS = drivers
 DO_MAKE = @ for i in $(SUBDIRS); do $(MAKE) -C $$i $@ || exit; done
 
@@ -20,15 +22,14 @@ all:	$(SUBDIRS) $(LIBNAME)
 	$(DO_MAKE)
 
 $(LIBNAME):	$(OBJS)
-	$(AR) r $(LIBNAME) $(OBJS)
-
+	$(LD) -shared -soname $(LIBNAME) -o $(LIBNAME) $(OBJS) -lc
 
 clean:
-	rm -f *.o *.a *~
+	rm -f *.o $(LIBNAME) *~
 	$(DO_MAKE)
 
 distclean:
-	rm -f test *.o *.a *~ .depend
+	rm -f test *.o $(LIBNAME) *~ .depend
 	$(DO_MAKE)
 
 dep:    depend
@@ -39,9 +40,23 @@ depend:
 
 install:
 	$(DO_MAKE)
+	mkdir -p $(BINDIR)
+	install -m 755 -s -p $(LIBNAME) $(BINDIR)
+ifeq ($(TARGET_OS),OpenBSD)
+	$(LDCONFIG) -R
+else
+	$(LDCONFIG)
+endif
+	mkdir -p $(INCDIR)
+	install -m 644 fourcc.h $(INCDIR)/fourcc.h
+	install -m 644 vidix.h $(INCDIR)/vidix.h
+	install -m 644 vidixlib.h $(INCDIR)/vidixlib.h
 
 uninstall:
 	$(DO_MAKE)
+	rm -f $(BINDIR)/$(LIBNAME)
+	rmdir -p --ignore-fail-on-non-empty $(BINDIR)
+
 #
 # include dependency files if they exist
 #

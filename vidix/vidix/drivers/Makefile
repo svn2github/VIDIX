@@ -2,7 +2,7 @@
 
 include ../../config.mak
 
-BINDIR = $(prefix)/lib/mplayerxp/vidix
+BINDIR = $(prefix)/lib/vidix
 
 
 RADEON_VID=radeon_vid.so
