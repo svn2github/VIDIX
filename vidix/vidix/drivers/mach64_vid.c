@@ -970,9 +970,9 @@ for(i=0; i<32; i++){
 	if(besr.fourcc == IMGFMT_I420 || besr.fourcc == IMGFMT_IYUV)
 	{
 	  uint32_t tmp;
-	  tmp = config->offset.u;
-	  config->offset.u = config->offset.v;
-	  config->offset.v = tmp;
+	  tmp = src_offset_u;
+	  src_offset_u = src_offset_v;
+	  src_offset_v = tmp;
 	}
     }
     else if(besr.fourcc == IMGFMT_YVU9)
