@@ -22,6 +22,8 @@
 #endif
 
 
+#include "../../config.h"
+#include "../../bswap.h"
 #include "../vidix.h"
 #include "../fourcc.h"
 #include "../../libdha/libdha.h"
@@ -172,8 +174,8 @@ static video_registers_t vregs[] =
 
 #define INREG8(addr)		GETREG(uint8_t,(uint32_t)mach64_mmio_base,((addr)^0x100)<<2)
 #define OUTREG8(addr,val)	SETREG(uint8_t,(uint32_t)mach64_mmio_base,((addr)^0x100)<<2,val)
-#define INREG(addr)		GETREG(uint32_t,(uint32_t)mach64_mmio_base,((addr)^0x100)<<2)
-#define OUTREG(addr,val)	SETREG(uint32_t,(uint32_t)mach64_mmio_base,((addr)^0x100)<<2,val)
+#define INREG(addr)		le2me_32(GETREG(uint32_t,(uint32_t)mach64_mmio_base,((addr)^0x100)<<2))
+#define OUTREG(addr,val)	SETREG(uint32_t,(uint32_t)mach64_mmio_base,((addr)^0x100)<<2,le2me_32(val))
 
 #define OUTREGP(addr,val,mask)  					\
 	do {								\
@@ -1186,6 +1188,7 @@ int VIDIX_NAME(vixSetGrKeys)(const vidix_grkey_t *grkey)
 			  ((mach64_grkey.ckey.blue &0xF8)>>3)
 			| ((mach64_grkey.ckey.green&0xFC)<<3)
 			| ((mach64_grkey.ckey.red  &0xF8)<<8);
+		besr.graphics_key_clr=le2me_32(besr.graphics_key_clr);
 		break;
 	case 24:
 		besr.graphics_key_msk=0xFFFFFF;
