@@ -358,8 +358,6 @@ static unsigned short ati_card_ids[] =
  DEVICE_ATI_3D_RAGE_IIC4,
  DEVICE_ATI_3D_RAGE_LT,
  DEVICE_ATI_3D_RAGE_LT2,
- DEVICE_ATI_RAGE_MOBILITY_M3,
- DEVICE_ATI_RAGE_MOBILITY_M32,
  DEVICE_ATI_3D_RAGE_LT_G,
  DEVICE_ATI_3D_RAGE_LT3,
  DEVICE_ATI_RAGE_MOBILITY_P_M,
@@ -842,19 +840,33 @@ int vixQueryFourcc(vidix_fourcc_t *to)
 
 int vixConfigPlayback(vidix_playback_t *info)
 {
+  unsigned rgb_size,nfr;
   if(!is_supported_fourcc(info->fourcc)) return ENOSYS;
+  if(info->num_frames>VID_PLAY_MAXFRAMES) info->num_frames=VID_PLAY_MAXFRAMES;
 
   mach64_compute_framesize(info);
 
-  if(info->num_frames>VID_PLAY_MAXFRAMES) info->num_frames=VID_PLAY_MAXFRAMES;
-  for(;info->num_frames>0; info->num_frames--)
+  rgb_size = mach64_get_xres()*mach64_get_yres()*((mach64_vid_get_dbpp()+7)/8);
+  nfr = info->num_frames;
+  for(;nfr>0;nfr--)
   {
-      mach64_overlay_offset = mach64_ram_size - info->frame_size*info->num_frames;
+      mach64_overlay_offset = mach64_ram_size - info->frame_size*nfr;
+      mach64_overlay_offset &= 0xffff0000;
+      if(mach64_overlay_offset >= (int)rgb_size ) break;
+  }
+  if(nfr <= 3)
+  {
+   nfr = info->num_frames;
+   for(;nfr>0;nfr--)
+   {
+      mach64_overlay_offset = mach64_ram_size - info->frame_size*nfr;
       mach64_overlay_offset &= 0xffff0000;
       if(mach64_overlay_offset>0) break;
+   }
   }
-  if(info->num_frames <= 0) return EINVAL;
-
+  if(nfr <= 0) return EINVAL;
+  info->num_frames=nfr;
+  num_mach64_buffers = info->num_frames;
   info->dga_addr = (char *)mach64_mem_base + mach64_overlay_offset;
   mach64_vid_init_video(info);
   return 0;

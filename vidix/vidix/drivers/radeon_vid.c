@@ -720,7 +720,10 @@ static unsigned short ati_card_ids[] =
  DEVICE_ATI_RAGE_128_4X2,
  DEVICE_ATI_RAGE_128_PRO,
  DEVICE_ATI_RAGE_128_PRO2,
- DEVICE_ATI_RAGE_128_PRO3
+ DEVICE_ATI_RAGE_128_PRO3,
+/* these seem to be based on rage 128 instead of mach64 */
+ DEVICE_ATI_RAGE_MOBILITY_M3,
+ DEVICE_ATI_RAGE_MOBILITY_M32
 #else
 /* Radeons (indeed: Rage 256 Pro ;) */
  DEVICE_ATI_RADEON_8500_DV,
@@ -1061,6 +1064,10 @@ static unsigned radeon_query_pitch(unsigned fourcc,const vidix_yuv_t *spitch)
 		if(spy > 16 && spu == spy/2 && spv == spy/2)	pitch = spy;
 		else						pitch = 32;
 		break;
+	case IMGFMT_YVU9:
+		if(spy > 32 && spu == spy/4 && spv == spy/4)	pitch = spy;
+		else						pitch = 64;
+		break;
 	default:
 		if(spy >= 16)	pitch = spy;
 		else		pitch = 16;
@@ -1096,6 +1103,7 @@ static int radeon_vid_init_video( vidix_playback_t *config )
     mpitch = best_pitch-1;
     switch(config->fourcc)
     {
+	case IMGFMT_YVU9:
 	/* 4:2:0 */
 	case IMGFMT_IYUV:
 	case IMGFMT_YV12:
@@ -1251,28 +1259,33 @@ static void radeon_compute_framesize(vidix_playback_t *info)
 
 int vixConfigPlayback(vidix_playback_t *info)
 {
-  unsigned rgb_size;
+  unsigned rgb_size,nfr;
   if(!is_supported_fourcc(info->fourcc)) return ENOSYS;
-  if(info->num_frames>=VID_PLAY_MAXFRAMES) info->num_frames=VID_PLAY_MAXFRAMES-1;
+  if(info->num_frames>VID_PLAY_MAXFRAMES) info->num_frames=VID_PLAY_MAXFRAMES;
   if(info->num_frames==1) besr.double_buff=0;
   else                    besr.double_buff=1;
   radeon_compute_framesize(info);
     
-  rgb_size = radeon_get_xres()*radeon_get_yres()*radeon_vid_get_dbpp();
-  for(;info->num_frames>0; info->num_frames--)
+  rgb_size = radeon_get_xres()*radeon_get_yres()*((radeon_vid_get_dbpp()+7)/8);
+  nfr = info->num_frames;
+  for(;nfr>0; nfr--)
   {
-      radeon_overlay_off = radeon_ram_size - info->frame_size*info->num_frames;
+      radeon_overlay_off = radeon_ram_size - info->frame_size*nfr;
       radeon_overlay_off &= 0xffff0000;
       if(radeon_overlay_off >= (int)rgb_size ) break;
   }
-  if(info->num_frames <= 3)
-   for(;info->num_frames>0; info->num_frames--)
+  if(nfr <= 3)
+  {
+   nfr = info->num_frames;
+   for(;nfr>0; nfr--)
    {
-      radeon_overlay_off = radeon_ram_size - info->frame_size*info->num_frames;
+      radeon_overlay_off = radeon_ram_size - info->frame_size*nfr;
       radeon_overlay_off &= 0xffff0000;
       if(radeon_overlay_off > 0) break;
    }
-  if(info->num_frames <= 0) return EINVAL;
+  }
+  if(nfr <= 0) return EINVAL;
+  info->num_frames = nfr;
   besr.vid_nbufs = info->num_frames;
   info->dga_addr = (char *)radeon_mem_base + radeon_overlay_off;  
   radeon_vid_init_video(info);
