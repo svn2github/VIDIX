@@ -1206,16 +1206,10 @@ static int radeon_vid_init_video( vidix_playback_t *config )
     dest_w = config->dest.w;
     dest_h = config->dest.h;
     if(radeon_is_dbl_scan()) dest_h *= 2;
-#ifndef RAGE128
-    else
-    if(radeon_is_interlace()) dest_h /= 2;
-#endif
     besr.dest_bpp = radeon_vid_get_dbpp();
     besr.fourcc = config->fourcc;
     besr.v_inc = (src_h << 20) / dest_h;
-#ifdef RAGE128
     if(radeon_is_interlace()) besr.v_inc *= 2;
-#endif
     h_inc = (src_w << 12) / dest_w;
     step_by = 1;
     while(h_inc >= (2 << 12)) {
