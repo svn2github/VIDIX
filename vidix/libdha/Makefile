@@ -2,7 +2,7 @@
 
 include ../config.mak
 
-VERSION = 0.3
+VERSION = 0.4
 
 ifeq ($(TARGET_OS),CYGWIN)
 SHORTNAME = libdha.dll

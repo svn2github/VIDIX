@@ -2,7 +2,7 @@
     Direct Hardware Access kernel helper
     
     (C) 2002 Alex Beregszaszi <alex@naxine.org>
-    (C) 2002 Nick Kurshev <nickols_k@mail.ru>
+    (C) 2002-2003 Nick Kurshev <nickols_k@mail.ru>
 
     Accessing hardware from userspace as USER (no root needed!)
 
@@ -90,6 +90,9 @@
 #include <linux/fs.h>
 #include <linux/unistd.h>
 
+#ifdef CONFIG_MTRR 
+#include <asm/mtrr.h>
+#endif
 #ifdef CONFIG_DEVFS_FS
 #include <linux/devfs_fs_kernel.h>
 #endif
@@ -735,6 +738,140 @@ static int dhahelper_cpu_flush(dhahelper_cpu_flush_t *arg)
 	return 0;
 }
 
+static struct pci_dev *pdev = NULL;
+static int dhahelper_pci_find(dhahelper_pci_device_t *arg)
+{
+	dhahelper_pci_device_t this_dev;
+	pdev = pci_find_device(PCI_ANY_ID, PCI_ANY_ID, pdev);
+	if(pdev)
+	{
+	    this_dev.bus = pdev->bus->number;
+	    this_dev.card = PCI_SLOT(pdev->devfn);
+	    this_dev.func = PCI_FUNC(pdev->devfn);
+	    this_dev.vendor = pdev->vendor;
+	    this_dev.device = pdev->device;
+	    this_dev.base0 = pci_resource_start (pdev, 0);
+	    this_dev.base1 = pci_resource_start (pdev, 1);
+	    this_dev.base2 = pci_resource_start (pdev, 2);
+	    pci_read_config_dword(pdev, pdev->rom_base_reg, (u32*)&this_dev.baserom);
+	    this_dev.base3 = pci_resource_start (pdev, 3);
+	    this_dev.base4 = pci_resource_start (pdev, 4);
+	    this_dev.base5 = pci_resource_start (pdev, 5);
+	    pci_read_config_byte(pdev, PCI_INTERRUPT_LINE, &this_dev.irq);
+	    pci_read_config_byte(pdev, PCI_INTERRUPT_PIN, &this_dev.ipin);
+	    pci_read_config_byte(pdev, PCI_MIN_GNT, &this_dev.gnt);
+	    pci_read_config_byte(pdev, PCI_MAX_LAT, &this_dev.lat);
+	}
+	else memset(&this_dev,0,sizeof(dhahelper_pci_device_t));
+	if (copy_to_user(arg, &this_dev, sizeof(dhahelper_pci_device_t)))
+	{
+		if (dhahelper_verbosity > 0)
+		    printk(KERN_ERR "dhahelper: failed copy to userspace\n");
+		return -EFAULT;
+	}
+	return pdev?0:-ENODATA;
+}
+
+static int dhahelper_pci_config(dhahelper_pci_config_t *arg)
+{
+    dhahelper_pci_config_t op;
+    struct pci_dev *pdev;
+	if (copy_from_user(&op, arg, sizeof(dhahelper_pci_config_t)))
+	{
+		if (dhahelper_verbosity > 0)
+		    printk(KERN_ERR "dhahelper: failed copy from userspace\n");
+		return -EFAULT;
+	}
+	pdev = pci_find_slot(op.bus,PCI_DEVFN(op.dev,op.func));
+	if(!pdev)
+	{
+		if (dhahelper_verbosity > 0)
+		    printk(KERN_ERR "dhahelper: can't identify device\n");
+		return -EFAULT;
+	}
+	switch(op.operation)
+	{
+	    case PCI_OP_READ:
+		switch(op.size)
+		{
+		    case 1:
+			pci_read_config_byte(pdev,op.cmd,(u8*)&op.ret);
+			break;
+		    case 2:
+			pci_read_config_word(pdev,op.cmd,(u16*)&op.ret);
+			break;
+		    case 4:
+			pci_read_config_dword(pdev,op.cmd,(u32*)&op.ret);
+			break;
+		    default:
+			if (dhahelper_verbosity > 0)
+			    printk(KERN_ERR "dhahelper: wrong size of pci operation: %u \n",op.size);
+			return -EFAULT;
+		}
+	    case PCI_OP_WRITE:
+		switch(op.size)
+		{
+		    case 1:
+			pci_write_config_byte(pdev,op.cmd,op.ret);
+			break;
+		    case 2:
+			pci_write_config_word(pdev,op.cmd,op.ret);
+			break;
+		    case 4:
+			pci_write_config_dword(pdev,op.cmd,op.ret);
+			break;
+		    default:
+			if (dhahelper_verbosity > 0)
+			    printk(KERN_ERR "dhahelper: wrong size of pci operation: %u \n",op.size);
+			return -EFAULT;
+		}
+	    default:
+		if (dhahelper_verbosity > 0)
+		    printk(KERN_ERR "dhahelper: unknown pci operation %i\n",op.operation);
+		return -EFAULT;
+	}
+	if (copy_to_user(arg, &op, sizeof(dhahelper_pci_device_t)))
+	{
+		if (dhahelper_verbosity > 0)
+		    printk(KERN_ERR "dhahelper: failed copy to userspace\n");
+		return -EFAULT;
+	}
+	return 0;
+}
+
+static int dhahelper_mtrr(dhahelper_mtrr_t *arg)
+{
+#ifdef CONFIG_MTRR
+    dhahelper_mtrr_t op;
+	if (copy_from_user(&op, arg, sizeof(dhahelper_pci_config_t)))
+	{
+		if (dhahelper_verbosity > 0)
+		    printk(KERN_ERR "dhahelper: failed copy from userspace\n");
+		return -EFAULT;
+	}
+	switch(op.operation)
+	{
+	    case MTRR_OP_ADD:
+		op.privat = mtrr_add (op.start,op.size,op.type,1);
+		break;
+	    case MTRR_OP_DEL:
+		mtrr_del(op.privat, op.start, op.size);
+                break;
+	    default:
+		if (dhahelper_verbosity > 0)
+		    printk(KERN_ERR "dhahelper: unknown mtrr operation %i\n",op.operation);
+		return -EFAULT;
+	}
+	if (copy_to_user(arg, &op, sizeof(dhahelper_mtrr_t)))
+	{
+		if (dhahelper_verbosity > 0)
+		    printk(KERN_ERR "dhahelper: failed copy to userspace\n");
+		return -EFAULT;
+	}
+#endif
+    return 0;
+}
+
 static int dhahelper_ioctl(struct inode *inode, struct file *file,
     unsigned int cmd, unsigned long arg)
 {
@@ -749,6 +886,8 @@ static int dhahelper_ioctl(struct inode *inode, struct file *file,
     {
 	case DHAHELPER_GET_VERSION: return dhahelper_get_version((int *)arg);
 	case DHAHELPER_PORT:	    return dhahelper_port((dhahelper_port_t *)arg);
+	case DHAHELPER_MTRR:	    return dhahelper_mtrr((dhahelper_mtrr_t *)arg);
+	case DHAHELPER_PCI_CONFIG:  return dhahelper_pci_config((dhahelper_pci_config_t *)arg);
 	case DHAHELPER_VIRT_TO_PHYS:return dhahelper_virt_to_phys((dhahelper_vmi_t *)arg);
 	case DHAHELPER_VIRT_TO_BUS: return dhahelper_virt_to_bus((dhahelper_vmi_t *)arg);
 	case DHAHELPER_ALLOC_PA:return dhahelper_alloc_pa((dhahelper_mem_t *)arg);
@@ -759,6 +898,7 @@ static int dhahelper_ioctl(struct inode *inode, struct file *file,
 	case DHAHELPER_ACK_IRQ: return dhahelper_ack_irq((dhahelper_irq_t *)arg);
 	case DHAHELPER_FREE_IRQ: return dhahelper_free_irq((dhahelper_irq_t *)arg);
 	case DHAHELPER_CPU_FLUSH: return dhahelper_cpu_flush((dhahelper_cpu_flush_t *)arg);
+	case DHAHELPER_PCI_FIND: return dhahelper_pci_find((dhahelper_pci_device_t *)arg);
 	default:
     	    if (dhahelper_verbosity > 0)
 		printk(KERN_ERR "dhahelper: invalid ioctl (%x)\n", cmd);
