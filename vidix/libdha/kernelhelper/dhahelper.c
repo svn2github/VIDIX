@@ -634,6 +634,25 @@ out:
 	return retval;
 }
 
+static int dhahelper_cpu_flush(dhahelper_cpu_flush_t *arg)
+{
+	dhahelper_cpu_flush_t my_l2;
+	if (copy_from_user(&my_l2, arg, sizeof(dhahelper_irq_t)))
+	{
+		if (dhahelper_verbosity > 0)
+		    printk(KERN_ERR "dhahelper: failed copy from userspace\n");
+		return -EFAULT;
+	}
+#if defined(__i386__)
+	/* WBINVD writes all modified cache lines back to main memory */
+	if(boot_cpu_data.x86 > 3) { __asm __volatile("wbinvd":::"memory"); }
+#else
+	/* FIXME!!!*/
+	mb(); /* declared in "asm/system.h" */
+#endif
+	return 0;
+}
+
 static int dhahelper_ioctl(struct inode *inode, struct file *file,
     unsigned int cmd, unsigned long arg)
 {
@@ -657,6 +676,7 @@ static int dhahelper_ioctl(struct inode *inode, struct file *file,
 	case DHAHELPER_INSTALL_IRQ: return dhahelper_install_irq((dhahelper_irq_t *)arg);
 	case DHAHELPER_ACK_IRQ: return dhahelper_ack_irq((dhahelper_irq_t *)arg);
 	case DHAHELPER_FREE_IRQ: return dhahelper_free_irq((dhahelper_irq_t *)arg);
+	case DHAHELPER_CPU_FLUSH: return dhahelper_cpu_flush((dhahelper_cpu_flush_t *)arg);
 	default:
     	    if (dhahelper_verbosity > 0)
 		printk(KERN_ERR "dhahelper: invalid ioctl (%x)\n", cmd);

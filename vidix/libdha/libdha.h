@@ -101,6 +101,9 @@ extern int	bm_unlock_mem( const void * addr, unsigned long length );
 extern int	hwirq_install(unsigned irqnum);
 extern int	hwirq_wait(unsigned irqnum);
 extern int	hwirq_uninstall(unsigned irqnum);
+
+/* CPU flushing support */
+extern void	cpu_flush(void *va,unsigned long length);
 #ifdef __cplusplus
 }
 #endif

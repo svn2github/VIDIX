@@ -11,7 +11,7 @@ SHORTNAME = libdha.so
 endif
 LIBNAME = libdha-$(VERSION).so
 
-SRCS=libdha.c mtrr.c pci.c pci_names.c mmi.c ports.c irq.c
+SRCS=libdha.c mtrr.c pci.c pci_names.c mmi.c ports.c irq.c cpu_flush.c
 OBJS=$(SRCS:.c=.o)
 
 CFLAGS  = $(OPTFLAGS) -fPIC -I. -I.. -Wall -W
