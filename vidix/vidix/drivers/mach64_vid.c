@@ -501,6 +501,36 @@ static void reset_regs( void )
   }
 }
 
+typedef struct saved_regs_s
+{
+    uint32_t overlay_video_key_clr;
+    uint32_t overlay_video_key_msk;
+    uint32_t overlay_graphics_key_clr;
+    uint32_t overlay_graphics_key_msk;
+    uint32_t overlay_key_cntl;
+}saved_regs_t;
+static saved_regs_t savreg;
+
+static void save_regs( void )
+{
+    mach64_fifo_wait(6);
+    savreg.overlay_video_key_clr	= INREG(OVERLAY_VIDEO_KEY_CLR);
+    savreg.overlay_video_key_msk	= INREG(OVERLAY_VIDEO_KEY_MSK);
+    savreg.overlay_graphics_key_clr	= INREG(OVERLAY_GRAPHICS_KEY_CLR);
+    savreg.overlay_graphics_key_clr	= INREG(OVERLAY_GRAPHICS_KEY_CLR);
+    savreg.overlay_key_cntl		= INREG(OVERLAY_KEY_CNTL);
+}
+
+static void restore_regs( void )
+{
+    mach64_fifo_wait(6);
+    OUTREG(OVERLAY_VIDEO_KEY_CLR,savreg.overlay_video_key_clr);
+    OUTREG(OVERLAY_VIDEO_KEY_MSK,savreg.overlay_video_key_msk);
+    OUTREG(OVERLAY_GRAPHICS_KEY_CLR,savreg.overlay_graphics_key_clr);
+    OUTREG(OVERLAY_GRAPHICS_KEY_CLR,savreg.overlay_graphics_key_clr);
+    OUTREG(OVERLAY_KEY_CNTL,savreg.overlay_key_cntl);
+}
+
 int VIDIX_NAME(vixInit)(const char *args)
 {
   int err;
@@ -525,6 +555,7 @@ int VIDIX_NAME(vixInit)(const char *args)
   err = mtrr_set_type(pci_info.base0,mach64_ram_size,MTRR_TYPE_WRCOMB);
   if(!err) printf("[mach64] Set write-combining type of video memory\n");
   
+  save_regs();
   /* check if planar formats are supported */
   supports_planar=0;
   mach64_wait_for_idle();
@@ -594,6 +625,7 @@ int VIDIX_NAME(vixInit)(const char *args)
 void VIDIX_NAME(vixDestroy)(void)
 {
   unsigned i;
+  restore_regs();
   unmap_phys_mem(mach64_mem_base,mach64_ram_size);
   unmap_phys_mem(mach64_mmio_base,0x4000);
 #ifdef MACH64_ENABLE_BM
