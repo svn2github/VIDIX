@@ -48,12 +48,14 @@ depend:
 	$(CC) -MM $(CFLAGS) $(SRCS) 1>.depend
 
 install:
-	mkdir -p $(prefix)/lib
-	install -m 755 -s -p $(LIBNAME) $(prefix)/lib/$(LIBNAME)
+	install -D -m 755 -s -p $(LIBNAME) $(prefix)/lib/$(LIBNAME)
 	rm -f $(prefix)/lib/libdha.so
 	ln -sf $(LIBNAME) $(prefix)/lib/libdha.so
-	ldconfig
-
+	$(LDCONFIG)
+uninstall:
+	rm -f $(prefix)/lib/$(LIBNAME)
+	rm -f $(prefix)/lib/libdha.so
+	rmdir -p --ignore-fail-on-non-empty $(prefix)/lib
 #
 # include dependency files if they exist
 #

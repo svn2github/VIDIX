@@ -110,6 +110,10 @@ depend:
 install:
 	mkdir -p $(BINDIR)
 	install -m 755 -s -p *.so $(BINDIR)
+uninstall:
+	rm -f $(BINDIR)/*.so
+	rmdir -p --ignore-fail-on-non-empty $(BINDIR)
+
 #
 # include dependency files if they exist
 #

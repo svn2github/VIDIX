@@ -1,6 +1,6 @@
 LIBNAME = libvidix.a
 SUBDIRS = drivers
-DO_MAKE = @ for i in $(SUBDIRS); do $(MAKE) -C $$i $@; done
+DO_MAKE = @ for i in $(SUBDIRS); do $(MAKE) -C $$i $@ || exit; done
 
 include ../config.mak
 
@@ -40,6 +40,8 @@ depend:
 install:
 	$(DO_MAKE)
 
+uninstall:
+	$(DO_MAKE)
 #
 # include dependency files if they exist
 #
