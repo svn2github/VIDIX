@@ -985,6 +985,7 @@ int vixGetCapability(vidix_capability_t *to)
 
 uint32_t supported_fourcc[] = 
 {
+  IMGFMT_YVU9,
   IMGFMT_YV12, IMGFMT_I420, IMGFMT_IYUV, 
   IMGFMT_UYVY, IMGFMT_YUY2, IMGFMT_YVYU,
   IMGFMT_RGB15, IMGFMT_BGR15,
@@ -1199,16 +1200,18 @@ static unsigned radeon_query_pitch(unsigned fourcc,const vidix_yuv_t *spitch)
 static int radeon_vid_init_video( vidix_playback_t *config )
 {
     uint32_t i,tmp,src_w,src_h,dest_w,dest_h,pitch,h_inc,step_by,left,leftUV,top;
-    int is_420,is_rgb32,is_rgb,best_pitch,mpitch;
+    int is_410,is_420,is_rgb32,is_rgb,best_pitch,mpitch;
     radeon_vid_stop_video();
     left = config->src.x << 16;
     top =  config->src.y << 16;
     src_h = config->src.h;
     src_w = config->src.w;
-    is_420 = is_rgb32 = is_rgb = 0;
+    is_410 = is_420 = is_rgb32 = is_rgb = 0;
     if(config->fourcc == IMGFMT_YV12 ||
        config->fourcc == IMGFMT_I420 ||
        config->fourcc == IMGFMT_IYUV) is_420 = 1;
+    if(config->fourcc == IMGFMT_YVU9 ||
+       config->fourcc == IMGFMT_IF09) is_410 = 1;
     if(config->fourcc == IMGFMT_RGB32 ||
        config->fourcc == IMGFMT_BGR32) is_rgb32 = 1;
     if(config->fourcc == IMGFMT_RGB32 ||
@@ -1223,6 +1226,7 @@ static int radeon_vid_init_video( vidix_playback_t *config )
     mpitch = best_pitch-1;
     switch(config->fourcc)
     {
+	/* 4:1:0*/
 	case IMGFMT_YVU9:
 	/* 4:2:0 */
 	case IMGFMT_IYUV:
@@ -1296,6 +1300,36 @@ static int radeon_vid_init_video( vidix_playback_t *config )
 	}
     }
     else
+    if(is_410)
+    {
+        uint32_t d1line,d2line,d3line;
+	d1line = top*pitch;
+	d2line = src_h*pitch+(d1line>>4);
+	d3line = d2line+((src_h*pitch)>>4);
+	d1line += (left >> 16) & ~15;
+	d2line += (left >> 17) & ~15;
+	d3line += (left >> 17) & ~15;
+	config->offset.y = d1line & VIF_BUF0_BASE_ADRS_MASK;
+	config->offset.v = d2line & VIF_BUF1_BASE_ADRS_MASK;
+	config->offset.u = d3line & VIF_BUF2_BASE_ADRS_MASK;
+	for(i=0;i<besr.vid_nbufs;i++)
+	{
+	    besr.vid_buf_base_adrs_y[i]=((radeon_overlay_off+config->offsets[i]+config->offset.y)&VIF_BUF0_BASE_ADRS_MASK);
+	    besr.vid_buf_base_adrs_v[i]=((radeon_overlay_off+config->offsets[i]+config->offset.v)&VIF_BUF1_BASE_ADRS_MASK)|VIF_BUF1_PITCH_SEL;
+	    besr.vid_buf_base_adrs_u[i]=((radeon_overlay_off+config->offsets[i]+config->offset.u)&VIF_BUF2_BASE_ADRS_MASK)|VIF_BUF2_PITCH_SEL;
+	}
+	config->offset.y = ((besr.vid_buf_base_adrs_y[0])&VIF_BUF0_BASE_ADRS_MASK) - radeon_overlay_off;
+	config->offset.v = ((besr.vid_buf_base_adrs_v[0])&VIF_BUF1_BASE_ADRS_MASK) - radeon_overlay_off;
+	config->offset.u = ((besr.vid_buf_base_adrs_u[0])&VIF_BUF2_BASE_ADRS_MASK) - radeon_overlay_off;
+	if(besr.fourcc == IMGFMT_IF09)
+	{
+	  uint32_t tmp;
+	  tmp = config->offset.u;
+	  config->offset.u = config->offset.v;
+	  config->offset.v = tmp;
+	}
+    }
+    else
     {
       config->offset.y = config->offset.u = config->offset.v = ((left & ~7) << 1)&VIF_BUF0_BASE_ADRS_MASK;
       for(i=0;i<besr.vid_nbufs;i++)
@@ -1356,6 +1390,10 @@ static void radeon_compute_framesize(vidix_playback_t *info)
   dbpp = radeon_vid_get_dbpp();
   switch(info->fourcc)
   {
+    case IMGFMT_YVU9:
+		awidth = (info->src.w + (pitch-1)) & ~(pitch-1);
+		info->frame_size = awidth*(info->src.h+info->src.h/4);
+		break;
     case IMGFMT_I420:
     case IMGFMT_YV12:
     case IMGFMT_IYUV:
