@@ -174,6 +174,17 @@ static __inline__ void OUTPLL(uint32_t addr,uint32_t val)
 		OUTPLL(addr, _tmp);					\
 	} while (0)
 
+static void mach64_engine_reset( void )
+{
+  /* Kill off bus mastering with extreme predjudice... */
+  OUTREG(BUS_CNTL, INREG(BUS_CNTL) | BUS_MASTER_DIS);
+  /* Reset engine -- This is accomplished by setting bit 8 of the GEN_TEST_CNTL
+   register high, then low (per the documentation, it's on high to low transition
+   that the GUI engine gets reset...) */
+  OUTREG( GEN_TEST_CNTL, INREG( GEN_TEST_CNTL ) | GEN_GUI_EN );
+  OUTREG( GEN_TEST_CNTL, INREG( GEN_TEST_CNTL ) & ~GEN_GUI_EN );
+}
+
 static void mach64_fifo_wait(unsigned n) 
 {
     while ((INREG(FIFO_STAT) & 0xffff) > ((uint32_t)(0x8000 >> n)));
@@ -181,8 +192,10 @@ static void mach64_fifo_wait(unsigned n)
 
 static void mach64_wait_for_idle( void ) 
 {
+    unsigned i;
     mach64_fifo_wait(16);
-    while ((INREG(GUI_STAT) & 1)!= 0);
+    for (i=0; i<2000000; i++) if((INREG(GUI_STAT) & GUI_ACTIVE) == 0) break;
+    if((INREG(GUI_STAT) & 1) != 0) mach64_engine_reset(); /* due card lookup */
 }
 
 static void mach64_wait_vsync( void )
