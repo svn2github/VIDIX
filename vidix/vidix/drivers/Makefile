@@ -23,6 +23,12 @@ PM3_OBJS=pm3_vid.o
 PM3_LIBS=-L../../libdha -ldha
 PM3_CFLAGS=$(OPTFLAGS) -fPIC -I. -I.. -Wall -W
 
+PM2_VID=pm2_vid.so
+PM2_SRCS=pm2_vid.c
+PM2_OBJS=pm2_vid.o
+PM2_LIBS=-L../../libdha -ldha
+PM2_CFLAGS=$(OPTFLAGS) -fPIC -I. -I.. -Wall -W
+
 MACH64_VID=mach64_vid.so
 MACH64_SRCS=mach64_vid.c
 MACH64_OBJS=mach64_vid.o
@@ -53,7 +59,7 @@ MGA_CRTC2_OBJS=mga_crtc2_vid.o
 MGA_CRTC2_LIBS=-L../../libdha -ldha -lm
 MGA_CRTC2_CFLAGS=$(OPTFLAGS) -fPIC -I. -I.. -Wall -W -DCRTC2
 
-all:    $(RADEON_VID) $(RAGE128_VID) $(MACH64_VID) $(NVIDIA_VID) $(GENFB_VID) $(MGA_VID) $(MGA_CRTC2_VID) $(PM3_VID)
+all:    $(RADEON_VID) $(RAGE128_VID) $(MACH64_VID) $(NVIDIA_VID) $(GENFB_VID) $(MGA_VID) $(MGA_CRTC2_VID) $(PM3_VID) $(PM2_VID)
 
 
 .SUFFIXES: .c .o
@@ -65,6 +71,12 @@ $(PM3_OBJS):    $(PM3_SRCS)
 
 $(PM3_VID):     $(PM3_OBJS)
 	$(LD) $(PM3_LIBS) -shared -soname $(PM3_VID) -o $(PM3_VID) $(PM3_OBJS)
+
+$(PM2_OBJS):    $(PM2_SRCS)
+	$(CC) -c $(PM2_CFLAGS) -o $@ $<
+
+$(PM2_VID):     $(PM2_OBJS)
+	$(LD) $(PM2_LIBS) -shared -soname $(PM2_VID) -o $(PM2_VID) $(PM2_OBJS)
 
 $(RADEON_OBJS):    $(RADEON_SRCS)
 	$(CC) -c $(RADEON_CFLAGS) -o $@ $<
