@@ -20,7 +20,7 @@ typedef struct dhahelper_port_s
 #define PORT_OP_WRITE	2
     int		operation;
     int		size;
-    int		addr;
+    int      	addr; // FIXME - switch to void* (64bit)
     int		value;
 } dhahelper_port_t;
 
