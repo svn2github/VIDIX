@@ -99,7 +99,16 @@
 
 #include "dhahelper.h"
 
-MODULE_AUTHOR("Alex Beregszaszi <alex@naxine.org> and Nick Kurshev <nickols_k@mail.ru>");
+#if LINUX_VERSION_CODE > KERNEL_VERSION(2,5,0)
+#define DEV_MINOR(d) minor(d)
+#define pte_offset(p,a) pte_offset_kernel(p,a)
+#define LockPage(p) SetPageLocked(p)
+#define UnlockPage(p) ClearPageLocked(p)
+#else
+#define DEV_MINOR(d) MINOR(d)
+#endif
+
+MODULE_AUTHOR("Alex Beregszaszi <alex@naxine.org>, Nick Kurshev <nickols_k@mail.ru>, Måns Rullgård <mru@users.sf.net>");
 MODULE_DESCRIPTION("Provides userspace access to hardware");
 #ifdef MODULE_LICENSE
 MODULE_LICENSE("GPL");
@@ -121,10 +130,12 @@ static int dhahelper_open(struct inode *inode, struct file *file)
     if (dhahelper_verbosity > 1)
 	printk(KERN_DEBUG "dhahelper: device opened\n");
 
-    if (MINOR(inode->i_rdev) != 0)
+    if (DEV_MINOR(inode->i_rdev) != 0)
 	return -ENXIO;
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,4,0)
     MOD_INC_USE_COUNT;
+#endif
 
     return 0;
 }
@@ -134,10 +145,12 @@ static int dhahelper_release(struct inode *inode, struct file *file)
     if (dhahelper_verbosity > 1)
 	printk(KERN_DEBUG "dhahelper: device released\n");
 
-    if (MINOR(inode->i_rdev) != 0)
+    if (DEV_MINOR(inode->i_rdev) != 0)
 	return -ENXIO;
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,4,0)
     MOD_DEC_USE_COUNT;
+#endif
 
     return 0;
 }
@@ -879,7 +892,7 @@ static int dhahelper_ioctl(struct inode *inode, struct file *file,
 	printk(KERN_DEBUG "dhahelper: ioctl(cmd=%x, arg=%lx)\n",
 	    cmd, arg);
 
-    if (MINOR(inode->i_rdev) != 0)
+    if (DEV_MINOR(inode->i_rdev) != 0)
 	return -ENXIO;
 
     switch(cmd)
@@ -1067,6 +1080,7 @@ static inline int noncached_address(unsigned long addr)
 static int dhahelper_mmap(struct file * file, struct vm_area_struct * vma)
 {
 	unsigned long offset = vma->vm_pgoff << PAGE_SHIFT;
+	int err;
 
 	/*
 	 * Accessing memory above the top the kernel knows about or
@@ -1085,8 +1099,14 @@ static int dhahelper_mmap(struct file * file, struct vm_area_struct * vma)
 	if (offset >= __pa(high_memory) || (file->f_flags & O_SYNC))
 		vma->vm_flags |= VM_IO;
 
-	if (remap_page_range(vma->vm_start, offset, vma->vm_end-vma->vm_start,
-			     vma->vm_page_prot))
+#if LINUX_VERSION_CODE > KERNEL_VERSION(2,5,0)
+	err = remap_page_range(vma, vma->vm_start, offset,
+			       vma->vm_end-vma->vm_start, vma->vm_page_prot);
+#else
+	err = remap_page_range(vma->vm_start, offset,
+			       vma->vm_end-vma->vm_start, vma->vm_page_prot);
+#endif
+	if(err)
 		return -EAGAIN;
 	return 0;
 }
@@ -1175,7 +1195,9 @@ static void __exit exit_dhahelper(void)
 #endif
 }
 
+#ifdef EXPORT_NO_SYMBOLS
 EXPORT_NO_SYMBOLS;
+#endif
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,4,0)
 module_init(init_dhahelper);
