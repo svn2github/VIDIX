@@ -63,6 +63,15 @@
 #define	CONFIG_CNTL				0x00E0
 /* CONFIG_CNTL bit constants */
 #	define CFG_VGA_RAM_EN			0x00000100
+#ifdef RAGE128
+#define GEN_RESET_CNTL				0x00f0
+#	define SOFT_RESET_GUI			0x00000001
+#	define SOFT_RESET_VCLK			0x00000100
+#	define SOFT_RESET_PCLK			0x00000200
+#	define SOFT_RESET_ECP			0x00000400
+#	define SOFT_RESET_DISPENG_XCLK		0x00000800
+#	define SOFT_RESET_MEMCTLR_XCLK		0x00001000
+#endif
 #define	CONFIG_MEMSIZE				0x00F8
 #define	CONFIG_APER_0_BASE			0x0100
 #define	CONFIG_APER_1_BASE			0x0104
@@ -200,10 +209,21 @@
 #define	MEM_INIT_LATENCY_TIMER			0x0154
 #define	MEM_SDRAM_MODE_REG			0x0158
 #define	AGP_BASE				0x0170
+#ifdef RAGE128
+#define PCI_GART_PAGE				0x017c
+#define PC_NGUI_MODE				0x0180
+#define PC_NGUI_CTLSTAT				0x0184
+#	define PC_FLUSH_GUI			(3 << 0)
+#	define PC_RI_GUI			(1 << 2)
+#	define PC_FLUSH_ALL			0x00ff
+#	define PC_BUSY				(1 << 31)
+#define PC_MISC_CNTL				0x0188
+#else
 #define	MEM_IO_CNTL_A1				0x017C
 #define	MEM_IO_CNTL_B0				0x0180
 #define	MEM_IO_CNTL_B1				0x0184
 #define	MC_DEBUG				0x0188
+#endif
 #define	MC_STATUS				0x0150
 #define	MEM_IO_OE_CNTL				0x018C
 #define	MC_FB_LOCATION				0x0148
@@ -1005,6 +1025,11 @@
 #define	DST_Y_X					0x1438
 #define	DST_WIDTH_HEIGHT			0x1598
 #define	DST_HEIGHT_WIDTH			0x143c
+#ifdef RAGE128
+#define GUI_STAT				0x1740
+#	define GUI_FIFOCNT_MASK			0x0fff
+#	define GUI_ACTIVE			(1 << 31)
+#endif
 #define	SRC_CLUT_ADDRESS			0x1780
 #define	SRC_CLUT_DATA				0x1784
 #define	SRC_CLUT_DATA_RD			0x1788
@@ -1227,6 +1252,12 @@
 #define SCLK_MORE_CNTL				0x0035 /* PLL */
 #	define SCLK_MORE_FORCEON		0x0700
 #define	MPLL_CNTL				0x000e
+#ifdef RAGE128
+#define MCLK_CNTL				0x000f /* PLL */
+#	define FORCE_GCP			(1 << 16)
+#	define FORCE_PIPE3D_CP			(1 << 17)
+#	define FORCE_RCP			(1 << 18)
+#else
 #define	MCLK_CNTL				0x0012
 /* MCLK_CNTL bit constants */
 #	define FORCEON_MCLKA			(1 << 16)
@@ -1235,6 +1266,7 @@
 #	define FORCEON_YCLKB			(1 << 19)
 #	define FORCEON_MC			(1 << 20)
 #	define FORCEON_AIC			(1 << 21)
+#endif
 #define	PLL_TEST_CNTL				0x0013
 #define	P2PLL_CNTL				0x002a /* P2PLL	*/
 #	define P2PLL_RESET			(1 <<  0)
@@ -1266,16 +1298,6 @@
 #define	PPLL_DIV_SEL_MASK		0x00000300
 #define	PPLL_FB3_DIV_MASK		0x000007ff
 #define	PPLL_POST3_DIV_MASK		0x00070000
-
-#define	GUI_ACTIVE			0x80000000
-
-/* GEN_RESET_CNTL bit constants	*/
-#define	SOFT_RESET_GUI				0x00000001
-#define	SOFT_RESET_VCLK				0x00000100
-#define	SOFT_RESET_PCLK				0x00000200
-#define	SOFT_RESET_ECP				0x00000400
-#define	SOFT_RESET_DISPENG_XCLK			0x00000800
-						
 /* RAGE	THEATER	REGISTERS */
 
 #define DMA_VIPH0_COMMAND			0x0A00

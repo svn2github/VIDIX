@@ -280,6 +280,49 @@ static void radeon_wait_vsync(void)
     }
 }
 
+#ifdef RAGE128
+static void _radeon_engine_idle(void);
+static void _radeon_fifo_wait(unsigned);
+#define radeon_engine_idle()		_radeon_engine_idle()
+#define radeon_fifo_wait(entries)	_radeon_fifo_wait(entries)
+/* Flush all dirty data in the Pixel Cache to memory. */
+static __inline__ void radeon_engine_flush ( void )
+{
+    unsigned i;
+
+    OUTREGP(PC_NGUI_CTLSTAT, PC_FLUSH_ALL, ~PC_FLUSH_ALL);
+    for (i = 0; i < 2000000; i++) {
+	if (!(INREG(PC_NGUI_CTLSTAT) & PC_BUSY)) break;
+    }
+}
+
+/* Reset graphics card to known state. */
+static void radeon_engine_reset( void )
+{
+    uint32_t clock_cntl_index;
+    uint32_t mclk_cntl;
+    uint32_t gen_reset_cntl;
+
+    radeon_engine_flush();
+
+    clock_cntl_index = INREG(CLOCK_CNTL_INDEX);
+    mclk_cntl        = INPLL(MCLK_CNTL);
+
+    OUTPLL(MCLK_CNTL, mclk_cntl | FORCE_GCP | FORCE_PIPE3D_CP);
+
+    gen_reset_cntl   = INREG(GEN_RESET_CNTL);
+
+    OUTREG(GEN_RESET_CNTL, gen_reset_cntl | SOFT_RESET_GUI);
+    INREG(GEN_RESET_CNTL);
+    OUTREG(GEN_RESET_CNTL,
+	gen_reset_cntl & (uint32_t)(~SOFT_RESET_GUI));
+    INREG(GEN_RESET_CNTL);
+
+    OUTPLL(MCLK_CNTL,        mclk_cntl);
+    OUTREG(CLOCK_CNTL_INDEX, clock_cntl_index);
+    OUTREG(GEN_RESET_CNTL,   gen_reset_cntl);
+}
+#else
 
 static __inline__ void radeon_engine_flush ( void )
 {
@@ -345,9 +388,10 @@ static void radeon_engine_reset( void )
 
 	return;
 }
-
+#endif
 static void radeon_engine_restore( void )
 {
+#ifndef RAGE128
     int pitch64;
     uint32_t xres,yres,bpp;
     radeon_fifo_wait(1);
@@ -389,11 +433,45 @@ static void radeon_engine_restore( void )
     OUTREG(DP_WRITE_MASK,     0xffffffff);
 
     radeon_engine_idle();
+#endif
 }
-
+#ifdef RAGE128
 static void _radeon_fifo_wait (unsigned entries)
 {
-    int i;
+    unsigned i;
+
+    for(;;)
+    {
+	for (i=0; i<2000000; i++)
+		if ((INREG(GUI_STAT) & GUI_FIFOCNT_MASK) >= entries)
+			return;
+	radeon_engine_reset();
+	radeon_engine_restore();
+    }
+}
+
+static void _radeon_engine_idle ( void )
+{
+    unsigned i;
+
+    /* ensure FIFO is empty before waiting for idle */
+    radeon_fifo_wait (64);
+    for(;;)
+    {
+	for (i=0; i<2000000; i++) {
+		if ((INREG(GUI_STAT) & GUI_FIFOCNT_MASK) == 0) {
+			radeon_engine_flush ();
+			return;
+		}
+	}
+	radeon_engine_reset();
+	radeon_engine_restore();
+    }
+}
+#else
+static void _radeon_fifo_wait (unsigned entries)
+{
+    unsigned i;
 
     for(;;)
     {
@@ -404,7 +482,6 @@ static void _radeon_fifo_wait (unsigned entries)
 	radeon_engine_restore();
     }
 }
-
 static void _radeon_engine_idle ( void )
 {
     int i;
@@ -414,7 +491,7 @@ static void _radeon_engine_idle ( void )
     for(;;)
     {
 	for (i=0; i<2000000; i++) {
-		if (((INREG(RBBM_STATUS) & GUI_ACTIVE)) == 0) {
+		if (((INREG(RBBM_STATUS) & RBBM_ACTIVE)) == 0) {
 			radeon_engine_flush ();
 			return;
 		}
@@ -423,8 +500,7 @@ static void _radeon_engine_idle ( void )
 	radeon_engine_restore();
     }
 }
-
-
+#endif
 
 #ifndef RAGE128
 /* Reference color space transform data */
