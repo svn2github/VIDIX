@@ -66,7 +66,7 @@ pciinfo_t pci_info;
 static int probed = 0;
 static int __verbose = 0;
 
-#define VERBOSE_LEVEL 0
+#define VERBOSE_LEVEL 2
 
 typedef struct bes_registers_s
 {
@@ -784,17 +784,22 @@ static void mach64_vid_display_video( void )
     
     mach64_fifo_wait(4);
     OUTREG(OVERLAY_SCALE_CNTL, 0xC4000003);
-// OVERLAY_SCALE_CNTL bits & what they seem to affect
-// bit 0 no effect
-// bit 1 yuv2rgb coeff related
-// bit 2 horizontal interpolation if 0
-// bit 3 vertical interpolation if 0
-// bit 4 chroma encoding (0-> 128=neutral / 1-> 0->neutral)
-// bit 5-6 gamma correction
-// bit 7 nothing visible if set
-// bit 8-27 no effect
-// bit 28-31 nothing interresting just crashed my system when i played with them  :(
 
+/* OVERLAY_SCALE_CNTL bits:
+bit 0 scale pix expand (Pixel expansion algorithm, 0 zero extend, 1 dynamic range correct)
+bit 1 colour temparature (0 red temp: 6500K, 1 red temp: 9800K) 
+bit 2 horizontal interpolation if 0
+bit 3 vertical interpolation if 0
+bit 4 signness of UV (0 UV unsigned, 1 UV signed)
+bit 5-6 gamma correction 
+    (0- Brightness enable, 1- Gamma 2.2, 2- Gamma 1.8, 3- Gamma 1.4)
+bit 26 reset bandwidth status (1 reset)
+    read: Status (0 Normal, 1 Bandwidth exceeded)
+bit 27 YUV limiting (0 limit to CCIR 601 levels, 1 disable)
+bit 29 Dynamic Scaler Clock (0 dynamically, 1 run continuously)
+bit 30 Overlay enable (0 disable, 1 enable)
+bit 31 Scaler enable (0 reset internal states, 1 enable)
+*/
     mach64_wait_for_idle();
     vf = INREG(VIDEO_FORMAT);
 
