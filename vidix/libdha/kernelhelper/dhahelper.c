@@ -343,7 +343,7 @@ static int pag_lock(unsigned long addr)
 	}
 	else
 	{
-	    page = *(unsigned char *)addr; /* try access it */
+	    copy_from_user(&page,(char *)addr,1); /* try access it */
 	    kva = uvirt_to_kva(pgd_offset(current->mm, addr), addr);
 	    if(kva) goto lock_it;
 	    else return EPERM;
