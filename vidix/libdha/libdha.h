@@ -89,6 +89,9 @@ extern int	bm_virt_to_phys( void * virt_addr, unsigned long length,
 extern int	bm_virt_to_bus( void * virt_addr, unsigned long length,
 			    unsigned long * barray );
 
+extern void *	bm_alloc_pa( unsigned long length );
+extern void	bm_free_pa( void * virt_addr, unsigned long length );
+
 #ifdef __cplusplus
 }
 #endif

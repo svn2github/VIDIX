@@ -55,3 +55,26 @@ int bm_virt_to_bus( void * virt_addr, unsigned long length, unsigned long * barr
     if(libdha_fd > 0) return ioctl(libdha_fd,DHAHELPER_VIRT_TO_BUS,&vmi);
     return ENXIO;
 }
+
+void *	bm_alloc_pa( unsigned long length )
+{
+    dhahelper_mem_t vmi;
+    vmi.length = length;
+    if(libdha_fd > 0) 
+    {
+	if(ioctl(libdha_fd,DHAHELPER_ALLOC_PA,&vmi) == 0)
+		return vmi.addr;
+    }
+    return 0;
+}
+
+void	bm_free_pa( void * virt_addr, unsigned long length )
+{
+    dhahelper_mem_t vmi;
+    vmi.addr = virt_addr;
+    vmi.length = length;
+    if(libdha_fd > 0) 
+    {
+	ioctl(libdha_fd,DHAHELPER_FREE_PA,&vmi);
+    }
+}
