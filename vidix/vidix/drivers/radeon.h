@@ -817,6 +817,7 @@
 #define CP_CSQ_CNTL				0x0740
 #define SCRATCH_UMSK				0x0770
 #define SCRATCH_ADDR				0x0774
+#ifndef RAGE128
 #define DMA_GUI_TABLE_ADDR			0x0780
 #	define DMA_GUI_COMMAND__BYTE_COUNT_MASK	0x001fffff
 #	define DMA_GUI_COMMAND__INTDIS		0x40000000
@@ -832,6 +833,7 @@
 #define DMA_VID_COMMAND				0x07AC
 #define DMA_VID_STATUS				0x07B0
 #define DMA_VID_ACT_DSCRPTR			0x07B4
+#endif
 #define CP_ME_CNTL				0x07D0
 #define CP_ME_RAM_ADDR				0x07D4
 #define CP_ME_RAM_RADDR				0x07D8
@@ -1211,7 +1213,7 @@
 #define	RB2D_DSTCACHE_CTLSTAT			0x342C
 #define	RB2D_DSTCACHE_MODE			0x3428
 
-#define	BASE_CODE				0x0f0b
+#define	BASE_CODE				0x0f0b/*0x0f08*/
 #define	RADEON_BIOS_0_SCRATCH			0x0010
 #define	RADEON_BIOS_1_SCRATCH			0x0014
 #define	RADEON_BIOS_2_SCRATCH			0x0018
@@ -1303,6 +1305,7 @@
 #define	PPLL_POST3_DIV_MASK		0x00070000
 
 /* BUS MASTERING */
+#ifdef RAGE128
 #define BM_FRAME_BUF_OFFSET			0xA00
 #define BM_SYSTEM_MEM_ADDR			0xA04
 #define BM_COMMAND				0xA08
@@ -1338,7 +1341,8 @@
 #define BM_VIDCAP_BUF2				0xA68
 #define BM_VIDCAP_ACTIVE			0xA6c
 #define BM_GUI					0xA80
-
+#define BM_ABORT				0xA88
+#endif
 /* RAGE	THEATER	REGISTERS */
 
 #define DMA_VIPH0_COMMAND			0x0A00
