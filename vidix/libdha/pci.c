@@ -731,3 +731,30 @@ int pci_config_read(unsigned char bus, unsigned char dev, unsigned char func,
     *val = ret;
     return(0);
 }
+
+int pci_config_write(unsigned char bus, unsigned char dev, unsigned char func,
+		    unsigned char cmd, int len, unsigned long val)
+{
+    int ret;
+    
+    ret = enable_app_io();
+    if (ret != 0)
+	return ret;
+    switch(len)
+    {
+	case 4:
+	    pci_config_write_long(bus, dev, func, cmd, val);
+	    break;
+	case 2:
+	    pci_config_write_word(bus, dev, func, cmd, val);
+	    break;
+	case 1:
+	    pci_config_write_byte(bus, dev, func, cmd, val);
+	    break;
+	default:
+	    printf("libdha_pci: wrong length to read: %u\n",len);
+    }
+    disable_app_io();
+
+    return 0;
+}
