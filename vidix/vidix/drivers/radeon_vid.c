@@ -62,10 +62,6 @@ typedef struct
 static int __verbose = 0;
 #ifndef RAGE128
 static int is_shift_required=0;
-#define CKEY_UNK	0
-#define CKEY_RAGE	1
-#define CKEY_RADEON	2
-static int ckey_model=0;
 #endif
 typedef struct bes_registers_s
 {
@@ -282,7 +278,7 @@ static inline uint32_t INREG (uint32_t addr) {
     uint32_t tmp = GETREG(uint32_t,(uint32_t)(radeon_mmio_base),addr);
     return le2me_32(tmp);
 }
-#define OUTREG(addr,val)	SETREG(uint32_t,(uint32_t)(radeon_mmio_base),addr,me2le_32(val))
+#define OUTREG(addr,val)	SETREG(uint32_t,(uint32_t)(radeon_mmio_base),addr,le2me_32(val))
 #define OUTREGP(addr,val,mask)						\
 	do {								\
 		unsigned int _tmp = INREG(addr);			\
@@ -872,7 +868,7 @@ static unsigned short ati_card_ids[] =
  DEVICE_ATI_RAGE_128_SE_4X,
  DEVICE_ATI_RAGE_128_SF_4X,
  DEVICE_ATI_RAGE_128_SG_4X,
- DEVICE_ATI_RAGE_128_4X,
+ DEVICE_ATI_RAGE_128_SH,
  DEVICE_ATI_RAGE_128_SK_4X,
  DEVICE_ATI_RAGE_128_SL_4X,
  DEVICE_ATI_RAGE_128_SM_4X,
@@ -985,40 +981,69 @@ int VIDIX_NAME(vixProbe)( int verbose,int force )
 	printf(RADEON_MSG" Found chip: %s\n",dname);
 #ifndef RAGE128 
 	if(idx != -1)
-	     if(ati_card_ids[idx] == DEVICE_ATI_RADEON_R100_QD ||
-		ati_card_ids[idx] == DEVICE_ATI_RADEON_R100_QE ||
-		ati_card_ids[idx] == DEVICE_ATI_RADEON_R100_QF ||
-		ati_card_ids[idx] == DEVICE_ATI_RADEON_R100_QG ||
-		ati_card_ids[idx] == DEVICE_ATI_RADEON_VE_QY ||
-		ati_card_ids[idx] == DEVICE_ATI_RADEON_VE_QZ ||
-		ati_card_ids[idx] == DEVICE_ATI_RADEON_MOBILITY_M7||
-		ati_card_ids[idx] == DEVICE_ATI_RADEON_MOBILITY_M72||
-		ati_card_ids[idx] == DEVICE_ATI_RADEON_MOBILITY_M6||
-		ati_card_ids[idx] == DEVICE_ATI_RADEON_MOBILITY_M62) RadeonFamily = 100;
-	     if(ati_card_ids[idx] == DEVICE_ATI_RADEON_R200_BB ||
-		ati_card_ids[idx] == DEVICE_ATI_RADEON_R200_QH ||
-		ati_card_ids[idx] == DEVICE_ATI_RADEON_R200_QI ||
-		ati_card_ids[idx] == DEVICE_ATI_RADEON_R200_QJ ||
-		ati_card_ids[idx] == DEVICE_ATI_RADEON_R200_QK ||
-		ati_card_ids[idx] == DEVICE_ATI_RADEON_R200_QL ||
-		ati_card_ids[idx] == DEVICE_ATI_RADEON_R200_QH2 ||
-		ati_card_ids[idx] == DEVICE_ATI_RADEON_R200_QI2 ||
-		ati_card_ids[idx] == DEVICE_ATI_RADEON_R200_QJ2 ||
-		ati_card_ids[idx] == DEVICE_ATI_RADEON_R200_QK2 ||
-		ati_card_ids[idx] == DEVICE_ATI_RADEON_RV200_QW ||
-		ati_card_ids[idx] == DEVICE_ATI_RADEON_RV200_QX) RadeonFamily = 200;
-	     if(ati_card_ids[idx] == DEVICE_ATI_RADEON_R250_ID ||
-		ati_card_ids[idx] == DEVICE_ATI_RADEON_R250_IE ||
-		ati_card_ids[idx] == DEVICE_ATI_RADEON_R250_IF ||
-		ati_card_ids[idx] == DEVICE_ATI_RADEON_R250_IG ||
-		ati_card_ids[idx] == DEVICE_ATI_RADEON_R250_LD ||
-		ati_card_ids[idx] == DEVICE_ATI_RADEON_R250_LE ||
-		ati_card_ids[idx] == DEVICE_ATI_RADEON_R250_LF ||
-		ati_card_ids[idx] == DEVICE_ATI_RADEON_R250_LG) RadeonFamily = 250;
-	     if(ati_card_ids[idx] == DEVICE_ATI_RADEON_R300_ND ||
-		ati_card_ids[idx] == DEVICE_ATI_RADEON_R300_NE ||
-		ati_card_ids[idx] == DEVICE_ATI_RADEON_R300_NF ||
-		ati_card_ids[idx] == DEVICE_ATI_RADEON_R300_NG) RadeonFamily = 300;
+	{
+          switch(ati_card_ids[idx]) {
+            /* Original radeon */
+            case DEVICE_ATI_RADEON_R100_QD:
+            case DEVICE_ATI_RADEON_R100_QE:
+            case DEVICE_ATI_RADEON_R100_QF:
+            case DEVICE_ATI_RADEON_R100_QG:
+              RadeonFamily = 100;
+              break;
+              
+            /* Radeon VE / Radeon Mobility */
+            case DEVICE_ATI_RADEON_VE_QY:
+            case DEVICE_ATI_RADEON_VE_QZ:
+            case DEVICE_ATI_RADEON_MOBILITY_M6:
+            case DEVICE_ATI_RADEON_MOBILITY_M62:
+              RadeonFamily = 120;
+              break;
+              
+            /* Radeon 7500 / Radeon Mobility 7500 */
+            case DEVICE_ATI_RADEON_RV200_QW:
+            case DEVICE_ATI_RADEON_RV200_QX: 
+            case DEVICE_ATI_RADEON_MOBILITY_M7:
+            case DEVICE_ATI_RADEON_MOBILITY_M72:
+              RadeonFamily = 150;
+              break;
+              
+            /* Radeon 8500 */
+            case DEVICE_ATI_RADEON_R200_BB:
+            case DEVICE_ATI_RADEON_R200_QH:
+            case DEVICE_ATI_RADEON_R200_QI:
+            case DEVICE_ATI_RADEON_R200_QJ:
+            case DEVICE_ATI_RADEON_R200_QK:
+            case DEVICE_ATI_RADEON_R200_QL:
+            case DEVICE_ATI_RADEON_R200_QH2:
+            case DEVICE_ATI_RADEON_R200_QI2:
+            case DEVICE_ATI_RADEON_R200_QJ2:
+            case DEVICE_ATI_RADEON_R200_QK2:
+              RadeonFamily = 200;
+              break;
+              
+            /* Radeon 9000 */
+            case DEVICE_ATI_RADEON_R250_ID:
+            case DEVICE_ATI_RADEON_R250_IE:
+            case DEVICE_ATI_RADEON_R250_IF:
+            case DEVICE_ATI_RADEON_R250_IG:
+            case DEVICE_ATI_RADEON_R250_LD:
+            case DEVICE_ATI_RADEON_R250_LE:
+            case DEVICE_ATI_RADEON_R250_LF:
+            case DEVICE_ATI_RADEON_R250_LG:
+              RadeonFamily = 250;
+              break;
+              
+            /* Radeon 9700 */
+            case DEVICE_ATI_RADEON_R300_ND:
+            case DEVICE_ATI_RADEON_R300_NE:
+            case DEVICE_ATI_RADEON_R300_NF:
+            case DEVICE_ATI_RADEON_R300_NG:
+              RadeonFamily = 300;
+              break;
+            default:
+              break;
+          }
+	}
 #endif
 	if(force > PROBE_NORMAL)
 	{
@@ -1172,91 +1197,18 @@ int VIDIX_NAME(vixInit)( const char *args )
 #ifndef RAGE128
   {
     memset(&rinfo,0,sizeof(rinfo_t));
-    switch(def_cap.device_id)
+    if(RadeonFamily > 100) rinfo.hasCRTC2 = 1;
+    
+  switch(RadeonFamily)
     {
-	case DEVICE_ATI_RADEON_VE_QY:
-	case DEVICE_ATI_RADEON_VE_QZ:
-	case DEVICE_ATI_RADEON_MOBILITY_M7:
-	case DEVICE_ATI_RADEON_MOBILITY_M72:
-	case DEVICE_ATI_RADEON_MOBILITY_M6:
-	case DEVICE_ATI_RADEON_MOBILITY_M62:
-	case DEVICE_ATI_RADEON_R200_BB:
-	case DEVICE_ATI_RADEON_R200_QH:
-	case DEVICE_ATI_RADEON_R200_QI:
-	case DEVICE_ATI_RADEON_R200_QJ:
-	case DEVICE_ATI_RADEON_R200_QK:
-	case DEVICE_ATI_RADEON_R200_QL:
-	case DEVICE_ATI_RADEON_R200_QH2:
-	case DEVICE_ATI_RADEON_R200_QI2:
-	case DEVICE_ATI_RADEON_R200_QJ2:
-	case DEVICE_ATI_RADEON_R200_QK2:
-	case DEVICE_ATI_RADEON_RV200_QW:
-	case DEVICE_ATI_RADEON_RV200_QX:
-	case DEVICE_ATI_RADEON_R250_ID:
-	case DEVICE_ATI_RADEON_R250_IE:
-	case DEVICE_ATI_RADEON_R250_IF:
-	case DEVICE_ATI_RADEON_R250_IG:
-	case DEVICE_ATI_RADEON_R250_LD:
-	case DEVICE_ATI_RADEON_R250_LE:
-	case DEVICE_ATI_RADEON_R250_LF:
-	case DEVICE_ATI_RADEON_R250_LG:
-	case DEVICE_ATI_RADEON_R300_ND:
-	case DEVICE_ATI_RADEON_R300_NE:
-	case DEVICE_ATI_RADEON_R300_NF:
-	case DEVICE_ATI_RADEON_R300_NG:
-			rinfo.hasCRTC2 = 1;
-			break;
-	default: break;
-    }
-    switch(def_cap.device_id)
-    {
-	case DEVICE_ATI_RADEON_R100_QD:
-	case DEVICE_ATI_RADEON_R100_QE:
-	case DEVICE_ATI_RADEON_R100_QF:
-	case DEVICE_ATI_RADEON_R100_QG:
-	case DEVICE_ATI_RADEON_VE_QY:
-	case DEVICE_ATI_RADEON_VE_QZ:
-	case DEVICE_ATI_RADEON_MOBILITY_M7:
-	case DEVICE_ATI_RADEON_MOBILITY_M72:
-	case DEVICE_ATI_RADEON_MOBILITY_M6:
-	case DEVICE_ATI_RADEON_MOBILITY_M62:
-	case DEVICE_ATI_RADEON_RV200_QW:
-	case DEVICE_ATI_RADEON_RV200_QX:
-		is_shift_required=1;
-		break;
-	default: break;
-    }
-    switch(def_cap.device_id)
-    {
-	case DEVICE_ATI_RADEON_R100_QD:
-	case DEVICE_ATI_RADEON_R100_QE:
-	case DEVICE_ATI_RADEON_R100_QF:
-	case DEVICE_ATI_RADEON_R100_QG:
-	case DEVICE_ATI_RADEON_VE_QY:
-	case DEVICE_ATI_RADEON_VE_QZ:
-	case DEVICE_ATI_RADEON_R200_BB:
-	case DEVICE_ATI_RADEON_R200_QH:
-	case DEVICE_ATI_RADEON_R200_QI:
-	case DEVICE_ATI_RADEON_R200_QJ:
-	case DEVICE_ATI_RADEON_R200_QK:
-	case DEVICE_ATI_RADEON_R200_QL:
-	case DEVICE_ATI_RADEON_R200_QH2:
-	case DEVICE_ATI_RADEON_R200_QI2:
-	case DEVICE_ATI_RADEON_R200_QJ2:
-	case DEVICE_ATI_RADEON_R200_QK2:
-		ckey_model = CKEY_RADEON;
-		break;
-	case DEVICE_ATI_RADEON_MOBILITY_M7:
-	case DEVICE_ATI_RADEON_MOBILITY_M72:
-	case DEVICE_ATI_RADEON_MOBILITY_M6:
-	case DEVICE_ATI_RADEON_MOBILITY_M62:
-	case DEVICE_ATI_RADEON_RV200_QW:
-	case DEVICE_ATI_RADEON_RV200_QX:
-		ckey_model = CKEY_RAGE;
-		break;
-	default:
-		ckey_model = CKEY_UNK;
-		break;
+    case 100:
+    case 120:
+    case 150:
+    case 250:
+      is_shift_required=1;
+      break;
+    default:
+      break;
     }
     radeon_get_moninfo(&rinfo);
 	if(rinfo.hasCRTC2) {
@@ -1377,7 +1329,11 @@ static void radeon_vid_stop_video( void )
     OUTREG(OV0_EXCLUSIVE_HORZ, 0);
     OUTREG(OV0_AUTO_FLIP_CNTL, 0);   /* maybe */
     OUTREG(OV0_FILTER_CNTL, FILTER_HARDCODED_COEF);
+#ifdef RAGE128    
     OUTREG(OV0_KEY_CNTL, GRAPHIC_KEY_FN_NE);
+#else
+    OUTREG(OV0_KEY_CNTL, GRAPHIC_KEY_FN_EQ);
+#endif
     OUTREG(OV0_TEST, 0);
 }
 
@@ -3232,12 +3188,29 @@ static void set_gr_key( void )
 	switch(dbpp)
 	{
 	case 15:
+#ifndef RAGE128
+		if(RadeonFamily > 100)
+			besr.graphics_key_clr=
+				  ((radeon_grkey.ckey.blue &0xF8))
+				| ((radeon_grkey.ckey.green&0xF8)<<8)
+				| ((radeon_grkey.ckey.red  &0xF8)<<16);
+		else
+#endif
 		besr.graphics_key_clr=
 			  ((radeon_grkey.ckey.blue &0xF8)>>3)
 			| ((radeon_grkey.ckey.green&0xF8)<<2)
 			| ((radeon_grkey.ckey.red  &0xF8)<<7);
 		break;
 	case 16:
+#ifndef RAGE128
+		/* This test may be too general/specific */
+		if(RadeonFamily > 100)
+			besr.graphics_key_clr=
+				  ((radeon_grkey.ckey.blue &0xF8))
+				| ((radeon_grkey.ckey.green&0xFC)<<8)
+				| ((radeon_grkey.ckey.red  &0xF8)<<16);
+		else
+#endif
 		besr.graphics_key_clr=
 			  ((radeon_grkey.ckey.blue &0xF8)>>3)
 			| ((radeon_grkey.ckey.green&0xFC)<<3)
@@ -3264,27 +3237,12 @@ static void set_gr_key( void )
 	besr.graphics_key_msk=(1<<dbpp)-1;
 	besr.ckey_cntl = VIDEO_KEY_FN_TRUE|GRAPHIC_KEY_FN_NE|CMP_MIX_AND;
 #else
-	if(ckey_model > CKEY_UNK)
-	{
-	    if(ckey_model == CKEY_RAGE)
-	    {
-		besr.graphics_key_msk=besr.graphics_key_clr;
-		besr.ckey_cntl = VIDEO_KEY_FN_TRUE|GRAPHIC_KEY_FN_NE|CMP_MIX_AND;
-	    }
-	    else
-	    {
-		besr.graphics_key_msk=besr.graphics_key_clr;
-		besr.ckey_cntl = VIDEO_KEY_FN_TRUE|GRAPHIC_KEY_FN_EQ|CMP_MIX_AND;
-	    }
-	}
-	else goto def_key;
+	besr.graphics_key_msk=besr.graphics_key_clr;
+	besr.ckey_cntl = VIDEO_KEY_FN_TRUE|CMP_MIX_AND|GRAPHIC_KEY_FN_EQ;
 #endif
     }
     else
     {
-#ifndef RAGE128
-	def_key:
-#endif
 	besr.ckey_on=0;
 	besr.graphics_key_msk=0;
 	besr.graphics_key_clr=0;
