@@ -3269,10 +3269,12 @@ static void set_gr_key( void )
 		besr.ckey_cntl = VIDEO_KEY_FN_TRUE|GRAPHIC_KEY_FN_EQ|CMP_MIX_AND;
 	    }
 	}
+	else goto def_key;
 #endif
     }
     else
     {
+	def_key:
 	besr.ckey_on=0;
 	besr.graphics_key_msk=0;
 	besr.graphics_key_clr=0;
