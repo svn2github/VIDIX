@@ -251,11 +251,11 @@ typedef struct vidix_dma_s
 #define BM_DMA_FIXED_BUFFS	2	/* app -> driver: app uses buffers which are fixed in memory  */
 	unsigned	flags;		/* app -> driver */
 	unsigned 	idx;		/* app -> driver: idx of src buffer */
-	void *		internal[64];	/* for internal use by driver */
+	void *		internal[VID_PLAY_MAXFRAMES];	/* for internal use by driver */
 }vidix_dma_t;
 
 			/* Returns 0 if ok else errno */
-extern int 	vixPlaybackCopyFrame( const vidix_dma_t * );
+extern int 	vixPlaybackCopyFrame( vidix_dma_t * );
 
 			/* Returns 0 if DMA is available else errno (EBUSY) */
 extern int	vixQueryDMAStatus( void );
