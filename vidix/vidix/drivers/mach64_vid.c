@@ -40,7 +40,7 @@
 #ifdef MACH64_ENABLE_BM
 
 #define cpu_to_le32(a) (a)
-#define VIRT_TO_CARD(a,b,c) bm_virt_to_phys(a,b,c)
+#define VIRT_TO_CARD(a,b,c) bm_virt_to_bus(a,b,c)
 #pragma pack(1)
 typedef struct
 {
