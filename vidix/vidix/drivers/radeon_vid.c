@@ -1904,7 +1904,7 @@ int vixSetGrKeys(const vidix_grkey_t *grkey)
 }
 
 #ifdef RADEON_ENABLE_BM
-static int radeon_setup_frame( const vidix_dma_t * dmai )
+static int radeon_setup_frame( vidix_dma_t * dmai )
 {
     bm_list_descriptor * list = (bm_list_descriptor *)radeon_dma_desc_base;
     unsigned long dest_ptr;
@@ -1960,7 +1960,7 @@ static int radeon_transfer_frame( void  )
 }
 
 
-int vixPlaybackCopyFrame( const vidix_dma_t * dmai )
+int vixPlaybackCopyFrame( vidix_dma_t * dmai )
 {
     int retval;
     if(mlock(dmai->src,dmai->size) != 0) return errno;
