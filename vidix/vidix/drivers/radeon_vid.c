@@ -941,6 +941,84 @@ int vixProbe( int verbose,int force )
   return err;
 }
 
+#ifndef RAGE128
+enum radeon_montype
+{
+    MT_NONE,
+    MT_CRT, /* CRT-(cathode ray tube) analog monitor. (15-pin VGA connector) */
+    MT_LCD, /* Liquid Crystal Display */
+    MT_DFP, /* DFP-digital flat panel monitor. (24-pin DVI-I connector) */
+    MT_CTV, /* Composite TV out (not in VE) */
+    MT_STV  /* S-Video TV out (probably in VE only) */
+};
+
+typedef struct radeon_info_s
+{
+	int hasCRTC2;
+	int crtDispType;
+	int dviDispType;
+}rinfo_t;
+
+static rinfo_t rinfo;
+
+static char * GET_MON_NAME(int type)
+{
+  char *pret;
+  switch(type)
+  {
+    case MT_NONE: pret = "no"; break;
+    case MT_CRT:  pret = "CRT"; break;
+    case MT_DFP:  pret = "DFP"; break;
+    case MT_LCD:  pret = "LCD"; break;
+    case MT_CTV:  pret = "CTV"; break;
+    case MT_STV:  pret = "STV"; break;
+    default:      pret = "Unknown";
+  }
+  return pret;
+}
+
+static void radeon_get_moninfo (rinfo_t *rinfo)
+{
+	unsigned int tmp;
+
+	tmp = INREG(RADEON_BIOS_4_SCRATCH);
+
+	if (rinfo->hasCRTC2) {
+		/* primary DVI port */
+		if (tmp & 0x08)
+			rinfo->dviDispType = MT_DFP;
+		else if (tmp & 0x4)
+			rinfo->dviDispType = MT_LCD;
+		else if (tmp & 0x200)
+			rinfo->dviDispType = MT_CRT;
+		else if (tmp & 0x10)
+			rinfo->dviDispType = MT_CTV;
+		else if (tmp & 0x20)
+			rinfo->dviDispType = MT_STV;
+
+		/* secondary CRT port */
+		if (tmp & 0x2)
+			rinfo->crtDispType = MT_CRT;
+		else if (tmp & 0x800)
+			rinfo->crtDispType = MT_DFP;
+		else if (tmp & 0x400)
+			rinfo->crtDispType = MT_LCD;
+		else if (tmp & 0x1000)
+			rinfo->crtDispType = MT_CTV;
+		else if (tmp & 0x2000)
+			rinfo->crtDispType = MT_STV;
+	} else {
+		rinfo->dviDispType = MT_NONE;
+
+		tmp = INREG(FP_GEN_CNTL);
+
+		if (tmp & FP_EN_TMDS)
+			rinfo->crtDispType = MT_DFP;
+		else
+			rinfo->crtDispType = MT_CRT;
+	}
+}
+#endif
 int vixInit( void )
 {
   int err;
@@ -959,6 +1037,32 @@ int vixInit( void )
   printf(RADEON_MSG" Video memory = %uMb\n",radeon_ram_size/0x100000);
   err = mtrr_set_type(pci_info.base0,radeon_ram_size,MTRR_TYPE_WRCOMB);
   if(!err) printf(RADEON_MSG" Set write-combining type of video memory\n");
+#ifndef RAGE128
+  {
+    memset(&rinfo,0,sizeof(rinfo_t));
+    switch(def_cap.device_id)
+    {
+	case DEVICE_ATI_RADEON_VE_QY:
+	case DEVICE_ATI_RADEON_VE_QZ:
+	case DEVICE_ATI_RADEON_MOBILITY_M6:
+	case DEVICE_ATI_RADEON_MOBILITY_M62:
+	case DEVICE_ATI_RADEON_MOBILITY_M63:
+	case DEVICE_ATI_RADEON_QL:
+	case DEVICE_ATI_RADEON_8500_DV:
+	case DEVICE_ATI_RADEON_QW:
+			rinfo.hasCRTC2 = 1;
+			break;
+	default: break;
+    }
+    radeon_get_moninfo(&rinfo);
+	if(rinfo.hasCRTC2) {
+	    printf(RADEON_MSG" DVI port has %s monitor connected\n",GET_MON_NAME(rinfo.dviDispType));
+	    printf(RADEON_MSG" CRT port has %s monitor connected\n",GET_MON_NAME(rinfo.crtDispType));
+	}
+	else
+	    printf(RADEON_MSG" CRT port has %s monitor connected\n",GET_MON_NAME(rinfo.crtDispType));
+  }
+#endif
 #ifdef RADEON_ENABLE_BM
   if(bm_open() == 0)
   {
@@ -1146,6 +1250,13 @@ static void radeon_vid_display_video( void )
 	default:           bes_flags |= SCALER_SOURCE_VYUY422; break;
     }
     OUTREG(OV0_SCALE_CNTL,		bes_flags);
+#ifndef RAGE128
+    if(rinfo.hasCRTC2 && 
+       (rinfo.dviDispType == MT_CTV || rinfo.dviDispType == MT_STV))
+    {
+	/* TODO: suppress scaler output to CRTC here and enable TVO only */
+    }
+#endif
     OUTREG(OV0_REG_LOAD_CNTL,		0);
     if(__verbose > VERBOSE_LEVEL) printf(RADEON_MSG"we wanted: scaler=%08X\n",bes_flags);
     if(__verbose > VERBOSE_LEVEL) radeon_vid_dump_regs();
