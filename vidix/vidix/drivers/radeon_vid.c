@@ -24,7 +24,7 @@
 #define X_ADJUST 0
 #else
 #define RADEON_MSG "Radeon_vid:"
-#define X_ADJUST (RadeonFamily == 100 ? 8 : 0)
+#define X_ADJUST (is_shift_required ? 8 : 0)
 #ifndef RADEON
 #define RADEON
 #endif
@@ -58,7 +58,11 @@ typedef struct
 
 #define VERBOSE_LEVEL 0
 static int __verbose = 0;
-
+static int is_shift_required;
+#define CKEY_UNK	0
+#define CKEY_RAGE	1
+#define CKEY_RADEON	2
+static int ckey_model=0;
 typedef struct bes_registers_s
 {
   /* base address of yuv framebuffer */
@@ -1195,6 +1199,56 @@ int VIDIX_NAME(vixInit)( const char *args )
 			rinfo.hasCRTC2 = 1;
 			break;
 	default: break;
+    }
+    switch(def_cap.device_id)
+    {
+	case DEVICE_ATI_RADEON_R100_QD:
+	case DEVICE_ATI_RADEON_R100_QE:
+	case DEVICE_ATI_RADEON_R100_QF:
+	case DEVICE_ATI_RADEON_R100_QG:
+	case DEVICE_ATI_RADEON_VE_QY:
+	case DEVICE_ATI_RADEON_VE_QZ:
+	case DEVICE_ATI_RADEON_MOBILITY_M7:
+	case DEVICE_ATI_RADEON_MOBILITY_M72:
+	case DEVICE_ATI_RADEON_MOBILITY_M6:
+	case DEVICE_ATI_RADEON_MOBILITY_M62:
+	case DEVICE_ATI_RADEON_RV200_QW:
+	case DEVICE_ATI_RADEON_RV200_QX:
+		is_shift_required=1;
+		break;
+	default: break;
+    }
+    switch(def_cap.device_id)
+    {
+	case DEVICE_ATI_RADEON_R100_QD:
+	case DEVICE_ATI_RADEON_R100_QE:
+	case DEVICE_ATI_RADEON_R100_QF:
+	case DEVICE_ATI_RADEON_R100_QG:
+	case DEVICE_ATI_RADEON_VE_QY:
+	case DEVICE_ATI_RADEON_VE_QZ:
+	case DEVICE_ATI_RADEON_R200_BB:
+	case DEVICE_ATI_RADEON_R200_QH:
+	case DEVICE_ATI_RADEON_R200_QI:
+	case DEVICE_ATI_RADEON_R200_QJ:
+	case DEVICE_ATI_RADEON_R200_QK:
+	case DEVICE_ATI_RADEON_R200_QL:
+	case DEVICE_ATI_RADEON_R200_QH2:
+	case DEVICE_ATI_RADEON_R200_QI2:
+	case DEVICE_ATI_RADEON_R200_QJ2:
+	case DEVICE_ATI_RADEON_R200_QK2:
+		ckey_model = CKEY_RADEON;
+		break;
+	case DEVICE_ATI_RADEON_MOBILITY_M7:
+	case DEVICE_ATI_RADEON_MOBILITY_M72:
+	case DEVICE_ATI_RADEON_MOBILITY_M6:
+	case DEVICE_ATI_RADEON_MOBILITY_M62:
+	case DEVICE_ATI_RADEON_RV200_QW:
+	case DEVICE_ATI_RADEON_RV200_QX:
+		ckey_model = CKEY_RAGE;
+		break;
+	default:
+		ckey_model = CKEY_UNK;
+		break;
     }
     radeon_get_moninfo(&rinfo);
 	if(rinfo.hasCRTC2) {
@@ -3202,8 +3256,19 @@ static void set_gr_key( void )
 	besr.graphics_key_msk=(1<<dbpp)-1;
 	besr.ckey_cntl = VIDEO_KEY_FN_TRUE|GRAPHIC_KEY_FN_NE|CMP_MIX_AND;
 #else
-	besr.graphics_key_msk=besr.graphics_key_clr;
-	besr.ckey_cntl = VIDEO_KEY_FN_TRUE|GRAPHIC_KEY_FN_EQ|CMP_MIX_AND;
+	if(ckey_model > CKEY_UNK)
+	{
+	    if(ckey_model == CKEY_RAGE)
+	    {
+		besr.graphics_key_msk=besr.graphics_key_clr;
+		besr.ckey_cntl = VIDEO_KEY_FN_TRUE|GRAPHIC_KEY_FN_NE|CMP_MIX_AND;
+	    }
+	    else
+	    {
+		besr.graphics_key_msk=besr.graphics_key_clr;
+		besr.ckey_cntl = VIDEO_KEY_FN_TRUE|GRAPHIC_KEY_FN_EQ|CMP_MIX_AND;
+	    }
+	}
 #endif
     }
     else
