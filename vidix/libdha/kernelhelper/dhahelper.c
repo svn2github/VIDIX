@@ -7,7 +7,7 @@
 
     Accessing hardware from userspace as USER (no root needed!)
 
-    Tested on 2.2.x (2.2.19), 2.4.x (2.4.3,2.4.17) and 2.6.0 (2.6.1).
+    Tested on 2.2.x (2.2.19), 2.4.x (2.4.3,2.4.17) and 2.6.1.
     
     License: GPL
     
