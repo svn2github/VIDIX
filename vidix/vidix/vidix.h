@@ -243,16 +243,18 @@ typedef struct vidix_slice_s
 
 typedef struct vidix_dma_s
 {
-	vidix_slice_t	src;                    /* app -> driver */
-	vidix_slice_t	dest;			/* app -> driver */
-#define LVO_DMA_NOSYNC		0
-#define LVO_DMA_SYNC		1       /* means: wait vsync or hsync */
-	unsigned	flags;			/* app -> driver */
+	void *	src;			/* app -> driver */
+	unsigned dest_frame;		/* app -> driver */
+#define BM_DMA_ASYNC		0
+#define BM_DMA_SYNC		1	/* means: wait dma transfer completion */
+	unsigned	flags;		/* app -> driver */
 }vidix_dma_t;
 
 			/* Returns 0 if ok else errno */
 extern int 	vixPlaybackCopyFrame( const vidix_dma_t * );
 
+			/* Returns 0 if DMA is available else errno (EBUSY) */
+extern int	vixQueryDMAStatus( void );
 /*
    This structure is introdused to support OEM effects like:
    - sharpness

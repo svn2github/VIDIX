@@ -59,7 +59,7 @@
 #include <linux/string.h>
 #include <linux/errno.h>
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,4,10)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,4,0)
 #include <linux/malloc.h>
 #else
 #include <linux/slab.h>
@@ -106,11 +106,11 @@ static int dhahelper_open(struct inode *inode, struct file *file)
 	printk(KERN_DEBUG "dhahelper: device opened\n");
 
     if (MINOR(inode->i_rdev) != 0)
-	return(-ENXIO);
+	return -ENXIO;
 
     MOD_INC_USE_COUNT;
 
-    return(0);
+    return 0;
 }
 
 static int dhahelper_release(struct inode *inode, struct file *file)
@@ -119,51 +119,37 @@ static int dhahelper_release(struct inode *inode, struct file *file)
 	printk(KERN_DEBUG "dhahelper: device released\n");
 
     if (MINOR(inode->i_rdev) != 0)
-	return(-ENXIO);
+	return -ENXIO;
 
     MOD_DEC_USE_COUNT;
 
-    return(0);
+    return 0;
 }
 
-static int dhahelper_ioctl(struct inode *inode, struct file *file,
-    unsigned int cmd, unsigned long arg)
+static int dhahelper_get_version(int * arg)
 {
-    if (dhahelper_verbosity > 1)
-	printk(KERN_DEBUG "dhahelper: ioctl(cmd=%x, arg=%lx)\n",
-	    cmd, arg);
+	int version = API_VERSION;
 
-    if (MINOR(inode->i_rdev) != 0)
-	return(-ENXIO);
-
-    switch(cmd)
-    {
-	case DHAHELPER_GET_VERSION:
+	if (copy_to_user(arg, &version, sizeof(int)))
 	{
-	    int version = API_VERSION;
-
-	    if (copy_to_user((int *)arg, &version, sizeof(int)))
-	    {
 		if (dhahelper_verbosity > 0)
 		    printk(KERN_ERR "dhahelper: failed copy to userspace\n");
-		return(-EFAULT);
-	    }
-
-	    break;
+		return -EFAULT;
 	}
-	case DHAHELPER_PORT:
-	{
-	    dhahelper_port_t port;
+	return 0;
+}
 
-	    if (copy_from_user(&port, (dhahelper_port_t *)arg, sizeof(dhahelper_port_t)))
-	    {
+static int dhahelper_port(dhahelper_port_t * arg)
+{
+	dhahelper_port_t port;
+	if (copy_from_user(&port, arg, sizeof(dhahelper_port_t)))
+	{
 		if (dhahelper_verbosity > 0)
 		    printk(KERN_ERR "dhahelper: failed copy from userspace\n");
-		return(-EFAULT);
-	    }
-
-	    switch(port.operation)
-	    {
+		return -EFAULT;
+	}
+	switch(port.operation)
+	{
 		case PORT_OP_READ:
 		{
 		    switch(port.size)
@@ -181,7 +167,7 @@ static int dhahelper_ioctl(struct inode *inode, struct file *file,
 			    if (dhahelper_verbosity > 0)
 				printk(KERN_ERR "dhahelper: invalid port read size (%d)\n",
 				    port.size);
-			    return(-EINVAL);
+			    return -EINVAL;
 		    }
 		    break;
 		}
@@ -202,7 +188,7 @@ static int dhahelper_ioctl(struct inode *inode, struct file *file,
 			    if (dhahelper_verbosity > 0)
 				printk(KERN_ERR "dhahelper: invalid port write size (%d)\n",
 				    port.size);
-			    return(-EINVAL);
+			    return -EINVAL;
 		    }
 		    break;
 		}
@@ -210,33 +196,30 @@ static int dhahelper_ioctl(struct inode *inode, struct file *file,
 		    if (dhahelper_verbosity > 0)
 		        printk(KERN_ERR "dhahelper: invalid port operation (%d)\n",
 		    	    port.operation);
-		    return(-EINVAL);
-	    }
-
-	    /* copy back only if read was performed */
-	    if (port.operation == PORT_OP_READ)
-	    if (copy_to_user((dhahelper_port_t *)arg, &port, sizeof(dhahelper_port_t)))
-	    {
+		    return -EINVAL;
+	}
+	/* copy back only if read was performed */
+	if (port.operation == PORT_OP_READ)
+	if (copy_to_user(arg, &port, sizeof(dhahelper_port_t)))
+	{
 		if (dhahelper_verbosity > 0)
 		    printk(KERN_ERR "dhahelper: failed copy to userspace\n");
-		return(-EFAULT);
-	    }
-	    
-	    break;
+		return -EFAULT;
 	}
-	case DHAHELPER_MEMORY:
-	{
-	    dhahelper_memory_t mem;
+	return 0;
+}
 
-	    if (copy_from_user(&mem, (dhahelper_memory_t *)arg, sizeof(dhahelper_memory_t)))
-	    {
+static int dhahelper_memory(dhahelper_memory_t * arg)
+{
+	dhahelper_memory_t mem;
+	if (copy_from_user(&mem, arg, sizeof(dhahelper_memory_t)))
+	{
 		if (dhahelper_verbosity > 0)
 		    printk(KERN_ERR "dhahelper: failed copy from userspace\n");
-		return(-EFAULT);
-	    }
-	    
-	    switch(mem.operation)
-	    {
+		return -EFAULT;
+	}
+	switch(mem.operation)
+	{
 		case MEMORY_OP_MAP:
 		{
 #if 1
@@ -245,7 +228,6 @@ static int dhahelper_ioctl(struct inode *inode, struct file *file,
 		    mem.ret = do_mmap(file, mem.start, mem.size, PROT_READ|PROT_WRITE,
 			MAP_SHARED, mem.offset);
 #endif
-
 		    break;
 		}
 		case MEMORY_OP_UNMAP:
@@ -254,25 +236,98 @@ static int dhahelper_ioctl(struct inode *inode, struct file *file,
 		    if (dhahelper_verbosity > 0)
 			printk(KERN_ERR "dhahelper: invalid memory operation (%d)\n",
 			    mem.operation);
-		    return(-EINVAL);
-	    }
-	    
-	    if (copy_to_user((dhahelper_memory_t *)arg, &mem, sizeof(dhahelper_memory_t)))
+		    return -EINVAL;
+	}
+	if (copy_to_user(arg, &mem, sizeof(dhahelper_memory_t)))
+	{
+		if (dhahelper_verbosity > 0)
+		    printk(KERN_ERR "dhahelper: failed copy to userspace\n");
+		return -EFAULT;
+	}
+	return 0;
+}
+
+static int dhahelper_virt_to_phys(dhahelper_vmi_t *arg)
+{
+	dhahelper_vmi_t mem;
+	unsigned long i,nitems;
+	char *addr;
+	if (copy_from_user(&mem, arg, sizeof(dhahelper_vmi_t)))
+	{
+		if (dhahelper_verbosity > 0)
+		    printk(KERN_ERR "dhahelper: failed copy from userspace\n");
+		return -EFAULT;
+	}
+	nitems = mem.length / PAGE_SIZE;
+	if(mem.length % PAGE_SIZE) nitems++;
+	addr = mem.virtaddr;
+	for(i=0;i<nitems;i++)
+	{
+	    unsigned long result;
+	    result = virt_to_phys(addr);
+	    if (copy_to_user(&mem.realaddr[i], &result, sizeof(unsigned long)))
 	    {
 		if (dhahelper_verbosity > 0)
 		    printk(KERN_ERR "dhahelper: failed copy to userspace\n");
-		return(-EFAULT);
+		return -EFAULT;
 	    }
-	    
-	    break;
+	    addr += PAGE_SIZE;
 	}
+	return 0;
+}
+
+static int dhahelper_virt_to_bus(dhahelper_vmi_t *arg)
+{
+	dhahelper_vmi_t mem;
+	unsigned long i,nitems;
+	char *addr;
+	if (copy_from_user(&mem, arg, sizeof(dhahelper_vmi_t)))
+	{
+		if (dhahelper_verbosity > 0)
+		    printk(KERN_ERR "dhahelper: failed copy from userspace\n");
+		return -EFAULT;
+	}
+	nitems = mem.length / PAGE_SIZE;
+	if(mem.length % PAGE_SIZE) nitems++;
+	addr = mem.virtaddr;
+	for(i=0;i<nitems;i++)
+	{
+	    unsigned long result;
+	    result = virt_to_bus(addr);
+	    if (copy_to_user(&mem.realaddr[i], &result, sizeof(unsigned long)))
+	    {
+		if (dhahelper_verbosity > 0)
+		    printk(KERN_ERR "dhahelper: failed copy to userspace\n");
+		return -EFAULT;
+	    }
+	    addr += PAGE_SIZE;
+	}
+	return 0;
+}
+
+static int dhahelper_ioctl(struct inode *inode, struct file *file,
+    unsigned int cmd, unsigned long arg)
+{
+    if (dhahelper_verbosity > 1)
+	printk(KERN_DEBUG "dhahelper: ioctl(cmd=%x, arg=%lx)\n",
+	    cmd, arg);
+
+    if (MINOR(inode->i_rdev) != 0)
+	return -ENXIO;
+
+    switch(cmd)
+    {
+	case DHAHELPER_GET_VERSION: return dhahelper_get_version((int *)arg);
+	case DHAHELPER_PORT:	    return dhahelper_port((dhahelper_port_t *)arg);
+	case DHAHELPER_MEMORY:      return dhahelper_memory((dhahelper_memory_t *)arg);
+	case DHAHELPER_VIRT_TO_PHYS:return dhahelper_virt_to_phys((dhahelper_vmi_t *)arg);
+	case DHAHELPER_VIRT_TO_BUS: return dhahelper_virt_to_bus((dhahelper_vmi_t *)arg);
 	default:
     	    if (dhahelper_verbosity > 0)
 		printk(KERN_ERR "dhahelper: invalid ioctl (%x)\n", cmd);
-	    return(-EINVAL);
+	    return -EINVAL;
     }
-
-    return(0);
+    return 0;
 }
 
 static int dhahelper_mmap(struct file *file, struct vm_area_struct *vma)
@@ -281,7 +336,7 @@ static int dhahelper_mmap(struct file *file, struct vm_area_struct *vma)
     {
 	if (dhahelper_verbosity > 0)
 	    printk(KERN_ERR "dhahelper: mapping not requested before mmap\n");
-	return(-EFAULT);
+	return -EFAULT;
     }
     
     if (dhahelper_verbosity > 1)
@@ -293,10 +348,10 @@ static int dhahelper_mmap(struct file *file, struct vm_area_struct *vma)
     {
 	if (dhahelper_verbosity > 0)
 	    printk(KERN_ERR "dhahelper: error mapping memory\n");
-	return(-EFAULT);
+	return -EFAULT;
     }
 
-    return(0);
+    return 0;
 }
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,4,0)
@@ -338,10 +393,10 @@ static int __init init_dhahelper(void)
     	if (dhahelper_verbosity > 0)
 	    printk(KERN_ERR "dhahelper: unable to register character device (major: %d)\n",
 		dhahelper_major);
-	return(-EIO);
+	return -EIO;
     }
     
-    return(0);
+    return 0;
 }
 
 #if KERNEL_VERSION < KERNEL_VERSION(2,4,0)

@@ -50,6 +50,7 @@ typedef struct vdl_stream_s
 	int 	(*get_deint)( vidix_deinterlace_t * );
 	int 	(*set_deint)( const vidix_deinterlace_t * );
 	int 	(*copy_frame)( const vidix_dma_t * );
+	int 	(*query_dma)( void );
 	int 	(*get_gkey)( vidix_grkey_t * );
 	int 	(*set_gkey)( const vidix_grkey_t * );
 	int 	(*get_num_fx)( unsigned * );
@@ -81,6 +82,7 @@ static int vdl_fill_driver(VDL_HANDLE stream)
   t_vdl(stream)->get_deint	= dlsym(t_vdl(stream)->handle,"vixPlaybackGetDeint");
   t_vdl(stream)->set_deint	= dlsym(t_vdl(stream)->handle,"vixPlaybackSetDeint");
   t_vdl(stream)->copy_frame	= dlsym(t_vdl(stream)->handle,"vixPlaybackCopyFrame");
+  t_vdl(stream)->query_dma	= dlsym(t_vdl(stream)->handle,"vixQueryDMAStatus");
   t_vdl(stream)->get_num_fx	= dlsym(t_vdl(stream)->handle,"vixQueryNumOemEffects");
   t_vdl(stream)->get_fx		= dlsym(t_vdl(stream)->handle,"vixGetOemEffect");
   t_vdl(stream)->set_fx		= dlsym(t_vdl(stream)->handle,"vixSetOemEffect");
@@ -291,6 +293,11 @@ int  vdlPlaybackSetEq(VDL_HANDLE handle, const vidix_video_eq_t * e)
 int  vdlPlaybackCopyFrame(VDL_HANDLE handle, const vidix_dma_t * f)
 {
   return t_vdl(handle)->copy_frame ? t_vdl(handle)->copy_frame(f) : ENOSYS;
+}
+
+int  vdlQueryDMAStatus(VDL_HANDLE handle )
+{
+  return t_vdl(handle)->query_dma ? t_vdl(handle)->query_dma() : ENOSYS;
 }
 
 int 	  vdlGetGrKeys(VDL_HANDLE handle, vidix_grkey_t * k)

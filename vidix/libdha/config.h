@@ -4,7 +4,7 @@
 #include "../config.h"
 
 #ifdef TARGET_LINUX
-#define CONFIG_DHAHELPER
+//#define CONFIG_DHAHELPER /* doesn't affect virt_to_phys */
 #endif
 
 #endif /* LIBDHA_CONFIG_H */

@@ -91,6 +91,9 @@ extern int	  vdlSetOemEffect(VDL_HANDLE, const vidix_oem_fx_t * );
 			/* Returns 0 if ok else errno */
 extern int	  vdlPlaybackCopyFrame(VDL_HANDLE, const vidix_dma_t * );
 
+			/* Returns 0 if DMA is available else errno (EBUSY) */
+extern int	  vdlQueryDMAStatus( VDL_HANDLE );
+
 #ifdef __cplusplus
 }
 #endif

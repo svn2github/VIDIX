@@ -440,7 +440,6 @@ static void reset_regs( void )
   }
 }
 
-
 int vixInit(void)
 {
   int err;
@@ -494,6 +493,9 @@ int vixInit(void)
   mach64_vid_make_default();
 
   if(__verbose > VERBOSE_LEVEL) mach64_vid_dump_regs();
+  if(bm_open() == 0) mach64_cap.flags |= FLAG_DMA | FLAG_EQ_DMA;
+  else
+    if(__verbose) printf("[mach64] Can't initialize busmastering: %s\n",strerror(errno));
   return 0;
 }
 
@@ -501,6 +503,7 @@ void vixDestroy(void)
 {
   unmap_phys_mem(mach64_mem_base,mach64_ram_size);
   unmap_phys_mem(mach64_mmio_base,0x4000);
+  bm_close();
 }
 
 int vixGetCapability(vidix_capability_t *to)

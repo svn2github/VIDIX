@@ -66,6 +66,29 @@ extern void    unmap_phys_mem(void *ptr, unsigned long size);
 #define MTRR_TYPE_WRBACK     6
 extern int	mtrr_set_type(unsigned base,unsigned size,int type);
 
+/* Busmastering support */
+		/* returns 0 if support exists else errno */
+extern int	bm_open( void );
+extern void	bm_close( void );
+		/* Converts virtual memory addresses into physical
+		   returns 0 if OK else - errno
+		   parray should have enough length to accept length/page_size
+		   elements. virt_addr can be located in non-continious memory
+		   block and can be allocated by malloc(). (kmalloc() is not
+		   needed). Note:  if you have some very old card which requires
+		   continous memory block then you need to implement  bm_kmalloc
+		   bm_kfree functions here. NOTE2: to be sure that every page of
+		   region is present in physical memory (is not swapped out) use
+		   m(un)lock functions. Note3: Probably your card will want to
+		   have page-aligned block for DMA transfer so use
+		   memalign(PAGE_SIZE,mem_size) function to alloc such memory. */
+extern int	bm_virt_to_phys( void * virt_addr, unsigned long length,
+			    unsigned long * parray );
+		/* Converts virtual memory addresses into bus address
+		   Works in the same way as bm_virt_to_phys. */
+extern int	bm_virt_to_bus( void * virt_addr, unsigned long length,
+			    unsigned long * barray );
+
 #ifdef __cplusplus
 }
 #endif
