@@ -1111,9 +1111,6 @@ static void radeon_vid_display_video( void )
 
     bes_flags = SCALER_ENABLE |
                 SCALER_SMART_SWITCH |
-#ifdef RADEON
-		SCALER_HORZ_PICK_NEAREST |
-#endif
 		SCALER_Y2R_TEMP |
 		SCALER_PIX_EXPAND;
     if(besr.double_buff) bes_flags |= SCALER_DOUBLE_BUFFER;
@@ -1196,7 +1193,7 @@ static unsigned radeon_query_pitch(unsigned fourcc,const vidix_yuv_t *spitch)
 		break;
 	case IMGFMT_IF09:
 	case IMGFMT_YVU9:
-		if(spy > 32 && spu == spy/4 && spv == spy/4)	pitch = spy;
+		if(spy >= 64 && spu == spy/4 && spv == spy/4)	pitch = spy;
 		else						pitch = 64;
 		break;
 	default:
@@ -1454,6 +1451,7 @@ static void radeon_compute_framesize(vidix_playback_t *info)
 		info->frame_size = awidth*info->src.h;
 		break;
   }
+  info->frame_size = (info->frame_size+4095)&~4095;
 }
 
 int vixConfigPlayback(vidix_playback_t *info)
