@@ -74,8 +74,10 @@
 #include "sysdep/AsmMacros_arm32.h"
 #elif defined(__powerpc__)
 #include "sysdep/AsmMacros_powerpc.h"
-#else
+#elif defined (__i386__)
 #include "sysdep/AsmMacros_x86.h"
+#else
+#include "sysdep/AsmMacros_generic.h"
 #endif
 
 #else /* __GNUC__ */

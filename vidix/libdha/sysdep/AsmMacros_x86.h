@@ -8,7 +8,7 @@
 #define __ASM_MACROS_X86_H
 
 #if defined (WINNT)
-#error This stuff is not ported on your system
+#include "sysdep/AsmMacros_generic.h"
 #else
 
 #include "config.h"

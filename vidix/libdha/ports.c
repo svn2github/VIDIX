@@ -96,6 +96,8 @@
 #include "sysdep/pci_os2.c"
 #elif defined (_WIN32) || defined(__CYGWIN__)
 #include "sysdep/pci_win32.c"
+#else
+#include "sysdep/pci_generic_os.c"
 #endif
 
 static int dhahelper_fd=-1;

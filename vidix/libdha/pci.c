@@ -456,8 +456,10 @@ static int pcibus=-1, pcicard=-1, pcifunc=-1 ;
 #include "sysdep/pci_arm32.c"
 #elif defined(__powerpc__)
 #include "sysdep/pci_powerpc.c"
-#else
+#elif defined( __i386__ )
 #include "sysdep/pci_x86.c"
+#else
+#include "sysdep/pci_generic_cpu.c"
 #endif
 
 static int pcicards=0 ;
