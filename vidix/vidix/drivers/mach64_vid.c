@@ -1242,11 +1242,11 @@ static int mach64_transfer_frame( unsigned long ba_dma_desc )
 int vixPlaybackCopyFrame( vidix_dma_t * dmai )
 {
     int retval;
-    if(!(dmai->flags & BM_DMA_FIXED_BUFFS)) if(mlock(dmai->src,dmai->size) != 0) return errno;
+    if(!(dmai->flags & BM_DMA_FIXED_BUFFS)) if(bm_lock_mem(dmai->src,dmai->size) != 0) return errno;
     retval = mach64_setup_frame(dmai);
     VIRT_TO_CARD(mach64_dma_desc_base[dmai->idx],1,&bus_addr_dma_desc);
     if(retval == 0) retval = mach64_transfer_frame(bus_addr_dma_desc);
-    if(!(dmai->flags & BM_DMA_FIXED_BUFFS)) munlock(dmai->src,dmai->size);
+    if(!(dmai->flags & BM_DMA_FIXED_BUFFS)) bm_unlock_mem(dmai->src,dmai->size);
     return retval;
 }
 
