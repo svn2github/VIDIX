@@ -411,9 +411,6 @@ int VIDIX_NAME(vixPlaybackOn)(void)
 	WRITE_REG(PM3VideoControl,
 		  video_control | PM3VideoControl_DISPLAY_ENABLE);
 
-    if(pm3_dma)
-	WRITE_REG(PM3IntEnable, (1 << 7));
-
     TRACE_EXIT();
     return 0;
 }
@@ -514,9 +511,11 @@ VIDIX_NAME(vixPlaybackCopyFrame)(vidix_dma_t *dma)
     }
 
     if(dma->flags & BM_DMA_SYNC){
+	WRITE_REG(PM3IntEnable, (1 << 7));
 	while(READ_REG(PM3ByDMAReadMode) & PM3ByDMAReadMode_Active){
 	    hwirq_wait(pci_info.irq);
 	}
+	WRITE_REG(PM3IntEnable, 0);
     }
 
     WAIT_FIFO(3);
