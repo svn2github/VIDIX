@@ -173,10 +173,11 @@ int VIDIX_NAME(vixInit)(const char *args)
 
     if(bm_open() == 0){
 	fprintf(stderr, "[pm3] DMA available.\n");
-	pm3_cap.flags |= FLAG_DMA;
+	pm3_cap.flags |= FLAG_DMA | FLAG_SYNC_DMA;
 	page_size = sysconf(_SC_PAGESIZE);
 	hwirq_install(pci_info.bus, pci_info.card, pci_info.func,
 		      0, PM3IntFlags, -1);
+	WRITE_REG(PM3IntEnable, (1 << 7));
 	pm3_dma = 1;
     }
 
@@ -545,12 +546,7 @@ VIDIX_NAME(vixPlaybackCopyFrame)(vidix_dma_t *dma)
 	dma->internal[frame] = bdf;
 
     if(dma->flags & BM_DMA_SYNC){
-	if(s){
-	    hwirq_wait(pci_info.irq);
-	} else {
-	    WRITE_REG(PM3IntEnable, (1 << 7));
-	    s = 1;
-	}
+	hwirq_wait(pci_info.irq);
     }
 
     WAIT_FIFO(3);
@@ -563,6 +559,10 @@ VIDIX_NAME(vixPlaybackCopyFrame)(vidix_dma_t *dma)
 	      PM3ByDMAReadMode_Active |
 	      PM3ByDMAReadMode_Burst(7) |
 	      PM3ByDMAReadMode_Align);
+
+    if(dma->flags & BM_DMA_BLOCK){
+	hwirq_wait(pci_info.irq);
+    }
 
     return 0;
 }
