@@ -20,7 +20,7 @@ int dhahelper_initialized = 0;
 int dhahelper_fd = 0;
 #endif
 
-#ifdef __sparc__
+#if defined(__sparc__) || defined(__powerpc__)
 #define iopl(x) (0)
 #endif
 
