@@ -144,25 +144,27 @@ int VIDIX_NAME(vixProbe)(int verbose, int force)
 
 int VIDIX_NAME(vixInit)(const char *args)
 {
-    char *ac = strdup(args), *s, *opt;
+    if(args != NULL){
+	char *ac = strdup(args), *s, *opt;
 
-    opt = strtok_r(ac, ",", &s);
-    while(opt){
-	char *a = strchr(opt, '=');
+	opt = strtok_r(ac, ",", &s);
+	while(opt){
+	    char *a = strchr(opt, '=');
 
-	if(a)
-	    *a++ = 0;
-	if(!strcmp(opt, "mem")){
 	    if(a)
-		pm3_vidmem = strtol(a, NULL, 0);
-	} else if(!strcmp(opt, "blank")){
-	    pm3_blank = a? strtol(a, NULL, 0): 1;
+		*a++ = 0;
+	    if(!strcmp(opt, "mem")){
+		if(a)
+		    pm3_vidmem = strtol(a, NULL, 0);
+	    } else if(!strcmp(opt, "blank")){
+		pm3_blank = a? strtol(a, NULL, 0): 1;
+	    }
+
+	    opt = strtok_r(NULL, ",", &s);
 	}
 
-	opt = strtok_r(NULL, ",", &s);
+	free(ac);
     }
-
-    free(ac);
 
     pm3_reg_base = map_phys_mem(pci_info.base0, 0x20000);
     pm3_mem = map_phys_mem(pci_info.base1, 0x2000000);
