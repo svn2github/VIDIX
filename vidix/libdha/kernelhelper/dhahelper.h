@@ -67,6 +67,12 @@ typedef struct dhahelper_vmi_s
     unsigned long *realaddr;
 }dhahelper_vmi_t;
 
+typedef struct dhahelper_mem_s
+{
+    void *	addr;
+    unsigned long length;
+}dhahelper_mem_t;
+
 #define DHAHELPER_GET_VERSION	_IOW('D', 0, int)
 #define DHAHELPER_PORT		_IOWR('D', 1, dhahelper_port_t)
 #define DHAHELPER_MEMORY	_IOWR('D', 2, dhahelper_memory_t)
@@ -74,5 +80,7 @@ typedef struct dhahelper_vmi_s
 #define DHAHELPER_PCI		_IOWR('D', 4, dhahelper_pci_t)
 #define DHAHELPER_VIRT_TO_PHYS	_IOWR('D', 5, dhahelper_vmi_t)
 #define DHAHELPER_VIRT_TO_BUS	_IOWR('D', 6, dhahelper_vmi_t)
+#define DHAHELPER_ALLOC_PA	_IOWR('D', 7, dhahelper_mem_t)
+#define DHAHELPER_FREE_PA	_IOWR('D', 6, dhahelper_mem_t)
 
 #endif /* DHAHELPER_H */

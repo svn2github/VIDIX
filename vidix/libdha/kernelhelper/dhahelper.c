@@ -2,7 +2,8 @@
     Direct Hardware Access kernel helper
     
     (C) 2002 Alex Beregszaszi <alex@naxine.org>
-    
+    (C) 2002 Nick Kurshev <nickols_k@mail.ru>
+
     Accessing hardware from userspace as USER (no root needed!)
 
     Tested on 2.2.x (2.2.19) and 2.4.x (2.4.3,2.4.17).
@@ -56,8 +57,15 @@
 #include <linux/kernel.h>
 #include <linux/sched.h>
 #include <linux/mm.h>
+#include <linux/init.h>
+#include <linux/pci.h>
+#include <linux/interrupt.h>
+#include <linux/wrapper.h>
+#include <linux/vmalloc.h>
 #include <linux/string.h>
 #include <linux/errno.h>
+#include <asm/io.h>
+#include <asm/pgtable.h>
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,4,0)
 #include <linux/malloc.h>
@@ -247,6 +255,136 @@ static int dhahelper_memory(dhahelper_memory_t * arg)
 	return 0;
 }
 
+/*******************************/
+/* Memory management functions */
+/* from kernel:/drivers/mdia/video/bttv-driver.c */
+/*******************************/
+
+#define MDEBUG(x)	do { } while(0)		/* Debug memory management */
+
+/* [DaveM] I've recoded most of this so that:
+ * 1) It's easier to tell what is happening
+ * 2) It's more portable, especially for translating things
+ *    out of vmalloc mapped areas in the kernel.
+ * 3) Less unnecessary translations happen.
+ *
+ * The code used to assume that the kernel vmalloc mappings
+ * existed in the page tables of every process, this is simply
+ * not guarenteed.  We now use pgd_offset_k which is the
+ * defined way to get at the kernel page tables.
+ */
+
+/* Given PGD from the address space's page table, return the kernel
+ * virtual mapping of the physical memory mapped at ADR.
+ */
+static inline unsigned long uvirt_to_kva(pgd_t *pgd, unsigned long adr)
+{
+        unsigned long ret = 0UL;
+	pmd_t *pmd;
+	pte_t *ptep, pte;
+  
+	if (!pgd_none(*pgd)) {
+                pmd = pmd_offset(pgd, adr);
+                if (!pmd_none(*pmd)) {
+                        ptep = pte_offset(pmd, adr);
+                        pte = *ptep;
+                        if(pte_present(pte)) {
+				ret  = (unsigned long) page_address(pte_page(pte));
+				ret |= (adr & (PAGE_SIZE - 1));
+				
+			}
+                }
+        }
+        MDEBUG(printk("uv2kva(%lx-->%lx)", adr, ret));
+	return ret;
+}
+
+static inline unsigned long uvirt_to_bus(unsigned long adr) 
+{
+        unsigned long kva, ret;
+
+        kva = uvirt_to_kva(pgd_offset(current->mm, adr), adr);
+	ret = virt_to_bus((void *)kva);
+        MDEBUG(printk("uv2b(%lx-->%lx)", adr, ret));
+        return ret;
+}
+
+static inline unsigned long uvirt_to_pa(unsigned long adr) 
+{
+        unsigned long kva, ret;
+
+        kva = uvirt_to_kva(pgd_offset(current->mm, adr), adr);
+	ret = virt_to_phys((void *)kva);
+        MDEBUG(printk("uv2b(%lx-->%lx)", adr, ret));
+        return ret;
+}
+
+static inline unsigned long kvirt_to_bus(unsigned long adr) 
+{
+        unsigned long va, kva, ret;
+
+        va = VMALLOC_VMADDR(adr);
+        kva = uvirt_to_kva(pgd_offset_k(va), va);
+	ret = virt_to_bus((void *)kva);
+        MDEBUG(printk("kv2b(%lx-->%lx)", adr, ret));
+        return ret;
+}
+
+/* Here we want the physical address of the memory.
+ * This is used when initializing the contents of the
+ * area and marking the pages as reserved.
+ */
+static inline unsigned long kvirt_to_pa(unsigned long adr) 
+{
+        unsigned long va, kva, ret;
+
+        va = VMALLOC_VMADDR(adr);
+        kva = uvirt_to_kva(pgd_offset_k(va), va);
+	ret = __pa(kva);
+        MDEBUG(printk("kv2pa(%lx-->%lx)", adr, ret));
+        return ret;
+}
+
+static void * rvmalloc(signed long size)
+{
+	void * mem;
+	unsigned long adr, page;
+
+	mem=vmalloc_32(size);
+	if (mem) 
+	{
+		memset(mem, 0, size); /* Clear the ram out, no junk to the user */
+	        adr=(unsigned long) mem;
+		while (size > 0) 
+                {
+	                page = kvirt_to_pa(adr);
+			mem_map_reserve(virt_to_page(__va(page)));
+			adr+=PAGE_SIZE;
+			size-=PAGE_SIZE;
+		}
+	}
+	return mem;
+}
+
+static void rvfree(void * mem, signed long size)
+{
+        unsigned long adr, page;
+        
+	if (mem) 
+	{
+	        adr=(unsigned long) mem;
+		while (size > 0) 
+                {
+	                page = kvirt_to_pa(adr);
+			mem_map_unreserve(virt_to_page(__va(page)));
+			adr+=PAGE_SIZE;
+			size-=PAGE_SIZE;
+		}
+		vfree(mem);
+	}
+}
+
+
 static int dhahelper_virt_to_phys(dhahelper_vmi_t *arg)
 {
 	dhahelper_vmi_t mem;
@@ -264,7 +402,7 @@ static int dhahelper_virt_to_phys(dhahelper_vmi_t *arg)
 	for(i=0;i<nitems;i++)
 	{
 	    unsigned long result;
-	    result = virt_to_phys(addr);
+	    result = uvirt_to_pa((unsigned long)addr);
 	    if (copy_to_user(&mem.realaddr[i], &result, sizeof(unsigned long)))
 	    {
 		if (dhahelper_verbosity > 0)
@@ -293,7 +431,7 @@ static int dhahelper_virt_to_bus(dhahelper_vmi_t *arg)
 	for(i=0;i<nitems;i++)
 	{
 	    unsigned long result;
-	    result = virt_to_bus(addr);
+	    result = uvirt_to_bus((unsigned long)addr);
 	    if (copy_to_user(&mem.realaddr[i], &result, sizeof(unsigned long)))
 	    {
 		if (dhahelper_verbosity > 0)
@@ -302,6 +440,39 @@ static int dhahelper_virt_to_bus(dhahelper_vmi_t *arg)
 	    }
 	    addr += PAGE_SIZE;
 	}
+	return 0;
+}
+
+
+static int dhahelper_alloc_pa(dhahelper_mem_t *arg)
+{
+	dhahelper_mem_t mem;
+	if (copy_from_user(&mem, arg, sizeof(dhahelper_mem_t)))
+	{
+		if (dhahelper_verbosity > 0)
+		    printk(KERN_ERR "dhahelper: failed copy from userspace\n");
+		return -EFAULT;
+	}
+	mem.addr = rvmalloc(mem.length);
+	if (copy_to_user(arg, &mem, sizeof(dhahelper_mem_t)))
+	{
+		if (dhahelper_verbosity > 0)
+		    printk(KERN_ERR "dhahelper: failed copy to userspace\n");
+		return -EFAULT;
+	}
+	return 0;
+}
+
+static int dhahelper_free_pa(dhahelper_mem_t *arg)
+{
+	dhahelper_mem_t mem;
+	if (copy_from_user(&mem, arg, sizeof(dhahelper_mem_t)))
+	{
+		if (dhahelper_verbosity > 0)
+		    printk(KERN_ERR "dhahelper: failed copy from userspace\n");
+		return -EFAULT;
+	}
+	rvfree(mem.addr,mem.length);
 	return 0;
 }
 
@@ -322,6 +493,8 @@ static int dhahelper_ioctl(struct inode *inode, struct file *file,
 	case DHAHELPER_MEMORY:      return dhahelper_memory((dhahelper_memory_t *)arg);
 	case DHAHELPER_VIRT_TO_PHYS:return dhahelper_virt_to_phys((dhahelper_vmi_t *)arg);
 	case DHAHELPER_VIRT_TO_BUS: return dhahelper_virt_to_bus((dhahelper_vmi_t *)arg);
+	case DHAHELPER_ALLOC_PA:return dhahelper_alloc_pa((dhahelper_mem_t *)arg);
+	case DHAHELPER_FREE_PA: return dhahelper_free_pa((dhahelper_mem_t *)arg);
 	default:
     	    if (dhahelper_verbosity > 0)
 		printk(KERN_ERR "dhahelper: invalid ioctl (%x)\n", cmd);
