@@ -58,6 +58,7 @@
 #include <linux/kernel.h>
 #include <linux/sched.h>
 #include <linux/mm.h>
+#include <linux/pagemap.h>
 #include <linux/init.h>
 #include <linux/pci.h>
 #include <linux/interrupt.h>
@@ -88,6 +89,10 @@
 
 #include <linux/fs.h>
 #include <linux/unistd.h>
+
+#ifdef CONFIG_DEVFS_FS
+#include <linux/devfs_fs_kernel.h>
+#endif
 
 #include "dhahelper.h"
 
@@ -775,37 +780,59 @@ static struct file_operations dhahelper_fops =
 };
 #endif
 
-#if KERNEL_VERSION < KERNEL_VERSION(2,4,0)
+#ifdef CONFIG_DEVFS_FS
+devfs_handle_t dha_devfsh;
+#endif
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,4,0)
 int init_module(void)
 #else 
 static int __init init_dhahelper(void)
 #endif
 {
+    int err = 0;
     printk(KERN_INFO "Direct Hardware Access kernel helper (C) Alex Beregszaszi\n");
 
+#ifdef CONFIG_DEVFS_FS
+    dha_devfsh = devfs_register(NULL, "dhahelper", DEVFS_FL_NONE,
+				dhahelper_major, 0,
+				S_IFCHR | S_IRUSR | S_IWUSR,
+				&dhahelper_fops, NULL);
+    if(!dha_devfsh){
+	err = -EIO;
+    }
+#else
     if(register_chrdev(dhahelper_major, "dhahelper", &dhahelper_fops))
     {
+	err = -EIO;
+    }
+#endif
+    if(err){
     	if (dhahelper_verbosity > 0)
 	    printk(KERN_ERR "dhahelper: unable to register character device (major: %d)\n",
 		dhahelper_major);
-	return -EIO;
+	return err;
     }
     
     return 0;
 }
 
-#if KERNEL_VERSION < KERNEL_VERSION(2,4,0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,4,0)
 void cleanup_module(void)
 #else
 static void __exit exit_dhahelper(void)
 #endif
 {
+#ifdef CONFIG_DEVFS_FS
+    devfs_unregister(dha_devfsh);
+#else
     unregister_chrdev(dhahelper_major, "dhahelper");
+#endif
 }
 
 EXPORT_NO_SYMBOLS;
 
-#if KERNEL_VERSION >= KERNEL_VERSION(2,4,0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,4,0)
 module_init(init_dhahelper);
 module_exit(exit_dhahelper);
 #endif
