@@ -171,7 +171,8 @@ int VIDIX_NAME(vixInit)(const char *args)
 	fprintf(stderr, "[pm3] Using DMA.\n");
 	pm3_cap.flags |= FLAG_DMA;
 	page_size = sysconf(_SC_PAGESIZE);
-	hwirq_install(pci_info.irq);
+	hwirq_install(pci_info.bus, pci_info.card, pci_info.func,
+		      0, PM3IntFlags, -1);
 	pm3_dma = 1;
     }
 
@@ -182,7 +183,7 @@ void VIDIX_NAME(vixDestroy)(void)
 {
     unmap_phys_mem(pm3_reg_base, 0x20000);
     unmap_phys_mem(pm3_mem, 0x2000000);
-    hwirq_uninstall(pci_info.irq);
+    hwirq_uninstall(pci_info.bus, pci_info.card, pci_info.func);
     bm_close();
 }
 
@@ -344,8 +345,9 @@ pm3_setup_overlay(vidix_playback_t *info)
 int VIDIX_NAME(vixConfigPlayback)(vidix_playback_t *info)
 {
     unsigned int i;
-    int frame_size;
-    int vidmem_size;
+    u_int frame_size;
+    u_int vidmem_size;
+    u_int max_frames;
 
     TRACE_ENTER();
 
@@ -357,16 +359,19 @@ int VIDIX_NAME(vixConfigPlayback)(vidix_playback_t *info)
     drw_y = info->dest.y;
 
     frame_size = src_w * src_h * 2;
-    vidmem_size = pm3_vidmem;
+    vidmem_size = pm3_vidmem*1024*1024;
+    max_frames = vidmem_size / frame_size;
+    if(max_frames > VID_PLAY_MAXFRAMES)
+	max_frames = VID_PLAY_MAXFRAMES;
 
-    src_h--;
+    src_h--; /* ugh */
 
-    info->num_frames = vidmem_size*1024*1024 / frame_size;
-    if(info->num_frames > VID_PLAY_MAXFRAMES)
-	info->num_frames = VID_PLAY_MAXFRAMES;
+    if(info->num_frames > max_frames)
+	info->num_frames = max_frames;
+    vidmem_size = info->num_frames * frame_size;
 
     /* Use end of video memory. Assume the card has 32 MB */
-    vid_base = (32-pm3_vidmem)*1024*1024;
+    vid_base = 32*1024*1024 - vidmem_size;
     info->dga_addr = pm3_mem + vid_base;
 
     info->dest.pitch.y = 2;
@@ -378,7 +383,7 @@ int VIDIX_NAME(vixConfigPlayback)(vidix_playback_t *info)
     info->frame_size = frame_size;
 
     for(i = 0; i < info->num_frames; i++){
-	info->offsets[i] = info->frame_size * i;
+	info->offsets[i] = frame_size * i;
 	frames[i] = (vid_base + info->offsets[i]) >> 1;
     }
 
@@ -407,7 +412,7 @@ int VIDIX_NAME(vixPlaybackOn)(void)
 		  video_control | PM3VideoControl_DISPLAY_ENABLE);
 
     if(pm3_dma)
-	WRITE_REG(PM3IntEnable, int_enable | (1 << 7));
+	WRITE_REG(PM3IntEnable, (1 << 7));
 
     TRACE_EXIT();
     return 0;
@@ -428,7 +433,7 @@ int VIDIX_NAME(vixPlaybackOff)(void)
 	WRITE_REG(PM3VideoControl, video_control);
 
     if(pm3_dma)
-	WRITE_REG(PM3IntEnable, int_enable);
+	WRITE_REG(PM3IntEnable, 0);
 
     return 0;
 }
@@ -509,10 +514,8 @@ VIDIX_NAME(vixPlaybackCopyFrame)(vidix_dma_t *dma)
     }
 
     if(dma->flags & BM_DMA_SYNC){
-	uint32_t ds;
-	while((ds = READ_REG(PM3ByDMAReadMode)) & PM3ByDMAReadMode_Active){
+	while(READ_REG(PM3ByDMAReadMode) & PM3ByDMAReadMode_Active){
 	    hwirq_wait(pci_info.irq);
-	    WRITE_REG(PM3IntFlags, 1 << 7);
 	}
     }
 
