@@ -1262,6 +1262,27 @@ static void radeon_vid_display_video( void )
     if(__verbose > VERBOSE_LEVEL) radeon_vid_dump_regs();
 }
 
+/* Goal of this function: hide RGB background and provide black screen around movie.
+   Useful in '-vo fbdev:vidix -fs -zoom' mode.
+   Reverse effect to colorkey */
+#ifdef RAGE128
+static void radeon_vid_exclusive( void )
+{
+/* this function works only with Rage128.
+   Radeon should has something the same */
+    unsigned screenw,screenh;
+    screenw = radeon_get_xres();
+    screenh = radeon_get_yres();
+    radeon_fifo_wait(2);
+    OUTREG(OV0_EXCLUSIVE_VERT,(((screenh-1)<<16)&EXCL_VERT_END_MASK));
+    OUTREG(OV0_EXCLUSIVE_HORZ,(((screenw/8+1)<<8)&EXCL_HORZ_END_MASK)|EXCL_HORZ_EXCLUSIVE_EN);
+}
+#endif
+static void radeon_vid_non_exclusive( void )
+{
+    OUTREG(OV0_EXCLUSIVE_HORZ,0);
+}
+
 static unsigned radeon_query_pitch(unsigned fourcc,const vidix_yuv_t *spitch)
 {
   unsigned pitch,spy,spv,spu;
@@ -1615,7 +1636,16 @@ int vixConfigPlayback(vidix_playback_t *info)
 
 int vixPlaybackOn( void )
 {
+#ifdef RAGE128
+  unsigned dw,dh;
+#endif
   radeon_vid_display_video();
+#ifdef RAGE128
+  dh = (besr.y_x_end >> 16) - (besr.y_x_start >> 16);
+  dw = (besr.y_x_end & 0xFFFF) - (besr.y_x_start & 0xFFFF);
+  if(dw == radeon_get_xres() || dh == radeon_get_yres()) radeon_vid_exclusive();
+  else radeon_vid_non_exclusive();
+#endif
   return 0;
 }
 
