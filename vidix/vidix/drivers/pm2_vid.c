@@ -272,11 +272,6 @@ int vixConfigPlayback(vidix_playback_t *info)
     if(!stride)
 	return -1;
 
-    fprintf(stderr, "[pm2] drw_w = %i drw_h = %i\n", drw_w, drw_h);
-    fprintf(stderr, "[pm2] x = %i y = %i\n", info->dest.x, info->dest.y);
-    fprintf(stderr, "[pm2] ppcode = %#x  sppc = %#x  sstr = %i\n",
-	    ppcode, sppc, sstr);
-
     info->num_frames = pm2_vidmem*1024*1024 / (stride * src_h * 2);
     if(info->num_frames > VID_PLAY_MAXFRAMES)
 	info->num_frames = VID_PLAY_MAXFRAMES;

@@ -295,20 +295,6 @@ int vixConfigPlayback(vidix_playback_t *info)
 
     compute_scale_factor(&src_w, &drw_w, &shrink, &zoom);
 
-#if 0
-    aperture_mode = READ_REG(PM3ByAperture1Mode);
-    if(info->fourcc == IMGFMT_YV12){
-/*     WRITE_REG(PM3Aperture0, base0 >> 1); */
-	WRITE_REG(PM3ByAperture1Mode,
-		  PM3ByApertureMode_FORMAT_YUYV |
-		  PM3ByApertureMode_PIXELSIZE_32BIT);
-	WRITE_REG(PM3Aperture1Stride, pitch);
-	WRITE_REG(PM3Aperture1YStart, base0 / 16);
-	WRITE_REG(PM3Aperture1VStart, (base0 + info->offset.v) / 16);
-	WRITE_REG(PM3Aperture1UStart, (base0 + info->offset.u) / 16);
-    }
-#endif
-
     WRITE_REG(PM3VideoOverlayBase0, base0 >> 1);
     WRITE_REG(PM3VideoOverlayStride, PM3VideoOverlayStride_STRIDE(pitch));
     WRITE_REG(PM3VideoOverlayWidth, PM3VideoOverlayWidth_WIDTH(src_w));
@@ -356,7 +342,7 @@ int vixConfigPlayback(vidix_playback_t *info)
 
     overlay_control = 
 	PM3RD_VideoOverlayControl_KEY_COLOR |
-	PM3RD_VideoOverlayControl_MODE_OVERLAYKEY |
+	PM3RD_VideoOverlayControl_MODE_MAINKEY |
 	PM3RD_VideoOverlayControl_DIRECTCOLOR_ENABLED;
 
     TRACE_EXIT();
