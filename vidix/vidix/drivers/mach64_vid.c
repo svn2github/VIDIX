@@ -21,7 +21,6 @@
 #endif
 #endif
 
-#define MACH64_ENABLE_BM 1
 
 #include "../vidix.h"
 #include "../fourcc.h"
@@ -42,15 +41,15 @@
 #pragma pack(1)
 typedef struct
 {
-uint32_t framebuf_offset;
-uint32_t sys_addr;
-uint32_t command;
-uint32_t reserved;
+	uint32_t framebuf_offset;
+	uint32_t sys_addr;
+	uint32_t command;
+	uint32_t reserved;
 } bm_list_descriptor;
 #pragma pack()
-static void *mach64_dma_desc_base = 0;
+static void *mach64_dma_desc_base[64];
 static unsigned long bus_addr_dma_desc = 0;
-static unsigned long *dma_phys_addrs[64];
+static unsigned long *dma_phys_addrs;
 #endif
 
 static void *mach64_mmio_base = 0;
@@ -569,12 +568,21 @@ int vixInit(void)
   if(bm_open() == 0)
   {
 	mach64_cap.flags |= FLAG_DMA | FLAG_EQ_DMA;
+	if((dma_phys_addrs = malloc(mach64_ram_size*sizeof(unsigned long)/4096)) == 0)
+	{
+	    out_mem:
+	    printf("[mach64] Can't allocate temopary buffer for DMA\n");
+	    mach64_cap.flags &= ~FLAG_DMA & ~FLAG_EQ_DMA;
+	    return 0;
+	}
+	/*
+	    WARNING: We MUST have continigous descriptors!!!
+	    But: (720*720*2(YUV422)*16(sizeof(bm_descriptor)))/4096=4050
+	    Thus one 4K page is far enough to describe max movie size.
+	*/
 	for(i=0;i<64;i++)
-	    if((dma_phys_addrs[i] = malloc(mach64_ram_size*sizeof(unsigned long)/4096)) == 0)
-	    {
-		printf("[mach64] Can't allocate temopary buffer for DMA\n");
-		mach64_cap.flags &= ~FLAG_DMA & ~FLAG_EQ_DMA;
-	    }
+	    if((mach64_dma_desc_base[i] = memalign(4096,mach64_ram_size*sizeof(bm_list_descriptor)/4096)) == 0)
+		goto out_mem;
   }
   else
     if(__verbose) printf("[mach64] Can't initialize busmastering: %s\n",strerror(errno));
@@ -589,7 +597,11 @@ void vixDestroy(void)
   unmap_phys_mem(mach64_mmio_base,0x4000);
 #ifdef MACH64_ENABLE_BM
   bm_close();
-  for(i=0;i<64;i++) if(dma_phys_addrs[i]) free(dma_phys_addrs[i]);
+  if(dma_phys_addrs) free(dma_phys_addrs);
+  for(i=0;i<64;i++) 
+  {
+    if(mach64_dma_desc_base[i]) free(mach64_dma_desc_base[i]);
+  }
 #endif
 }
 
@@ -973,19 +985,6 @@ int vixConfigPlayback(vidix_playback_t *info)
   rgb_size = mach64_get_xres()*mach64_get_yres()*((mach64_vid_get_dbpp()+7)/8);
   nfr = info->num_frames;
   mach64_video_size = mach64_ram_size;
-#ifdef MACH64_ENABLE_BM
-  if(mach64_cap.flags & FLAG_DMA)
-  {
-     /* every descriptor describes one 4K page and takes 16 bytes in memory 
-	Note: probably it's not good idea to locate them in video memory
-	but as initial release it's OK */
-	mach64_video_size -= mach64_ram_size * sizeof(bm_list_descriptor) / 4096;
-	mach64_dma_desc_base = (char *)mach64_mem_base + mach64_video_size;
-//	mach64_dma_desc_base = malloc(sizeof(bm_list_descriptor) / 4096);
-//	VIRT_TO_CARD(mach64_dma_desc_base,1,&bus_addr_dma_desc);
-	bus_addr_dma_desc = pci_info.base0 + mach64_video_size;
-  }
-#endif
   for(;nfr>0;nfr--)
   {
       mach64_overlay_offset = mach64_video_size - info->frame_size*nfr;
@@ -1196,57 +1195,57 @@ int vixSetGrKeys(const vidix_grkey_t *grkey)
 }
 
 #ifdef MACH64_ENABLE_BM
-static int mach64_setup_frame( const vidix_dma_t * dmai )
+static int mach64_setup_frame( vidix_dma_t * dmai )
 {
-    bm_list_descriptor * list = (bm_list_descriptor *)mach64_dma_desc_base;
-    unsigned long dest_ptr;
-    unsigned i,n,count;
-    int retval;
     if(mach64_overlay_offset + dmai->dest_offset + dmai->size > mach64_ram_size) return E2BIG;
-    n = dmai->size / 4096;
-    if(dmai->size % 4096) n++;
+    if(dmai->idx > VID_PLAY_MAXFRAMES-1) dmai->idx=0;
     if(!(dmai->internal[dmai->idx] && (dmai->flags & BM_DMA_FIXED_BUFFS)))
     {
-	if((retval = VIRT_TO_CARD(dmai->src,dmai->size,dma_phys_addrs[dmai->idx])) != 0) return retval;
-	dmai->internal[dmai->idx] = dma_phys_addrs[dmai->idx];
-    }
-    dma_phys_addrs[dmai->idx] = dmai->internal[dmai->idx];
-    dest_ptr = dmai->dest_offset;
-    count = dmai->size;
-    for(i=0;i<n;i++)
-    {
-	list[i].framebuf_offset = mach64_overlay_offset + dest_ptr; /* offset within of video memory */
-	list[i].sys_addr = dma_phys_addrs[dmai->idx][i];
-	list[i].command = (count > 4096 ? 4096 : (count | DMA_GUI_COMMAND__EOL));
-	list[i].reserved = 0;
+	bm_list_descriptor * list = (bm_list_descriptor *)mach64_dma_desc_base[dmai->idx];
+	unsigned long dest_ptr;
+	unsigned i,n,count;
+	int retval;
+	n = dmai->size / 4096;
+	if(dmai->size % 4096) n++;
+	if((retval = VIRT_TO_CARD(dmai->src,dmai->size,dma_phys_addrs)) != 0) return retval;
+	dmai->internal[dmai->idx] = mach64_dma_desc_base[dmai->idx];
+	dest_ptr = dmai->dest_offset;
+	count = dmai->size;
+	for(i=0;i<n;i++)
+	{
+	    list[i].framebuf_offset = mach64_overlay_offset + dest_ptr; /* offset within of video memory */
+	    list[i].sys_addr = dma_phys_addrs[i];
+	    list[i].command = (count > 4096 ? 4096 : (count | DMA_GUI_COMMAND__EOL));
+	    list[i].reserved = 0;
 #if 0
 printf("MACH64_DMA_TABLE[%i] %X %X %X %X\n",i,list[i].framebuf_offset,list[i].sys_addr,list[i].command,list[i].reserved);
 #endif
-	dest_ptr += 4096;
-	count -= 4096;
+	    dest_ptr += 4096;
+	    count -= 4096;
+	}
     }
     return 0;
 }
 
-static int mach64_transfer_frame( void  )
+static int mach64_transfer_frame( unsigned long ba_dma_desc )
 {
     mach64_wait_for_idle();
-    mach64_wait_vsync();
     OUTREG(BUS_CNTL,(INREG(BUS_CNTL)|BUS_MSTR_RESET));
     OUTREG(CRTC_INT_CNTL,INREG(CRTC_INT_CNTL)|CRTC_BUSMASTER_EOL_INT|CRTC_BUSMASTER_EOL_INT_EN);
-    OUTREG(BUS_CNTL,(INREG(BUS_CNTL)|BUS_EXT_REG_EN|BUS_WRT_BURST|BUS_READ_BURST|BUS_PCI_READ_RETRY_EN|BUS_PCI_WRT_RETRY_EN) &(~BUS_MASTER_DIS));
-    OUTREG(BM_SYSTEM_TABLE,bus_addr_dma_desc|SYSTEM_TRIGGER_SYSTEM_TO_VIDEO);
+    OUTREG(BUS_CNTL,(INREG(BUS_CNTL)|BUS_EXT_REG_EN|BUS_READ_BURST|BUS_PCI_READ_RETRY_EN) &(~BUS_MASTER_DIS));
+    OUTREG(BM_SYSTEM_TABLE,ba_dma_desc|SYSTEM_TRIGGER_SYSTEM_TO_VIDEO);
     if(__verbose > VERBOSE_LEVEL) mach64_vid_dump_regs();    
     return 0;
 }
 
 
-int vixPlaybackCopyFrame( const vidix_dma_t * dmai )
+int vixPlaybackCopyFrame( vidix_dma_t * dmai )
 {
     int retval;
     if(!(dmai->flags & BM_DMA_FIXED_BUFFS)) if(mlock(dmai->src,dmai->size) != 0) return errno;
     retval = mach64_setup_frame(dmai);
-    if(retval == 0) retval = mach64_transfer_frame();
+    VIRT_TO_CARD(mach64_dma_desc_base[dmai->idx],1,&bus_addr_dma_desc);
+    if(retval == 0) retval = mach64_transfer_frame(bus_addr_dma_desc);
     if(!(dmai->flags & BM_DMA_FIXED_BUFFS)) munlock(dmai->src,dmai->size);
     return retval;
 }
