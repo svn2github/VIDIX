@@ -23,14 +23,14 @@
  * mga_vid.c
  *
  * Copyright (C) 1999 Aaron Holtzman
- * 
- * Module skeleton based on gutted agpgart module by Jeff Hartmann 
+ *
+ * Module skeleton based on gutted agpgart module by Jeff Hartmann
  * <slicer@ionet.net>
  *
  * Matrox MGA G200/G400 YUV Video Interface module Version 0.1.0
- * 
+ *
  * BES == Back End Scaler
- * 
+ *
  * This software has been released under the terms of the GNU Public
  * license. See http://www.gnu.org/copyleft/gpl.html for details.
  */
@@ -135,67 +135,67 @@ static vidix_capability_t mga_cap =
 /* MATROX BES registers */
 typedef struct bes_registers_s
 {
-	//BES Control
-	uint32_t besctl;
-	//BES Global control
-	uint32_t besglobctl;
-	//Luma control (brightness and contrast)
-	uint32_t beslumactl;
-	//Line pitch
-	uint32_t bespitch;
+    //BES Control
+    uint32_t besctl;
+    //BES Global control
+    uint32_t besglobctl;
+    //Luma control (brightness and contrast)
+    uint32_t beslumactl;
+    //Line pitch
+    uint32_t bespitch;
 
-	//Buffer A-1 Chroma 3 plane org
-	uint32_t besa1c3org;
-	//Buffer A-1 Chroma org
-	uint32_t besa1corg;
-	//Buffer A-1 Luma org
-	uint32_t besa1org;
+    //Buffer A-1 Chroma 3 plane org
+    uint32_t besa1c3org;
+    //Buffer A-1 Chroma org
+    uint32_t besa1corg;
+    //Buffer A-1 Luma org
+    uint32_t besa1org;
 
-	//Buffer A-2 Chroma 3 plane org
-	uint32_t besa2c3org;
-	//Buffer A-2 Chroma org
-	uint32_t besa2corg;
-	//Buffer A-2 Luma org
-	uint32_t besa2org;
+    //Buffer A-2 Chroma 3 plane org
+    uint32_t besa2c3org;
+    //Buffer A-2 Chroma org
+    uint32_t besa2corg;
+    //Buffer A-2 Luma org
+    uint32_t besa2org;
 
-	//Buffer B-1 Chroma 3 plane org
-	uint32_t besb1c3org;
-	//Buffer B-1 Chroma org
-	uint32_t besb1corg;
-	//Buffer B-1 Luma org
-	uint32_t besb1org;
+    //Buffer B-1 Chroma 3 plane org
+    uint32_t besb1c3org;
+    //Buffer B-1 Chroma org
+    uint32_t besb1corg;
+    //Buffer B-1 Luma org
+    uint32_t besb1org;
 
-	//Buffer B-2 Chroma 3 plane org
-	uint32_t besb2c3org;
-	//Buffer B-2 Chroma org
-	uint32_t besb2corg;
-	//Buffer B-2 Luma org
-	uint32_t besb2org;
+    //Buffer B-2 Chroma 3 plane org
+    uint32_t besb2c3org;
+    //Buffer B-2 Chroma org
+    uint32_t besb2corg;
+    //Buffer B-2 Luma org
+    uint32_t besb2org;
 
-	//BES Horizontal coord
-	uint32_t beshcoord;
-	//BES Horizontal inverse scaling [5.14]
-	uint32_t beshiscal;
-	//BES Horizontal source start [10.14] (for scaling)
-	uint32_t beshsrcst;
-	//BES Horizontal source ending [10.14] (for scaling) 
-	uint32_t beshsrcend;
-	//BES Horizontal source last 
-	uint32_t beshsrclst;
+    //BES Horizontal coord
+    uint32_t beshcoord;
+    //BES Horizontal inverse scaling [5.14]
+    uint32_t beshiscal;
+    //BES Horizontal source start [10.14] (for scaling)
+    uint32_t beshsrcst;
+    //BES Horizontal source ending [10.14] (for scaling)
+    uint32_t beshsrcend;
+    //BES Horizontal source last
+    uint32_t beshsrclst;
 
-	
-	//BES Vertical coord
-	uint32_t besvcoord;
-	//BES Vertical inverse scaling [5.14]
-	uint32_t besviscal;
-	//BES Field 1 vertical source last position
-	uint32_t besv1srclst;
-	//BES Field 1 weight start
-	uint32_t besv1wght;
-	//BES Field 2 vertical source last position
-	uint32_t besv2srclst;
-	//BES Field 2 weight start
-	uint32_t besv2wght;
+
+    //BES Vertical coord
+    uint32_t besvcoord;
+    //BES Vertical inverse scaling [5.14]
+    uint32_t besviscal;
+    //BES Field 1 vertical source last position
+    uint32_t besv1srclst;
+    //BES Field 1 weight start
+    uint32_t besv1wght;
+    //BES Field 2 vertical source last position
+    uint32_t besv2srclst;
+    //BES Field 2 weight start
+    uint32_t besv2wght;
 
 } bes_registers_t;
 static bes_registers_t regs;
@@ -203,25 +203,25 @@ static bes_registers_t regs;
 #ifdef CRTC2
 typedef struct crtc2_registers_s
 {
-	uint32_t c2ctl;
-	uint32_t c2datactl;
-	uint32_t c2misc;
-	uint32_t c2hparam;
-	uint32_t c2hsync;
-	uint32_t c2offset;
-	uint32_t c2pl2startadd0;
-	uint32_t c2pl2startadd1;
-	uint32_t c2pl3startadd0;
-	uint32_t c2pl3startadd1;
-	uint32_t c2preload;
-	uint32_t c2spicstartadd0;
-	uint32_t c2spicstartadd1;
-	uint32_t c2startadd0;
-	uint32_t c2startadd1;
-	uint32_t c2subpiclut;
-	uint32_t c2vcount;
-	uint32_t c2vparam;
-	uint32_t c2vsync;
+    uint32_t c2ctl;
+    uint32_t c2datactl;
+    uint32_t c2misc;
+    uint32_t c2hparam;
+    uint32_t c2hsync;
+    uint32_t c2offset;
+    uint32_t c2pl2startadd0;
+    uint32_t c2pl2startadd1;
+    uint32_t c2pl3startadd0;
+    uint32_t c2pl3startadd1;
+    uint32_t c2preload;
+    uint32_t c2spicstartadd0;
+    uint32_t c2spicstartadd1;
+    uint32_t c2startadd0;
+    uint32_t c2startadd1;
+    uint32_t c2subpiclut;
+    uint32_t c2vcount;
+    uint32_t c2vparam;
+    uint32_t c2vsync;
 } crtc2_registers_t;
 static crtc2_registers_t cregs;
 static crtc2_registers_t cregs_save;
@@ -255,7 +255,7 @@ static crtc2_registers_t cregs_save;
 #ifdef CRTC2
 /*CRTC2 registers*/
 #define XMISCCTRL  0x1e
-#define C2CTL       0x3c10 
+#define C2CTL       0x3c10
 #define C2DATACTL   0x3c4c
 #define C2MISC      0x3c44
 #define C2HPARAM    0x3c14
@@ -286,7 +286,7 @@ static crtc2_registers_t cregs_save;
 #define BESA1CORG   0x3d10
 #define BESA1ORG    0x3d00
 
-#define BESA2C3ORG  0x3d64 
+#define BESA2C3ORG  0x3d64
 #define BESA2CORG   0x3d14
 #define BESA2ORG    0x3d04
 
@@ -377,17 +377,17 @@ int VIDIX_NAME(vixPlaybackFrameSelect)(unsigned int frame)
 
 static void mga_vid_write_regs(int restore)
 {
-	//Make sure internal registers don't get updated until we're done
+    //Make sure internal registers don't get updated until we're done
     writel(BESGLOBCTL, (readl(VCOUNT)-1)<<16);
 
-	// color or coordinate keying
-	
+    // color or coordinate keying
+
     if (restore && colkey_saved)
     {
-	    // restore it
+	// restore it
 	colkey_saved = 0;
 
-		// Set color key registers:
+	// Set color key registers:
 	writeb(PALWTADD,  XKEYOPMODE);
 	writeb(X_DATAREG, colkey_on);
 
@@ -408,17 +408,17 @@ static void mga_vid_write_regs(int restore)
 	writeb(X_DATAREG, colkey_mask[2]);
 	writeb(PALWTADD,  XCOLMSK);
 	writeb(X_DATAREG, colkey_mask[3]);
-		
+
 	printf("[mga] Restored colorkey (ON: %d  %02X:%02X:%02X)\n",
 	       colkey_on,colkey_color[0],colkey_color[1],colkey_color[2]);
 
     } else if (!colkey_saved) {
-	    // save it
-	    colkey_saved=1;
-		// Get color key registers:
+	// save it
+	colkey_saved=1;
+	// Get color key registers:
 	writeb(PALWTADD,  XKEYOPMODE);
 	colkey_on = readb(X_DATAREG) & 1;
-		
+
 	writeb(PALWTADD,  XCOLKEY0RED);
 	colkey_color[0]=(unsigned char)readb(X_DATAREG);
 	writeb(PALWTADD,  XCOLKEY0GREEN);
@@ -437,55 +437,52 @@ static void mga_vid_write_regs(int restore)
 	writeb(PALWTADD,  XCOLMSK);
 	colkey_mask[3]=(unsigned char)readb(X_DATAREG);
 
-		printf("[mga] Saved colorkey (ON: %d  %02X:%02X:%02X)\n",
-			colkey_on,colkey_color[0],colkey_color[1],colkey_color[2]);
-	}
-	
+	printf("[mga] Saved colorkey (ON: %d  %02X:%02X:%02X)\n",
+	       colkey_on,colkey_color[0],colkey_color[1],colkey_color[2]);
+    }
+
     if (!restore)
     {
 	writeb(PALWTADD,  XKEYOPMODE);
 	writeb(X_DATAREG, (mga_grkey.ckey.op == CKEY_TRUE));
 	if ( mga_grkey.ckey.op == CKEY_TRUE )
 	{
-		uint32_t r=0, g=0, b=0;
+	    uint32_t r=0, g=0, b=0;
 
 	    writeb(PALWTADD, XMULCTRL);
 	    switch (readb(X_DATAREG))
-		{
-			case BPP_8:
-				/* Need to look up the color index, just using
-														 color 0 for now. */
-			break;
+	    {
+	    case BPP_8:
+		/* Need to look up the color index, just using
+		 color 0 for now. */
+		break;
+	    case BPP_15:
+		r = mga_grkey.ckey.red   >> 3;
+		g = mga_grkey.ckey.green >> 3;
+		b = mga_grkey.ckey.blue  >> 3;
+		break;
+	    case BPP_16:
+		r = mga_grkey.ckey.red   >> 3;
+		g = mga_grkey.ckey.green >> 2;
+		b = mga_grkey.ckey.blue  >> 3;
+		break;
+	    case BPP_24:
+	    case BPP_32_DIR:
+	    case BPP_32_PAL:
+		r = mga_grkey.ckey.red;
+		g = mga_grkey.ckey.green;
+		b = mga_grkey.ckey.blue;
+		break;
+	    }
 
-			case BPP_15:
-				r = mga_grkey.ckey.red   >> 3;
-				g = mga_grkey.ckey.green >> 3;
-				b = mga_grkey.ckey.blue  >> 3;
-			break;
-
-			case BPP_16:
-				r = mga_grkey.ckey.red   >> 3;
-				g = mga_grkey.ckey.green >> 2;
-				b = mga_grkey.ckey.blue  >> 3;
-			break;
-
-			case BPP_24:
-			case BPP_32_DIR:
-			case BPP_32_PAL:
-				r = mga_grkey.ckey.red;
-				g = mga_grkey.ckey.green;
-				b = mga_grkey.ckey.blue;
-			break;
-		}
-
-		// Disable color keying on alpha channel 
+	    // Disable color keying on alpha channel
 	    writeb(PALWTADD, XCOLMSK);
 	    writeb(X_DATAREG, 0x00);
 	    writeb(PALWTADD, X_COLKEY);
 	    writeb(X_DATAREG, 0x00);
 
 
-		// Set up color key registers
+	    // Set up color key registers
 	    writeb(PALWTADD, XCOLKEY0RED);
 	    writeb(X_DATAREG, r);
 	    writeb(PALWTADD, XCOLKEY0GREEN);
@@ -493,7 +490,7 @@ static void mga_vid_write_regs(int restore)
 	    writeb(PALWTADD, XCOLKEY0BLUE);
 	    writeb(X_DATAREG, b);
 
-		// Set up color key mask registers
+	    // Set up color key mask registers
 	    writeb(PALWTADD, XCOLMSK0RED);
 	    writeb(X_DATAREG, 0xff);
 	    writeb(PALWTADD, XCOLMSK0GREEN);
@@ -501,9 +498,9 @@ static void mga_vid_write_regs(int restore)
 	    writeb(PALWTADD, XCOLMSK0BLUE);
 	    writeb(X_DATAREG, 0xff);
 	}
-	}
+    }
 
-	// Backend Scaler
+    // Backend Scaler
     writel(BESCTL,      regs.besctl);
     if (is_g400)
 	writel(BESLUMACTL, regs.beslumactl);
@@ -517,8 +514,8 @@ static void mga_vid_write_regs(int restore)
     writel(BESB1CORG,   regs.besb1corg);
     writel(BESB2ORG,    regs.besb2org);
     writel(BESB2CORG,   regs.besb2corg);
-	if(is_g400) 
-	{
+    if(is_g400)
+    {
 	writel(BESA1C3ORG, regs.besa1c3org);
 	writel(BESA2C3ORG, regs.besa2c3org);
 	writel(BESB1C3ORG, regs.besb1c3org);
@@ -538,17 +535,17 @@ static void mga_vid_write_regs(int restore)
     writel(BESV1WGHT,   regs.besv1wght);
     writel(BESV2SRCLST, regs.besv2srclst);
     writel(BESV2WGHT,   regs.besv2wght);
-	
-	//update the registers somewhere between 1 and 2 frames from now.
+
+    //update the registers somewhere between 1 and 2 frames from now.
     writel(BESGLOBCTL,  regs.besglobctl + ((readl(VCOUNT)+2)<<16));
 
-	if (mga_verbose > 1)
-	{
-	    printf("[mga] wrote BES registers\n");
+    if (mga_verbose > 1)
+    {
+	printf("[mga] wrote BES registers\n");
 	printf("[mga] BESCTL = 0x%08x\n", readl(BESCTL));
 	printf("[mga] BESGLOBCTL = 0x%08x\n", readl(BESGLOBCTL));
 	printf("[mga] BESSTATUS= 0x%08x\n", readl(BESSTATUS));
-	}
+    }
 #ifdef CRTC2
     if (cregs_save.c2ctl == 0)
     {
@@ -573,10 +570,10 @@ static void mga_vid_write_regs(int restore)
 
     writel(C2CTL, ((readl(C2CTL) & ~0x03e00000) + (cregs.c2ctl & 0x03e00000)));
     writel(C2DATACTL, ((readl(C2DATACTL) & ~0x000000ff) + (cregs.c2datactl & 0x000000ff)));
-	// ctrc2
-	// disable CRTC2 acording to specs
+    // ctrc2
+    // disable CRTC2 acording to specs
     //	writel(C2CTL, cregs.c2ctl & 0xfffffff0);
- // je to treba ???
+    // je to treba ???
     //	writeb(XMISCCTRL, (readb(XMISCCTRL) & 0x19) | 0xa2); // MAFC - mfcsel & vdoutsel
     //	writeb(XMISCCTRL, (readb(XMISCCTRL) & 0x19) | 0x92);
     //	writeb(XMISCCTRL, (readb(XMISCCTRL) & ~0xe9) + 0xa2);
@@ -604,30 +601,30 @@ static void mga_vid_write_regs(int restore)
     //writel(C2SUBPICLUT, cregs.c2subpiclut);
     //writel(C2PRELOAD,   cregs.c2preload);
 
-	// finaly enable everything
+    // finaly enable everything
     writel(C2CTL,       cregs.c2ctl);
     //	printf("c2ctl:0x%08x c2datactl:0x%08x\n",readl(C2CTL), readl(C2DATACTL));
     //	printf("c2misc:0x%08x\n", readl(C2MISC));
-#endif	
+#endif
 }
 
 #ifdef MGA_ALLOW_IRQ
 static void enable_irq()
 {
-	long int cc;
+    long int cc;
 
     cc = readl(IEN);
     //	printf("*** !!! IRQREG = %d\n", (int)(cc&0xff));
 
     writeb(CRTCX, 0x11);
-	
+
     writeb(CRTCD, 0x20);  /* clear 0, enable off */
     writeb(CRTCD, 0x00);  /* enable on */
     writeb(CRTCD, 0x10);  /* clear = 1 */
-	
+
     writel(BESGLOBCTL, regs.besglobctl);
-    	
-	return;
+
+    return;
 }
 
 static void disable_irq()
@@ -635,69 +632,69 @@ static void disable_irq()
     writeb(CRTCX, 0x11);
     writeb(CRTCD, 0x20);  /* clear 0, enable off */
 
-	return;
+    return;
 }
 
 void mga_handle_irq(int irq, void *dev_id/*, struct pt_regs *pregs*/) {
     //	static int frame=0;
     //	static int counter=0;
-	long int cc;
+    long int cc;
     //	if ( ! mga_enabled_flag ) return;
 
     //	printf("vcount = %d\n",readl(VCOUNT));
 
-	//printf("mga_interrupt #%d\n", irq);
+    //printf("mga_interrupt #%d\n", irq);
 
-	if ( irq != -1 ) {
+    if ( irq != -1 ) {
 
 	cc = readl(STATUS);
-		if ( ! (cc & 0x10) ) return;  /* vsyncpen */
+	if ( ! (cc & 0x10) ) return;  /* vsyncpen */
 	// 		debug_irqcnt++;
-	} 
+    }
 
     //    if ( debug_irqignore ) {
     //	debug_irqignore = 0;
 
     /*
-	if ( mga_conf_deinterlace ) {
-		if ( mga_first_field ) {
-			// printf("mga_interrupt first field\n");
-			if ( syncfb_interrupt() )
-				mga_first_field = 0;
-		} else {
-			// printf("mga_interrupt second field\n");
-			mga_select_buffer( mga_current_field | 2 );
-			mga_first_field = 1;
-		}
-	} else {
-		syncfb_interrupt();
-	}
+     if ( mga_conf_deinterlace ) {
+     if ( mga_first_field ) {
+     // printf("mga_interrupt first field\n");
+     if ( syncfb_interrupt() )
+     mga_first_field = 0;
+     } else {
+     // printf("mga_interrupt second field\n");
+     mga_select_buffer( mga_current_field | 2 );
+     mga_first_field = 1;
+     }
+     } else {
+     syncfb_interrupt();
+     }
      */
 
     //	frame=(frame+1)&1;
-	regs.besctl = (regs.besctl & ~0x07000000) + (mga_next_frame << 25);
+    regs.besctl = (regs.besctl & ~0x07000000) + (mga_next_frame << 25);
     writel(BESCTL, regs.besctl);
 
 #ifdef CRTC2
-	crtc2_frame_sel(mga_next_frame);
+    crtc2_frame_sel(mga_next_frame);
 #endif
-	
+
 #if 0
-	++counter;
-	if(!(counter&63)){
-	    printf("mga irq counter = %d\n",counter);
-	}
+    ++counter;
+    if(!(counter&63)){
+	printf("mga irq counter = %d\n",counter);
+    }
 #endif
 
     //    } else {
     //	debug_irqignore = 1;
     //    }
 
-	if ( irq != -1 ) {
+    if ( irq != -1 ) {
 	writeb(CRTCX, 0x11);
 	writeb(CRTCD, 0);
 	writeb(CRTCD, 0x10);
-	}
+    }
 
     //writel(BESGLOBCTL, regs.besglobctl);
 
@@ -706,9 +703,9 @@ void mga_handle_irq(int irq, void *dev_id/*, struct pt_regs *pregs*/) {
 
 int VIDIX_NAME(vixConfigPlayback)(vidix_playback_t *config)
 {
-	int i;
-	int x, y, sw, sh, dw, dh;
-	int besleft, bestop, ifactor, ofsleft, ofstop, baseadrofs, weight, weights;
+    int i;
+    int x, y, sw, sh, dw, dh;
+    int besleft, bestop, ifactor, ofsleft, ofstop, baseadrofs, weight, weights;
 #ifdef CRTC2
 #define right_margin 0
 #define left_margin 18
@@ -717,26 +714,26 @@ int VIDIX_NAME(vixConfigPlayback)(vidix_playback_t *config)
 #define vsync_len 4
 #define upper_margin 39
 
-	unsigned int hdispend = (config->src.w + 31) & ~31;
-	unsigned int hsyncstart = hdispend + (right_margin & ~7);
-	unsigned int hsyncend = hsyncstart + (hsync_len & ~7);
-	unsigned int htotal = hsyncend + (left_margin & ~7);
-	unsigned int vdispend = config->src.h;
-	unsigned int vsyncstart = vdispend + lower_margin;
-	unsigned int vsyncend = vsyncstart + vsync_len;
-	unsigned int vtotal = vsyncend + upper_margin;
-#endif 
+    unsigned int hdispend = (config->src.w + 31) & ~31;
+    unsigned int hsyncstart = hdispend + (right_margin & ~7);
+    unsigned int hsyncend = hsyncstart + (hsync_len & ~7);
+    unsigned int htotal = hsyncend + (left_margin & ~7);
+    unsigned int vdispend = config->src.h;
+    unsigned int vsyncstart = vdispend + lower_margin;
+    unsigned int vsyncend = vsyncstart + vsync_len;
+    unsigned int vtotal = vsyncend + upper_margin;
+#endif
 
     if ((config->num_frames < 1) || (config->num_frames > MGA_DEFAULT_FRAMES))
     {
 	printf("[mga] illegal num_frames: %d, setting to %d\n",
-	    config->num_frames, MGA_DEFAULT_FRAMES);
+	       config->num_frames, MGA_DEFAULT_FRAMES);
 	config->num_frames = MGA_DEFAULT_FRAMES;
     }
     for(;config->num_frames>0;config->num_frames--)
     {
 	/*FIXME: this driver can use more frames but we need to apply
-	  some tricks to avoid RGB-memory hits*/
+	 some tricks to avoid RGB-memory hits*/
 	mga_src_base = ((mga_ram_size/2)*0x100000-config->num_frames*config->frame_size);
 	mga_src_base &= (~0xFFFF); /* 64k boundary */
 	if(mga_src_base>=0) break;
@@ -751,17 +748,17 @@ int VIDIX_NAME(vixConfigPlayback)(vidix_playback_t *config)
     sh = config->src.h;
     dw = config->dest.w;
     dh = config->dest.h;
-    
+
     config->dest.pitch.y=32;
     config->dest.pitch.u=config->dest.pitch.v=16;
 
     if (mga_verbose) printf("[mga] Setting up a %dx%d-%dx%d video window (src %dx%d) format %X\n",
-           dw, dh, x, y, sw, sh, config->fourcc);
+			    dw, dh, x, y, sw, sh, config->fourcc);
 
     if ((sw < 4) || (sh < 4) || (dw < 4) || (dh < 4))
     {
-        printf("[mga] Invalid src/dest dimensions\n");
-        return(EINVAL);
+	printf("[mga] Invalid src/dest dimensions\n");
+	return(EINVAL);
     }
 
     //FIXME check that window is valid and inside desktop
@@ -771,19 +768,19 @@ int VIDIX_NAME(vixConfigPlayback)(vidix_playback_t *config)
     sw += sw & 1;
     switch(config->fourcc)
     {
-	case IMGFMT_I420:
-	case IMGFMT_IYUV:
-	case IMGFMT_YV12:
-	    sh+=sh&1;
-	    config->frame_size = ((sw + 31) & ~31) * sh + (((sw + 31) & ~31) * sh) / 2;
-	    break;
-	case IMGFMT_YUY2:
-	case IMGFMT_UYVY:
-	    config->frame_size = ((sw + 31) & ~31) * sh * 2;
-	    break;
-	default:
-	    printf("[mga] Unsupported pixel format: %x\n", config->fourcc);
-	    return(ENOTSUP);
+    case IMGFMT_I420:
+    case IMGFMT_IYUV:
+    case IMGFMT_YV12:
+	sh+=sh&1;
+	config->frame_size = ((sw + 31) & ~31) * sh + (((sw + 31) & ~31) * sh) / 2;
+	break;
+    case IMGFMT_YUY2:
+    case IMGFMT_UYVY:
+	config->frame_size = ((sw + 31) & ~31) * sh * 2;
+	break;
+    default:
+	printf("[mga] Unsupported pixel format: %x\n", config->fourcc);
+	return(ENOTSUP);
     }
 
     config->offsets[0] = 0;
@@ -806,130 +803,130 @@ int VIDIX_NAME(vixConfigPlayback)(vidix_playback_t *config)
     /* for G200 set Interleaved UV planes */
     if (!is_g400)
 	config->flags = VID_PLAY_INTERLEAVED_UV | INTERLEAVING_UV;
-	
-    //Setup the BES registers for a three plane 4:2:0 video source 
+
+    //Setup the BES registers for a three plane 4:2:0 video source
 
     regs.besglobctl = 0;
 
     switch(config->fourcc)
     {
-	case IMGFMT_YV12:	
-	case IMGFMT_I420:	
-	case IMGFMT_IYUV:	
-	regs.besctl = 1         // BES enabled
-                    + (0<<6)    // even start polarity
-                    + (1<<10)   // x filtering enabled
-                    + (1<<11)   // y filtering enabled
-                    + (1<<16)   // chroma upsampling
-                    + (1<<17)   // 4:2:0 mode
-                    + (1<<18);  // dither enabled
+    case IMGFMT_YV12:
+    case IMGFMT_I420:
+    case IMGFMT_IYUV:
+	regs.besctl = 1 // BES enabled
+	    + (0<<6)    // even start polarity
+	    + (1<<10)   // x filtering enabled
+	    + (1<<11)   // y filtering enabled
+	    + (1<<16)   // chroma upsampling
+	    + (1<<17)   // 4:2:0 mode
+	    + (1<<18);  // dither enabled
 #if 0
 	if(is_g400)
 	{
-		//zoom disabled, zoom filter disabled, 420 3 plane format, proc amp
-		//disabled, rgb mode disabled 
-		regs.besglobctl = (1<<5);
+	    //zoom disabled, zoom filter disabled, 420 3 plane format, proc amp
+	    //disabled, rgb mode disabled
+	    regs.besglobctl = (1<<5);
 	}
 	else
 	{
-		//zoom disabled, zoom filter disabled, Cb samples in 0246, Cr
-		//in 1357, BES register update on besvcnt
-	        regs.besglobctl = 0;
+	    //zoom disabled, zoom filter disabled, Cb samples in 0246, Cr
+	    //in 1357, BES register update on besvcnt
+	    regs.besglobctl = 0;
 	}
 #endif
-        break;
+	break;
 
-    case IMGFMT_YUY2:	
-	regs.besctl = 1         // BES enabled
-                    + (0<<6)    // even start polarity
-                    + (1<<10)   // x filtering enabled
-                    + (1<<11)   // y filtering enabled
-                    + (1<<16)   // chroma upsampling
-                    + (0<<17)   // 4:2:2 mode
-                    + (1<<18);  // dither enabled
+    case IMGFMT_YUY2:
+	regs.besctl = 1 // BES enabled
+	    + (0<<6)    // even start polarity
+	    + (1<<10)   // x filtering enabled
+	    + (1<<11)   // y filtering enabled
+	    + (1<<16)   // chroma upsampling
+	    + (0<<17)   // 4:2:2 mode
+	    + (1<<18);  // dither enabled
 
 	regs.besglobctl = 0;        // YUY2 format selected
-        break;
+	break;
 
-    case IMGFMT_UYVY:	
+    case IMGFMT_UYVY:
 	regs.besctl = 1         // BES enabled
-                    + (0<<6)    // even start polarity
-                    + (1<<10)   // x filtering enabled
-                    + (1<<11)   // y filtering enabled
-                    + (1<<16)   // chroma upsampling
-                    + (0<<17)   // 4:2:2 mode
-                    + (1<<18);  // dither enabled
+	    + (0<<6)    // even start polarity
+	    + (1<<10)   // x filtering enabled
+	    + (1<<11)   // y filtering enabled
+	    + (1<<16)   // chroma upsampling
+	    + (0<<17)   // 4:2:2 mode
+	    + (1<<18);  // dither enabled
 
 	regs.besglobctl = 1<<6;        // UYVY format selected
-        break;
+	break;
 
     }
 
-	//Disable contrast and brightness control
-	regs.besglobctl |= (1<<5) + (1<<7);
+    //Disable contrast and brightness control
+    regs.besglobctl |= (1<<5) + (1<<7);
     // we want to preserver these across restarts
     //regs.beslumactl = (0x0 << 16) + 0x80;
 
-	//Setup destination window boundaries
-	besleft = x > 0 ? x : 0;
-	bestop = y > 0 ? y : 0;
-	regs.beshcoord = (besleft<<16) + (x + dw-1);
-	regs.besvcoord = (bestop<<16) + (y + dh-1);
-	
-	//Setup source dimensions
-	regs.beshsrclst  = (sw - 1) << 16;
-	regs.bespitch = (sw + 31) & ~31 ; 
-	
-	//Setup horizontal scaling
-	ifactor = ((sw-1)<<14)/(dw-1);
-	ofsleft = besleft - x;
-		
-	regs.beshiscal = ifactor<<2;
-	regs.beshsrcst = (ofsleft*ifactor)<<2;
-	regs.beshsrcend = regs.beshsrcst + (((dw - ofsleft - 1) * ifactor) << 2);
-	
-	//Setup vertical scaling
-	ifactor = ((sh-1)<<14)/(dh-1);
-	ofstop = bestop - y;
+    //Setup destination window boundaries
+    besleft = x > 0 ? x : 0;
+    bestop = y > 0 ? y : 0;
+    regs.beshcoord = (besleft<<16) + (x + dw-1);
+    regs.besvcoord = (bestop<<16) + (y + dh-1);
 
-	regs.besviscal = ifactor<<2;
+    //Setup source dimensions
+    regs.beshsrclst = (sw - 1) << 16;
+    regs.bespitch = (sw + 31) & ~31 ;
 
-	baseadrofs = ((ofstop*regs.besviscal)>>16)*regs.bespitch;
-	//frame_size = ((sw + 31) & ~31) * sh + (((sw + 31) & ~31) * sh) / 2;
-	regs.besa1org = (uint32_t) mga_src_base + baseadrofs;
-	regs.besa2org = (uint32_t) mga_src_base + baseadrofs + 1*config->frame_size;
-	regs.besb1org = (uint32_t) mga_src_base + baseadrofs + 2*config->frame_size;
-	regs.besb2org = (uint32_t) mga_src_base + baseadrofs + 3*config->frame_size;
+    //Setup horizontal scaling
+    ifactor = ((sw-1)<<14)/(dw-1);
+    ofsleft = besleft - x;
+
+    regs.beshiscal = ifactor<<2;
+    regs.beshsrcst = (ofsleft*ifactor)<<2;
+    regs.beshsrcend = regs.beshsrcst + (((dw - ofsleft - 1) * ifactor) << 2);
+
+    //Setup vertical scaling
+    ifactor = ((sh-1)<<14)/(dh-1);
+    ofstop = bestop - y;
+
+    regs.besviscal = ifactor<<2;
+
+    baseadrofs = ((ofstop*regs.besviscal)>>16)*regs.bespitch;
+    //frame_size = ((sw + 31) & ~31) * sh + (((sw + 31) & ~31) * sh) / 2;
+    regs.besa1org = (uint32_t) mga_src_base + baseadrofs;
+    regs.besa2org = (uint32_t) mga_src_base + baseadrofs + 1*config->frame_size;
+    regs.besb1org = (uint32_t) mga_src_base + baseadrofs + 2*config->frame_size;
+    regs.besb2org = (uint32_t) mga_src_base + baseadrofs + 3*config->frame_size;
 
     if (config->fourcc == IMGFMT_YV12
 	|| config->fourcc == IMGFMT_IYUV
 	|| config->fourcc == IMGFMT_I420)
     {
-        // planar YUV frames:
-	if (is_g400) 
-		baseadrofs = (((ofstop*regs.besviscal)/4)>>16)*regs.bespitch;
-	else 
-		baseadrofs = (((ofstop*regs.besviscal)/2)>>16)*regs.bespitch;
+	// planar YUV frames:
+	if (is_g400)
+	    baseadrofs = (((ofstop*regs.besviscal)/4)>>16)*regs.bespitch;
+	else
+	    baseadrofs = (((ofstop*regs.besviscal)/2)>>16)*regs.bespitch;
 
 	if (config->fourcc == IMGFMT_YV12){
-	regs.besa1corg = (uint32_t) mga_src_base + baseadrofs + regs.bespitch * sh ;
-	regs.besa2corg = (uint32_t) mga_src_base + baseadrofs + 1*config->frame_size + regs.bespitch * sh;
-	regs.besb1corg = (uint32_t) mga_src_base + baseadrofs + 2*config->frame_size + regs.bespitch * sh;
-	regs.besb2corg = (uint32_t) mga_src_base + baseadrofs + 3*config->frame_size + regs.bespitch * sh;
-	regs.besa1c3org = regs.besa1corg + ((regs.bespitch * sh) / 4);
-	regs.besa2c3org = regs.besa2corg + ((regs.bespitch * sh) / 4);
-	regs.besb1c3org = regs.besb1corg + ((regs.bespitch * sh) / 4);
-	regs.besb2c3org = regs.besb2corg + ((regs.bespitch * sh) / 4);
-    } else {
-	regs.besa1c3org = (uint32_t) mga_src_base + baseadrofs + regs.bespitch * sh ;
-	regs.besa2c3org = (uint32_t) mga_src_base + baseadrofs + 1*config->frame_size + regs.bespitch * sh;
-	regs.besb1c3org = (uint32_t) mga_src_base + baseadrofs + 2*config->frame_size + regs.bespitch * sh;
-	regs.besb2c3org = (uint32_t) mga_src_base + baseadrofs + 3*config->frame_size + regs.bespitch * sh;
-	regs.besa1corg = regs.besa1c3org + ((regs.bespitch * sh) / 4);
-	regs.besa2corg = regs.besa2c3org + ((regs.bespitch * sh) / 4);
-	regs.besb1corg = regs.besb1c3org + ((regs.bespitch * sh) / 4);
-	regs.besb2corg = regs.besb2c3org + ((regs.bespitch * sh) / 4);
-    }
+	    regs.besa1corg = (uint32_t) mga_src_base + baseadrofs + regs.bespitch * sh ;
+	    regs.besa2corg = (uint32_t) mga_src_base + baseadrofs + 1*config->frame_size + regs.bespitch * sh;
+	    regs.besb1corg = (uint32_t) mga_src_base + baseadrofs + 2*config->frame_size + regs.bespitch * sh;
+	    regs.besb2corg = (uint32_t) mga_src_base + baseadrofs + 3*config->frame_size + regs.bespitch * sh;
+	    regs.besa1c3org = regs.besa1corg + ((regs.bespitch * sh) / 4);
+	    regs.besa2c3org = regs.besa2corg + ((regs.bespitch * sh) / 4);
+	    regs.besb1c3org = regs.besb1corg + ((regs.bespitch * sh) / 4);
+	    regs.besb2c3org = regs.besb2corg + ((regs.bespitch * sh) / 4);
+	} else {
+	    regs.besa1c3org = (uint32_t) mga_src_base + baseadrofs + regs.bespitch * sh ;
+	    regs.besa2c3org = (uint32_t) mga_src_base + baseadrofs + 1*config->frame_size + regs.bespitch * sh;
+	    regs.besb1c3org = (uint32_t) mga_src_base + baseadrofs + 2*config->frame_size + regs.bespitch * sh;
+	    regs.besb2c3org = (uint32_t) mga_src_base + baseadrofs + 3*config->frame_size + regs.bespitch * sh;
+	    regs.besa1corg = regs.besa1c3org + ((regs.bespitch * sh) / 4);
+	    regs.besa2corg = regs.besa2c3org + ((regs.bespitch * sh) / 4);
+	    regs.besb1corg = regs.besb1c3org + ((regs.bespitch * sh) / 4);
+	    regs.besb2corg = regs.besb2c3org + ((regs.bespitch * sh) / 4);
+	}
     }
 
     weight = ofstop * (regs.besviscal >> 2);
@@ -938,213 +935,213 @@ int VIDIX_NAME(vixConfigPlayback)(vidix_playback_t *config)
     regs.besv2srclst = regs.besv1srclst = sh - 1 - (((ofstop * regs.besviscal) >> 16) & 0x03FF);
 
 #ifdef CRTC2
-	// pridat hlavni registry - tj. casovani ...
+    // pridat hlavni registry - tj. casovani ...
 
 
     switch(config->fourcc){
-    case IMGFMT_YV12:	
-    case IMGFMT_I420:	
-    case IMGFMT_IYUV:	
+    case IMGFMT_YV12:
+    case IMGFMT_I420:
+    case IMGFMT_IYUV:
 	cregs.c2ctl = 1         // CRTC2 enabled
-		    + (1<<1)	// external clock
-		    + (0<<2)	// external clock
-		    + (1<<3)	// pixel clock enable - not needed ???
+	    + (1<<1)	// external clock
+	    + (0<<2)	// external clock
+	    + (1<<3)	// pixel clock enable - not needed ???
 	    + (0<<4)	// high priority req
 	    + (1<<5)	// high priority req
 	    + (0<<6)	// high priority req
 	    + (1<<8)	// high priority req max
 	    + (0<<9)	// high priority req max
 	    + (0<<10)	// high priority req max
-                    + (0<<20)   // CRTC1 to DAC
-                    + (1<<21)   // 420 mode
-                    + (1<<22)   // 420 mode
-                    + (1<<23)   // 420 mode
-                    + (0<<24)   // single chroma line for 420 mode - need to be corrected
-                    + (0<<25)   /*/ interlace mode - need to be corrected*/
-                    + (0<<26)   // field legth polariry
-                    + (0<<27)   // field identification polariry
-                    + (1<<28)   // VIDRST detection mode
-                    + (0<<29)   // VIDRST detection mode
-                    + (1<<30)   // Horizontal counter preload
-                    + (1<<31)   // Vertical counter preload
-		    ;
+	    + (0<<20)   // CRTC1 to DAC
+	    + (1<<21)   // 420 mode
+	    + (1<<22)   // 420 mode
+	    + (1<<23)   // 420 mode
+	    + (0<<24)   // single chroma line for 420 mode - need to be corrected
+	    + (0<<25)   /*/ interlace mode - need to be corrected*/
+	    + (0<<26)   // field legth polariry
+	    + (0<<27)   // field identification polariry
+	    + (1<<28)   // VIDRST detection mode
+	    + (0<<29)   // VIDRST detection mode
+	    + (1<<30)   // Horizontal counter preload
+	    + (1<<31)   // Vertical counter preload
+	    ;
 	cregs.c2datactl = 1         // disable dither - propably not needed, we are already in YUV mode
-		    + (1<<1)	// Y filter enable
-		    + (1<<2)	// CbCr filter enable
-		    + (0<<3)	// subpicture enable (disabled)
-		    + (0<<4)	// NTSC enable (disabled - PAL)
-		    + (0<<5)	// C2 static subpicture enable (disabled)
-		    + (0<<6)	// C2 subpicture offset division (disabled)
-		    + (0<<7)	// 422 subformat selection !
+	    + (1<<1)	// Y filter enable
+	    + (1<<2)	// CbCr filter enable
+	    + (0<<3)	// subpicture enable (disabled)
+	    + (0<<4)	// NTSC enable (disabled - PAL)
+	    + (0<<5)	// C2 static subpicture enable (disabled)
+	    + (0<<6)	// C2 subpicture offset division (disabled)
+	    + (0<<7)	// 422 subformat selection !
 	    /*		    + (0<<8)	// 15 bpp high alpha
-		    + (0<<9)	// 15 bpp high alpha
-		    + (0<<10)	// 15 bpp high alpha
-		    + (0<<11)	// 15 bpp high alpha
-		    + (0<<12)	// 15 bpp high alpha
-		    + (0<<13)	// 15 bpp high alpha
-		    + (0<<14)	// 15 bpp high alpha
-		    + (0<<15)	// 15 bpp high alpha
-		    + (0<<16)	// 15 bpp low alpha
-		    + (0<<17)	// 15 bpp low alpha
-		    + (0<<18)	// 15 bpp low alpha
-		    + (0<<19)	// 15 bpp low alpha
-		    + (0<<20)	// 15 bpp low alpha
-		    + (0<<21)	// 15 bpp low alpha
-		    + (0<<22)	// 15 bpp low alpha
-		    + (0<<23)	// 15 bpp low alpha
-		    + (0<<24)	// static subpicture key
-		    + (0<<25)	// static subpicture key
-		    + (0<<26)	// static subpicture key
-		    + (0<<27)	// static subpicture key
-		    + (0<<28)	// static subpicture key
+	     + (0<<9)	// 15 bpp high alpha
+	     + (0<<10)	// 15 bpp high alpha
+	     + (0<<11)	// 15 bpp high alpha
+	     + (0<<12)	// 15 bpp high alpha
+	     + (0<<13)	// 15 bpp high alpha
+	     + (0<<14)	// 15 bpp high alpha
+	     + (0<<15)	// 15 bpp high alpha
+	     + (0<<16)	// 15 bpp low alpha
+	     + (0<<17)	// 15 bpp low alpha
+	     + (0<<18)	// 15 bpp low alpha
+	     + (0<<19)	// 15 bpp low alpha
+	     + (0<<20)	// 15 bpp low alpha
+	     + (0<<21)	// 15 bpp low alpha
+	     + (0<<22)	// 15 bpp low alpha
+	     + (0<<23)	// 15 bpp low alpha
+	     + (0<<24)	// static subpicture key
+	     + (0<<25)	// static subpicture key
+	     + (0<<26)	// static subpicture key
+	     + (0<<27)	// static subpicture key
+	     + (0<<28)	// static subpicture key
 	     */		    ;
-        break;
+	break;
 
-    case IMGFMT_YUY2:	
+    case IMGFMT_YUY2:
 	cregs.c2ctl = 1         // CRTC2 enabled
-		    + (1<<1)	// external clock
-		    + (0<<2)	// external clock
-		    + (1<<3)	// pixel clock enable - not needed ???
+	    + (1<<1)	// external clock
+	    + (0<<2)	// external clock
+	    + (1<<3)	// pixel clock enable - not needed ???
 	    + (0<<4)	// high priority req - acc to spec
 	    + (1<<5)	// high priority req
 	    + (0<<6)	// high priority req
-				// 7 reserved
+	    // 7 reserved
 	    + (1<<8)	// high priority req max
 	    + (0<<9)	// high priority req max
 	    + (0<<10)	// high priority req max
-				// 11-19 reserved
-                    + (0<<20)   // CRTC1 to DAC
-                    + (1<<21)   // 422 mode
-                    + (0<<22)   // 422 mode
-                    + (1<<23)   // 422 mode
-                    + (0<<24)   // single chroma line for 420 mode - need to be corrected
-                    + (0<<25)   /*/ interlace mode - need to be corrected*/
-                    + (0<<26)   // field legth polariry
-                    + (0<<27)   // field identification polariry
-                    + (1<<28)   // VIDRST detection mode
-                    + (0<<29)   // VIDRST detection mode
-                    + (1<<30)   // Horizontal counter preload
-                    + (1<<31)   // Vertical counter preload
-		    ;
+	    // 11-19 reserved
+	    + (0<<20)   // CRTC1 to DAC
+	    + (1<<21)   // 422 mode
+	    + (0<<22)   // 422 mode
+	    + (1<<23)   // 422 mode
+	    + (0<<24)   // single chroma line for 420 mode - need to be corrected
+	    + (0<<25)   /*/ interlace mode - need to be corrected*/
+	    + (0<<26)   // field legth polariry
+	    + (0<<27)   // field identification polariry
+	    + (1<<28)   // VIDRST detection mode
+	    + (0<<29)   // VIDRST detection mode
+	    + (1<<30)   // Horizontal counter preload
+	    + (1<<31)   // Vertical counter preload
+	    ;
 	cregs.c2datactl = 1         // disable dither - propably not needed, we are already in YUV mode
-		    + (1<<1)	// Y filter enable
-		    + (1<<2)	// CbCr filter enable
-		    + (0<<3)	// subpicture enable (disabled)
-		    + (0<<4)	// NTSC enable (disabled - PAL)
-		    + (0<<5)	// C2 static subpicture enable (disabled)
-		    + (0<<6)	// C2 subpicture offset division (disabled)
-		    + (0<<7)	// 422 subformat selection !
+	    + (1<<1)	// Y filter enable
+	    + (1<<2)	// CbCr filter enable
+	    + (0<<3)	// subpicture enable (disabled)
+	    + (0<<4)	// NTSC enable (disabled - PAL)
+	    + (0<<5)	// C2 static subpicture enable (disabled)
+	    + (0<<6)	// C2 subpicture offset division (disabled)
+	    + (0<<7)	// 422 subformat selection !
 	    /*		    + (0<<8)	// 15 bpp high alpha
-		    + (0<<9)	// 15 bpp high alpha
-		    + (0<<10)	// 15 bpp high alpha
-		    + (0<<11)	// 15 bpp high alpha
-		    + (0<<12)	// 15 bpp high alpha
-		    + (0<<13)	// 15 bpp high alpha
-		    + (0<<14)	// 15 bpp high alpha
-		    + (0<<15)	// 15 bpp high alpha
-		    + (0<<16)	// 15 bpp low alpha
-		    + (0<<17)	// 15 bpp low alpha
-		    + (0<<18)	// 15 bpp low alpha
-		    + (0<<19)	// 15 bpp low alpha
-		    + (0<<20)	// 15 bpp low alpha
-		    + (0<<21)	// 15 bpp low alpha
-		    + (0<<22)	// 15 bpp low alpha
-		    + (0<<23)	// 15 bpp low alpha
-		    + (0<<24)	// static subpicture key
-		    + (0<<25)	// static subpicture key
-		    + (0<<26)	// static subpicture key
-		    + (0<<27)	// static subpicture key
-		    + (0<<28)	// static subpicture key
+	     + (0<<9)	// 15 bpp high alpha
+	     + (0<<10)	// 15 bpp high alpha
+	     + (0<<11)	// 15 bpp high alpha
+	     + (0<<12)	// 15 bpp high alpha
+	     + (0<<13)	// 15 bpp high alpha
+	     + (0<<14)	// 15 bpp high alpha
+	     + (0<<15)	// 15 bpp high alpha
+	     + (0<<16)	// 15 bpp low alpha
+	     + (0<<17)	// 15 bpp low alpha
+	     + (0<<18)	// 15 bpp low alpha
+	     + (0<<19)	// 15 bpp low alpha
+	     + (0<<20)	// 15 bpp low alpha
+	     + (0<<21)	// 15 bpp low alpha
+	     + (0<<22)	// 15 bpp low alpha
+	     + (0<<23)	// 15 bpp low alpha
+	     + (0<<24)	// static subpicture key
+	     + (0<<25)	// static subpicture key
+	     + (0<<26)	// static subpicture key
+	     + (0<<27)	// static subpicture key
+	     + (0<<28)	// static subpicture key
 	     */			;
-          break;
+	break;
 
-    case IMGFMT_UYVY:	
+    case IMGFMT_UYVY:
 	cregs.c2ctl = 1         // CRTC2 enabled
-		    + (1<<1)	// external clock
-		    + (0<<2)	// external clock
-		    + (1<<3)	// pixel clock enable - not needed ???
+	    + (1<<1)	// external clock
+	    + (0<<2)	// external clock
+	    + (1<<3)	// pixel clock enable - not needed ???
 	    + (0<<4)	// high priority req
 	    + (1<<5)	// high priority req
 	    + (0<<6)	// high priority req
 	    + (1<<8)	// high priority req max
 	    + (0<<9)	// high priority req max
 	    + (0<<10)	// high priority req max
-                    + (0<<20)   // CRTC1 to DAC
-                    + (1<<21)   // 422 mode
-                    + (0<<22)   // 422 mode
-                    + (1<<23)   // 422 mode
-                    + (1<<24)   // single chroma line for 420 mode - need to be corrected
-                    + (1<<25)   /*/ interlace mode - need to be corrected*/
-                    + (0<<26)   // field legth polariry
-                    + (0<<27)   // field identification polariry
-                    + (1<<28)   // VIDRST detection mode
-                    + (0<<29)   // VIDRST detection mode
-                    + (1<<30)   // Horizontal counter preload
-                    + (1<<31)   // Vertical counter preload
-		    ;
+	    + (0<<20)   // CRTC1 to DAC
+	    + (1<<21)   // 422 mode
+	    + (0<<22)   // 422 mode
+	    + (1<<23)   // 422 mode
+	    + (1<<24)   // single chroma line for 420 mode - need to be corrected
+	    + (1<<25)   /*/ interlace mode - need to be corrected*/
+	    + (0<<26)   // field legth polariry
+	    + (0<<27)   // field identification polariry
+	    + (1<<28)   // VIDRST detection mode
+	    + (0<<29)   // VIDRST detection mode
+	    + (1<<30)   // Horizontal counter preload
+	    + (1<<31)   // Vertical counter preload
+	    ;
 	cregs.c2datactl = 0         // enable dither - propably not needed, we are already in YUV mode
-		    + (1<<1)	// Y filter enable
-		    + (1<<2)	// CbCr filter enable
-		    + (0<<3)	// subpicture enable (disabled)
-		    + (0<<4)	// NTSC enable (disabled - PAL)
-		    + (0<<5)	// C2 static subpicture enable (disabled)
-		    + (0<<6)	// C2 subpicture offset division (disabled)
-		    + (1<<7)	// 422 subformat selection !
+	    + (1<<1)	// Y filter enable
+	    + (1<<2)	// CbCr filter enable
+	    + (0<<3)	// subpicture enable (disabled)
+	    + (0<<4)	// NTSC enable (disabled - PAL)
+	    + (0<<5)	// C2 static subpicture enable (disabled)
+	    + (0<<6)	// C2 subpicture offset division (disabled)
+	    + (1<<7)	// 422 subformat selection !
 	    /*		    + (0<<8)	// 15 bpp high alpha
-		    + (0<<9)	// 15 bpp high alpha
-		    + (0<<10)	// 15 bpp high alpha
-		    + (0<<11)	// 15 bpp high alpha
-		    + (0<<12)	// 15 bpp high alpha
-		    + (0<<13)	// 15 bpp high alpha
-		    + (0<<14)	// 15 bpp high alpha
-		    + (0<<15)	// 15 bpp high alpha
-		    + (0<<16)	// 15 bpp low alpha
-		    + (0<<17)	// 15 bpp low alpha
-		    + (0<<18)	// 15 bpp low alpha
-		    + (0<<19)	// 15 bpp low alpha
-		    + (0<<20)	// 15 bpp low alpha
-		    + (0<<21)	// 15 bpp low alpha
-		    + (0<<22)	// 15 bpp low alpha
-		    + (0<<23)	// 15 bpp low alpha
-		    + (0<<24)	// static subpicture key
-		    + (0<<25)	// static subpicture key
-		    + (0<<26)	// static subpicture key
-		    + (0<<27)	// static subpicture key
-		    + (0<<28)	// static subpicture key
+	     + (0<<9)	// 15 bpp high alpha
+	     + (0<<10)	// 15 bpp high alpha
+	     + (0<<11)	// 15 bpp high alpha
+	     + (0<<12)	// 15 bpp high alpha
+	     + (0<<13)	// 15 bpp high alpha
+	     + (0<<14)	// 15 bpp high alpha
+	     + (0<<15)	// 15 bpp high alpha
+	     + (0<<16)	// 15 bpp low alpha
+	     + (0<<17)	// 15 bpp low alpha
+	     + (0<<18)	// 15 bpp low alpha
+	     + (0<<19)	// 15 bpp low alpha
+	     + (0<<20)	// 15 bpp low alpha
+	     + (0<<21)	// 15 bpp low alpha
+	     + (0<<22)	// 15 bpp low alpha
+	     + (0<<23)	// 15 bpp low alpha
+	     + (0<<24)	// static subpicture key
+	     + (0<<25)	// static subpicture key
+	     + (0<<26)	// static subpicture key
+	     + (0<<27)	// static subpicture key
+	     + (0<<28)	// static subpicture key
 	     */		    ;
-        break;
+	break;
     }
 
-	cregs.c2hparam=((hdispend - 8) << 16) | (htotal - 8);
-	cregs.c2hsync=((hsyncend - 8) << 16) | (hsyncstart - 8);
-	
-	cregs.c2misc=0	// CRTCV2 656 togg f0
-		    +(0<<1) // CRTCV2 656 togg f0
-		    +(0<<2) // CRTCV2 656 togg f0
-		    +(0<<4) // CRTCV2 656 togg f1
-		    +(0<<5) // CRTCV2 656 togg f1
-		    +(0<<6) // CRTCV2 656 togg f1
-		    +(0<<8) // Hsync active high
-		    +(0<<9) // Vsync active high
-		    // 16-27 c2vlinecomp - nevim co tam dat
-		    ;
-	cregs.c2offset=(regs.bespitch << 1);
+    cregs.c2hparam=((hdispend - 8) << 16) | (htotal - 8);
+    cregs.c2hsync=((hsyncend - 8) << 16) | (hsyncstart - 8);
 
-	cregs.c2pl2startadd0=regs.besa1corg;
+    cregs.c2misc=0	// CRTCV2 656 togg f0
+	+(0<<1) // CRTCV2 656 togg f0
+	+(0<<2) // CRTCV2 656 togg f0
+	+(0<<4) // CRTCV2 656 togg f1
+	+(0<<5) // CRTCV2 656 togg f1
+	+(0<<6) // CRTCV2 656 togg f1
+	+(0<<8) // Hsync active high
+	+(0<<9) // Vsync active high
+	// 16-27 c2vlinecomp - nevim co tam dat
+	;
+    cregs.c2offset=(regs.bespitch << 1);
+
+    cregs.c2pl2startadd0=regs.besa1corg;
     //cregs.c2pl2startadd1=regs.besa2corg;
-	cregs.c2pl3startadd0=regs.besa1c3org;
+    cregs.c2pl3startadd0=regs.besa1c3org;
     //cregs.c2pl3startadd1=regs.besa2c3org;
-		    
-	cregs.c2preload=(vsyncstart << 16) | (hsyncstart); // from 
-	
-	cregs.c2spicstartadd0=0; // not used
+
+    cregs.c2preload=(vsyncstart << 16) | (hsyncstart); // from
+
+    cregs.c2spicstartadd0=0; // not used
     //cregs.c2spicstartadd1=0; // not used
-	
+
     cregs.c2startadd0=regs.besa1org;
     //cregs.c2startadd1=regs.besa2org;
-	
+
     cregs.c2subpiclut=0; //not used
-	
+
     cregs.c2vparam=((vdispend - 1) << 16) | (vtotal - 1);
     cregs.c2vsync=((vsyncend - 1) << 16) | (vsyncstart - 1);
 #endif /* CRTC2 */
@@ -1161,7 +1158,7 @@ int VIDIX_NAME(vixPlaybackOn)(void)
     if(vid_overlay_on)
     {
 	regs.besctl |= 1;
-    	mga_vid_write_regs(0);
+	mga_vid_write_regs(0);
     }
 #ifdef MGA_ALLOW_IRQ
     if (mga_irq != -1)
@@ -1176,7 +1173,7 @@ int VIDIX_NAME(vixPlaybackOff)(void)
 {
     if (mga_verbose) printf("[mga] playback off\n");
 
-    vid_src_ready = 0;   
+    vid_src_ready = 0;
 #ifdef MGA_ALLOW_IRQ
     if (mga_irq != -1)
 	disable_irq();
@@ -1190,75 +1187,75 @@ int VIDIX_NAME(vixPlaybackOff)(void)
 
 int VIDIX_NAME(vixProbe)(int verbose,int force)
 {
-	pciinfo_t lst[MAX_PCI_DEVICES];
-	unsigned int i, num_pci;
-	int err;
+    pciinfo_t lst[MAX_PCI_DEVICES];
+    unsigned int i, num_pci;
+    int err;
 
-	if (verbose) printf("[mga] probe\n");
+    if (verbose) printf("[mga] probe\n");
 
-	mga_verbose = verbose;
+    mga_verbose = verbose;
 
-	is_g400 = -1;
+    is_g400 = -1;
 
     err = pci_scan(lst, &num_pci);
-	if (err)
-	{
-	    printf("[mga] Error occured during pci scan: %s\n", strerror(err));
-	    return(err);
-	}
+    if (err)
+    {
+	printf("[mga] Error occured during pci scan: %s\n", strerror(err));
+	return(err);
+    }
 
-	if (mga_verbose)
-	    printf("[mga] found %d pci devices\n", num_pci);
-	
-	for (i = 0; i < num_pci; i++)
+    if (mga_verbose)
+	printf("[mga] found %d pci devices\n", num_pci);
+
+    for (i = 0; i < num_pci; i++)
+    {
+	if (mga_verbose > 1)
+	    printf("[mga] pci[%d] vendor: %d device: %d\n",
+		   i, lst[i].vendor, lst[i].device);
+	if (lst[i].vendor == VENDOR_MATROX)
 	{
-	    if (mga_verbose > 1)
-		printf("[mga] pci[%d] vendor: %d device: %d\n",
-		    i, lst[i].vendor, lst[i].device);
-	    if (lst[i].vendor == VENDOR_MATROX)
+	    switch(lst[i].device)
 	    {
-		switch(lst[i].device)
-		{
-		    case DEVICE_MATROX_MGA_G550_AGP:
-			printf("[mga] Found MGA G550\n");
-			is_g400 = 1;
-			goto card_found;
-		    case DEVICE_MATROX_MGA_G400_AGP:
-			printf("[mga] Found MGA G400/G450\n");
-			is_g400 = 1;
-			goto card_found;
-		    case DEVICE_MATROX_MGA_G200_AGP:
-			printf("[mga] Found MGA G200 AGP\n");
-			is_g400 = 0;
-			goto card_found;
-		    case DEVICE_MATROX_MGA_G200:
-			printf("[mga] Found MGA G200 PCI\n");
-			is_g400 = 0;
-			goto card_found;
-		}
+	    case DEVICE_MATROX_MGA_G550_AGP:
+		printf("[mga] Found MGA G550\n");
+		is_g400 = 1;
+		goto card_found;
+	    case DEVICE_MATROX_MGA_G400_AGP:
+		printf("[mga] Found MGA G400/G450\n");
+		is_g400 = 1;
+		goto card_found;
+	    case DEVICE_MATROX_MGA_G200_AGP:
+		printf("[mga] Found MGA G200 AGP\n");
+		is_g400 = 0;
+		goto card_found;
+	    case DEVICE_MATROX_MGA_G200:
+		printf("[mga] Found MGA G200 PCI\n");
+		is_g400 = 0;
+		goto card_found;
 	    }
 	}
+    }
 
-	if (is_g400 == -1)
-	{
-		printf("[mga] No supported cards found\n");
-		return(ENXIO);
-	}
+    if (is_g400 == -1)
+    {
+	printf("[mga] No supported cards found\n");
+	return(ENXIO);
+    }
 
 card_found:
-	probed = 1;
-	memcpy(&pci_info, &lst[i], sizeof(pciinfo_t));
+    probed = 1;
+    memcpy(&pci_info, &lst[i], sizeof(pciinfo_t));
 
-	mga_cap.device_id = pci_info.device; /* set device id in capabilites */
+    mga_cap.device_id = pci_info.device; /* set device id in capabilites */
 
-	return(0);
+    return(0);
 }
 
 int VIDIX_NAME(vixInit)(void)
 {
     unsigned int card_option = 0;
     int err;
-    
+
     /* reset Brightness & Constrast here */
     regs.beslumactl = (0x0 << 16) + 0x80;
 
@@ -1279,37 +1276,37 @@ int VIDIX_NAME(vixInit)(void)
 
 #ifdef MGA_PCICONFIG_MEMDETECT
     pci_config_read(pci_info.bus, pci_info.card, pci_info.func,
-        0x40, 4, &card_option);
+		    0x40, 4, &card_option);
     if (mga_verbose > 1) printf("[mga] OPTION word: 0x%08X  mem: 0x%02X  %s\n", card_option,
-    	(card_option>>10)&0x17, ((card_option>>14)&1)?"SGRAM":"SDRAM");
+				(card_option>>10)&0x17, ((card_option>>14)&1)?"SGRAM":"SDRAM");
 #endif
 
     if (mga_ram_size)
     {
-    	printf("[mga] RAMSIZE forced to %d MB\n", mga_ram_size);
+	printf("[mga] RAMSIZE forced to %d MB\n", mga_ram_size);
     }
     else
     {
 #ifdef MGA_MEMORY_SIZE
-        mga_ram_size = MGA_MEMORY_SIZE;
-        printf("[mga] hard-coded RAMSIZE is %d MB\n", (unsigned int) mga_ram_size);
+	mga_ram_size = MGA_MEMORY_SIZE;
+	printf("[mga] hard-coded RAMSIZE is %d MB\n", (unsigned int) mga_ram_size);
 #else
-        if (is_g400)
+	if (is_g400)
 	{
 	    switch((card_option>>10)&0x17)
 	    {
-	        // SDRAM:
-	        case 0x00:
-	        case 0x04:  mga_ram_size = 16; break;
-	        case 0x03:  mga_ram_size = 32; break;
-	        // SGRAM:
-	        case 0x10:
-	        case 0x14:  mga_ram_size = 32; break;
-	        case 0x11:
-	        case 0x12:  mga_ram_size = 16; break;
-	        default:
-	    	    mga_ram_size = 16;
-		    printf("[mga] Couldn't detect RAMSIZE, assuming 16MB!\n");
+	    // SDRAM:
+	    case 0x00:
+	    case 0x04:  mga_ram_size = 16; break;
+	    case 0x03:  mga_ram_size = 32; break;
+	    // SGRAM:
+	    case 0x10:
+	    case 0x14:  mga_ram_size = 32; break;
+	    case 0x11:
+	    case 0x12:  mga_ram_size = 16; break;
+	    default:
+		mga_ram_size = 16;
+		printf("[mga] Couldn't detect RAMSIZE, assuming 16MB!\n");
 	    }
 	}
 	else
@@ -1318,25 +1315,25 @@ int VIDIX_NAME(vixInit)(void)
 	    {
 		// case 0x10:
 		// case 0x13:  mga_ram_size = 8; break;
-		default: mga_ram_size = 8;
+	    default: mga_ram_size = 8;
 	    }
-	} 
+	}
 
 #if 0
 	//	    printf("List resources -----------\n");
-	    for(temp=0;temp<DEVICE_COUNT_RESOURCE;temp++){
-	        struct resource *res=&pci_dev->resource[temp];
-	        if(res->flags){
-	          int size=(1+res->end-res->start)>>20;
-	          printf("res %d:  start: 0x%X   end: 0x%X  (%d MB) flags=0x%X\n",temp,res->start,res->end,size,res->flags);
-	          if(res->flags&(IORESOURCE_MEM|IORESOURCE_PREFETCH)){
-	              if(size>mga_ram_size && size<=64) mga_ram_size=size;
-	          }
-	        }
+	for(temp=0;temp<DEVICE_COUNT_RESOURCE;temp++){
+	    struct resource *res=&pci_dev->resource[temp];
+	    if(res->flags){
+		int size=(1+res->end-res->start)>>20;
+		printf("res %d:  start: 0x%X   end: 0x%X  (%d MB) flags=0x%X\n",temp,res->start,res->end,size,res->flags);
+		if(res->flags&(IORESOURCE_MEM|IORESOURCE_PREFETCH)){
+		    if(size>mga_ram_size && size<=64) mga_ram_size=size;
+		}
 	    }
+	}
 #endif
 
-        printf("[mga] detected RAMSIZE is %d MB\n", (unsigned int) mga_ram_size);
+	printf("[mga] detected RAMSIZE is %d MB\n", (unsigned int) mga_ram_size);
 #endif
     }
 
@@ -1350,7 +1347,7 @@ int VIDIX_NAME(vixInit)(void)
     }
 
     if (mga_verbose > 1) printf("[mga] hardware addresses: mmio: 0x%x, framebuffer: 0x%x\n",
-        pci_info.base1, pci_info.base0);
+				pci_info.base1, pci_info.base0);
 
     mga_mmio_base = map_phys_mem(pci_info.base1,0x4000);
     mga_mem_base = map_phys_mem(pci_info.base0,mga_ram_size*1024*1024);
@@ -1362,11 +1359,11 @@ int VIDIX_NAME(vixInit)(void)
 #ifdef MGA_ALLOW_IRQ
     if (mga_irq != -1)
     {
-    	int tmp = request_irq(mga_irq, mga_handle_irq, SA_INTERRUPT | SA_SHIRQ, "Syncfb Time Base", &mga_irq);
-    	if (tmp)
+	int tmp = request_irq(mga_irq, mga_handle_irq, SA_INTERRUPT | SA_SHIRQ, "Syncfb Time Base", &mga_irq);
+	if (tmp)
 	{
-    	    printf("syncfb (mga): cannot register irq %d (Err: %d)\n", mga_irq, tmp);
-    	    mga_irq=-1;
+	    printf("syncfb (mga): cannot register irq %d (Err: %d)\n", mga_irq, tmp);
+	    mga_irq=-1;
 	}
 	else
 	{
@@ -1379,8 +1376,8 @@ int VIDIX_NAME(vixInit)(void)
 	mga_irq=-1;
     }
 #else
-	printf("syncfb (mga): IRQ disabled in mga_vid.c\n");
-	mga_irq=-1;
+    printf("syncfb (mga): IRQ disabled in mga_vid.c\n");
+    mga_irq=-1;
 #endif
 #ifdef CRTC2
     memset(&cregs_save, 0, sizeof(cregs_save));
@@ -1393,7 +1390,7 @@ void VIDIX_NAME(vixDestroy)(void)
     if (mga_verbose) printf("[mga] destroy\n");
 
     /* FIXME turn off BES */
-    vid_src_ready = 0;   
+    vid_src_ready = 0;
     regs.besctl &= ~1;
     regs.besglobctl &= ~(1<<6);  // UYVY format selected
     //    mga_config.colkey_on=0; //!!!
@@ -1402,13 +1399,13 @@ void VIDIX_NAME(vixDestroy)(void)
 
 #ifdef MGA_ALLOW_IRQ
     if (mga_irq != -1)
-    	free_irq(mga_irq, &mga_irq);
+	free_irq(mga_irq, &mga_irq);
 #endif
 
     if (mga_mmio_base)
-        unmap_phys_mem(mga_mmio_base, 0x4000);
+	unmap_phys_mem(mga_mmio_base, 0x4000);
     if (mga_mem_base)
-        unmap_phys_mem(mga_mem_base, mga_ram_size);
+	unmap_phys_mem(mga_mem_base, mga_ram_size);
     return;
 }
 
@@ -1419,28 +1416,28 @@ int VIDIX_NAME(vixQueryFourcc)(vidix_fourcc_t *to)
 
     switch(to->fourcc)
     {
-	case IMGFMT_YV12:
-	case IMGFMT_IYUV:
-	case IMGFMT_I420:
-		supports = is_g400 ? 1 : 0;
-	case IMGFMT_NV12:
-		supports = is_g400 ? 0 : 1;
-	case IMGFMT_YUY2:
-	case IMGFMT_UYVY:
-		supports = 1;
-	    break;
-	default:
-		supports = 0;
+    case IMGFMT_YV12:
+    case IMGFMT_IYUV:
+    case IMGFMT_I420:
+	supports = is_g400 ? 1 : 0;
+    case IMGFMT_NV12:
+	supports = is_g400 ? 0 : 1;
+    case IMGFMT_YUY2:
+    case IMGFMT_UYVY:
+	supports = 1;
+	break;
+    default:
+	supports = 0;
     }
-    
+
     if(!supports)
     {
 	to->depth = to->flags = 0;
 	return(ENOTSUP);
     }
     to->depth = VID_DEPTH_12BPP |
-		VID_DEPTH_15BPP | VID_DEPTH_16BPP |
-		VID_DEPTH_24BPP | VID_DEPTH_32BPP;
+	VID_DEPTH_15BPP | VID_DEPTH_16BPP |
+	VID_DEPTH_24BPP | VID_DEPTH_32BPP;
     to->flags = VID_CAP_EXPAND | VID_CAP_SHRINK | VID_CAP_COLORKEY;
     return(0);
 }
@@ -1479,7 +1476,7 @@ int VIDIX_NAME(vixPlaybackSetEq)( const vidix_video_eq_t * eq)
 	if (mga_verbose) printf("[mga] equalizer isn't supported with G200\n");
 	return(ENOTSUP);
     }
-    
+
     luma = regs.beslumactl;
 
     if (eq->cap & VEQ_CAP_BRIGHTNESS)
