@@ -60,7 +60,7 @@ static const struct nv_card_id_s nv_card_ids[]=
 {
     { DEVICE_NVIDIA_NV5_RIVA_TNT2, "nVidia TNT2 (NV5) ", 5, CARD_FLAGS_NOTSUPPORTED},
     { DEVICE_NVIDIA_NV6_VANTA, "nVidia Vanta (NV6.1)", 6, CARD_FLAGS_NOTSUPPORTED},
-    { DEVICE_NVIDIA_RIVA_TNT2_MODEL, "nVidia Vanta (NV6.2)", 6, CARD_FLAGS_NOTSUPPORTED}
+    { DEVICE_NVIDIA_NV5M64_RIVA_TNT2, "nVidia Vanta (NV6.2)", 6, CARD_FLAGS_NOTSUPPORTED}
 };
 
 static int find_chip(unsigned int chip_id)

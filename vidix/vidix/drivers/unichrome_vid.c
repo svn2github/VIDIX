@@ -103,7 +103,7 @@ unsigned int vixGetVersion(void)
 
 static unsigned short uc_card_ids[] =
 {
-	DEVICE_VIA2_VT8623_CLE266_AGP
+	DEVICE_VIA2_VT8623_APOLLO_CLE266
 };
 
 
