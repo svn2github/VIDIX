@@ -617,7 +617,8 @@ int vixInit(void)
 
 	if(INREG(SCALER_BUF0_OFFSET_U)) 	supports_planar=1;
   }
-  printf("[mach64] Planar YUV formats are %s supported\n",supports_planar?"":"not");
+  if(supports_planar)	printf("[mach64] Planar YUV formats are supported :)\n");
+  else			printf("[mach64] Planar YUV formats are not supported :(\n");
   
   if(   mach64_cap.device_id==DEVICE_ATI_RAGE_MOBILITY_P_M
      || mach64_cap.device_id==DEVICE_ATI_RAGE_MOBILITY_P_M2
@@ -733,10 +734,6 @@ static void mach64_compute_framesize(vidix_playback_t *info)
 		awidth = (info->src.w + (pitch-1)) & ~(pitch-1);
 		info->frame_size = awidth*(info->src.h+info->src.h/8);
 		break;
-    case IMGFMT_Y800:
-		awidth = (info->src.w + (pitch-1)) & ~(pitch-1);
-		info->frame_size = awidth*info->src.h;
-		break;
 //    case IMGFMT_RGB32:
     case IMGFMT_BGR32:
 		awidth = (info->src.w*4 + (pitch-1)) & ~(pitch-1);
@@ -770,7 +767,6 @@ static void mach64_vid_stop_video( void )
 static void mach64_vid_display_video( void )
 {
     uint32_t vf;
-
     mach64_fifo_wait(14);
 
     OUTREG(OVERLAY_Y_X_START,			besr.y_x_start);
@@ -784,6 +780,8 @@ static void mach64_vid_display_video( void )
     OUTREG(SCALER_BUF1_OFFSET,			mach64_buffer_base[0][0]);
     OUTREG(SCALER_BUF1_OFFSET_U,		mach64_buffer_base[0][1]);
     OUTREG(SCALER_BUF1_OFFSET_V,		mach64_buffer_base[0][2]);
+    mach64_wait_vsync();
+    
     mach64_fifo_wait(4);
     OUTREG(OVERLAY_SCALE_CNTL, 0xC4000003);
 // OVERLAY_SCALE_CNTL bits & what they seem to affect
@@ -796,7 +794,7 @@ static void mach64_vid_display_video( void )
 // bit 7 nothing visible if set
 // bit 8-27 no effect
 // bit 28-31 nothing interresting just crashed my system when i played with them  :(
-/* Rage3D: 0xE000007F can be set. */
+
     mach64_wait_for_idle();
     vf = INREG(VIDEO_FORMAT);
 
@@ -827,7 +825,6 @@ static void mach64_vid_display_video( void )
 	case IMGFMT_BGR15: OUTREG(VIDEO_FORMAT, 0x00030000);  break;
 	case IMGFMT_BGR16: OUTREG(VIDEO_FORMAT, 0x00040000);  break;
 	case IMGFMT_BGR32: OUTREG(VIDEO_FORMAT, 0x00060000);  break;
-	case IMGFMT_Y800:
         /* 4:2:0 */
 	case IMGFMT_IYUV:
 	case IMGFMT_I420:
@@ -840,15 +837,13 @@ static void mach64_vid_display_video( void )
 	case IMGFMT_YUY2:
 	default:           OUTREG(VIDEO_FORMAT, 0x000B0000); break;
     }
-    mach64_wait_vsync();
-    
     if(__verbose > VERBOSE_LEVEL) mach64_vid_dump_regs();
 }
 
 static int mach64_vid_init_video( vidix_playback_t *config )
 {
     uint32_t src_w,src_h,dest_w,dest_h,pitch,h_inc,v_inc,left,leftUV,top,ecp,y_pos;
-    int is_420,is_410,is_400,best_pitch,mpitch;
+    int is_420,best_pitch,mpitch;
     int src_offset_y, src_offset_u, src_offset_v;
     unsigned int i;
 
@@ -858,20 +853,14 @@ static int mach64_vid_init_video( vidix_playback_t *config )
     top =  config->src.y;
     src_h = config->src.h;
     src_w = config->src.w;
-    is_400 = is_410 = is_420 = 0;
+    is_420 = 0;
     if(config->fourcc == IMGFMT_YV12 ||
        config->fourcc == IMGFMT_I420 ||
        config->fourcc == IMGFMT_IYUV) is_420 = 1;
-    if(config->fourcc == IMGFMT_YVU9) is_410 = 1;
-    if(config->fourcc == IMGFMT_Y800) is_400 = 1;
-
     best_pitch = mach64_query_pitch(config->fourcc,&config->src.pitch);
     mpitch = best_pitch-1;
     switch(config->fourcc)
     {
-	/* 4:0:0 */
-	case IMGFMT_Y800:
-	/* 4:1:0 */
 	case IMGFMT_YVU9:
 	/* 4:2:0 */
 	case IMGFMT_IYUV:
@@ -932,31 +921,16 @@ for(i=0; i<32; i++){
 		      alignment problems for the code which writes into it
 	*/
     
-    if(is_420 || is_410 || is_400)
+    if(is_420)
     {
 	config->offset.y= 0;
 	config->offset.u= (pitch*src_h + 15)&~15; 
+	config->offset.v= (config->offset.u + (pitch*src_h>>2) + 15)&~15;
 	
 	src_offset_y= config->offset.y + top*pitch + left;
-	if(is_420)
-	{
-	    config->offset.v= (config->offset.u + (pitch*src_h>>2) + 15)&~15;
-	    src_offset_u= config->offset.u + (top*pitch>>2) + (left>>1);
-	    src_offset_v= config->offset.v + (top*pitch>>2) + (left>>1);
-	}
-	else
-	if(is_410)
-	{
-	    config->offset.v= (config->offset.u + (pitch*src_h>>4) + 15)&~15;
-	    src_offset_u= config->offset.u + (top*pitch>>4) + (left>>1);
-	    src_offset_v= config->offset.v + (top*pitch>>4) + (left>>1);
-	}
-	else
-	if(is_400)
-	{
-	    src_offset_u= 0;
-	    src_offset_v= 0;
-	}
+	src_offset_u= config->offset.u + (top*pitch>>2) + (left>>1);
+	src_offset_v= config->offset.v + (top*pitch>>2) + (left>>1);
+
 	if(besr.fourcc == IMGFMT_I420 || besr.fourcc == IMGFMT_IYUV)
 	{
 	  uint32_t tmp;
@@ -964,6 +938,16 @@ for(i=0; i<32; i++){
 	  config->offset.u = config->offset.v;
 	  config->offset.v = tmp;
 	}
+    }
+    else if(besr.fourcc == IMGFMT_YVU9)
+    {
+	config->offset.y= 0;
+	config->offset.u= (pitch*src_h + 15)&~15; 
+	config->offset.v= (config->offset.u + (pitch*src_h>>4) + 15)&~15;
+	
+	src_offset_y= config->offset.y + top*pitch + left;
+	src_offset_u= config->offset.u + (top*pitch>>4) + (left>>1);
+	src_offset_v= config->offset.v + (top*pitch>>4) + (left>>1);
     }
     else if(besr.fourcc == IMGFMT_BGR32)
     {
@@ -1011,7 +995,6 @@ static int is_supported_fourcc(uint32_t fourcc)
     case IMGFMT_YVU9:
     case IMGFMT_IYUV:
 	return supports_planar;
-    case IMGFMT_Y800:
     case IMGFMT_YUY2:
     case IMGFMT_UYVY:
     case IMGFMT_BGR15:
