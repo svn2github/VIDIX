@@ -786,7 +786,9 @@ static void make_default_gamma_correction( void )
 static void radeon_vid_make_default(void)
 {
 #ifdef RAGE128
-  OUTREG(OV0_COLOUR_CNTL,0x00101000UL); /* Default brihgtness and saturation for Rage128 */
+  besr.saturation = 0x0F;
+  besr.brightness = 0;
+  OUTREG(OV0_COLOUR_CNTL,0x000F0F00UL); /* Default brihgtness and saturation for Rage128 */
 #else
   make_default_gamma_correction();
 #endif
