@@ -55,6 +55,7 @@ static void *pm3_mem;
 
 static int pm3_vidmem = PM3_VIDMEM;
 static int pm3_blank = 0;
+static int pm3_dma = 0;
 
 static u_int page_size;
 
@@ -122,7 +123,8 @@ int VIDIX_NAME(vixProbe)(int verbose, int force)
 		    continue;
 		dname = pci_device_name(VENDOR_3DLABS, lst[i].device);
 		dname = dname ? dname : "Unknown chip";
-		printf("[pm3] Found chip: %s\n", dname);
+		printf("[pm3] Found chip: %s with IRQ %i\n",
+		       dname, lst[i].irq);
 		pm3_cap.device_id = lst[i].device;
 		err = 0;
 		memcpy(&pci_info, &lst[i], sizeof(pciinfo_t));
@@ -169,6 +171,8 @@ int VIDIX_NAME(vixInit)(const char *args)
 	fprintf(stderr, "[pm3] Using DMA.\n");
 	pm3_cap.flags |= FLAG_DMA;
 	page_size = sysconf(_SC_PAGESIZE);
+	hwirq_install(pci_info.irq);
+	pm3_dma = 1;
     }
 
     return 0;
@@ -178,6 +182,7 @@ void VIDIX_NAME(vixDestroy)(void)
 {
     unmap_phys_mem(pm3_reg_base, 0x20000);
     unmap_phys_mem(pm3_mem, 0x2000000);
+    hwirq_uninstall(pci_info.irq);
     bm_close();
 }
 
@@ -215,7 +220,7 @@ int VIDIX_NAME(vixQueryFourcc)(vidix_fourcc_t *to)
 }
 
 static int frames[VID_PLAY_MAXFRAMES], vid_base;
-static long overlay_mode, overlay_control, video_control;
+static long overlay_mode, overlay_control, video_control, int_enable;
 static int src_w, drw_w;
 static int src_h, drw_h;
 static int drw_x, drw_y;
@@ -380,6 +385,7 @@ int VIDIX_NAME(vixConfigPlayback)(vidix_playback_t *info)
     pm3_setup_overlay(info);
 
     video_control = READ_REG(PM3VideoControl);
+    int_enable = READ_REG(PM3IntEnable);
 
     TRACE_EXIT();
     return 0;
@@ -400,6 +406,9 @@ int VIDIX_NAME(vixPlaybackOn)(void)
 	WRITE_REG(PM3VideoControl,
 		  video_control | PM3VideoControl_DISPLAY_ENABLE);
 
+    if(pm3_dma)
+	WRITE_REG(PM3IntEnable, int_enable | (1 << 7));
+
     TRACE_EXIT();
     return 0;
 }
@@ -417,6 +426,9 @@ int VIDIX_NAME(vixPlaybackOff)(void)
 
     if(video_control)
 	WRITE_REG(PM3VideoControl, video_control);
+
+    if(pm3_dma)
+	WRITE_REG(PM3IntEnable, int_enable);
 
     return 0;
 }
@@ -493,6 +505,14 @@ VIDIX_NAME(vixPlaybackCopyFrame)(vidix_dma_t *dma)
 	    } else {
 		fprintf(stderr, "[pm3] Can't lock page @ %p\n", bdf->cmds);
 	    }
+	}
+    }
+
+    if(dma->flags & BM_DMA_SYNC){
+	uint32_t ds;
+	while((ds = READ_REG(PM3ByDMAReadMode)) & PM3ByDMAReadMode_Active){
+	    hwirq_wait(pci_info.irq);
+	    WRITE_REG(PM3IntFlags, 1 << 7);
 	}
     }
 
