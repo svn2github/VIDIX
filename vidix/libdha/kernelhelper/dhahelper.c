@@ -13,6 +13,9 @@
     WARNING! THIS MODULE VIOLATES SEVERAL SECURITY LINES! DON'T USE IT
     ON PRODUCTION SYSTEMS, ONLY AT HOME, ON A "SINGLE-USER" SYSTEM.
     NO WARRANTY!
+    
+    IF YOU WANT TO USE IT ON PRODUCTION SYSTEMS THEN PLEASE READ 'README'
+    FILE TO KNOW HOW TO PREVENT ANONYMOUS ACCESS TO THIS MODULE.
 
     Tech:
 	Communication between userspace and kernelspace goes over character
@@ -27,8 +30,6 @@
 	Note: do not use other than minor==0, the module forbids it.
 
     TODO:
-	* do memory mapping without fops:mmap
-	* implement unmap memory
 	* select (request?) a "valid" major number (from Linux project? ;)
 	* make security
 	* is pci handling needed? (libdha does this with lowlevel port funcs)
@@ -66,6 +67,8 @@
 #include <linux/errno.h>
 #include <asm/io.h>
 #include <asm/pgtable.h>
+#include <asm/unistd.h>
+#include <asm/uaccess.h>
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,4,0)
 #include <linux/malloc.h>
@@ -88,8 +91,8 @@
 
 #include "dhahelper.h"
 
-MODULE_AUTHOR("Alex Beregszaszi <alex@naxine.org>");
-MODULE_DESCRIPTION("Provides userspace access to hardware (security violation!)");
+MODULE_AUTHOR("Alex Beregszaszi <alex@naxine.org> and Nick Kurshev <nickols_k@mail.ru>");
+MODULE_DESCRIPTION("Provides userspace access to hardware");
 #ifdef MODULE_LICENSE
 MODULE_LICENSE("GPL");
 #endif
@@ -104,9 +107,6 @@ MODULE_PARM_DESC(dhahelper_major, "Major number of dhahelper characterdevice");
 static int dhahelper_verbosity = 1;
 MODULE_PARM(dhahelper_verbosity, "i");
 MODULE_PARM_DESC(dhahelper_verbosity, "Level of verbosity (0 = silent, 1 = only errors, 2 = debug)");
-
-static dhahelper_memory_t last_mem_request;
-
 
 static int dhahelper_open(struct inode *inode, struct file *file)
 {
@@ -217,47 +217,9 @@ static int dhahelper_port(dhahelper_port_t * arg)
 	return 0;
 }
 
-static int dhahelper_memory(dhahelper_memory_t * arg)
-{
-	dhahelper_memory_t mem;
-	if (copy_from_user(&mem, arg, sizeof(dhahelper_memory_t)))
-	{
-		if (dhahelper_verbosity > 0)
-		    printk(KERN_ERR "dhahelper: failed copy from userspace\n");
-		return -EFAULT;
-	}
-	switch(mem.operation)
-	{
-		case MEMORY_OP_MAP:
-		{
-#if 1
-		    memcpy(&last_mem_request, &mem, sizeof(dhahelper_memory_t));
-#else
-		    mem.ret = do_mmap(file, mem.start, mem.size, PROT_READ|PROT_WRITE,
-			MAP_SHARED, mem.offset);
-#endif
-		    break;
-		}
-		case MEMORY_OP_UNMAP:
-		    break;
-		default:
-		    if (dhahelper_verbosity > 0)
-			printk(KERN_ERR "dhahelper: invalid memory operation (%d)\n",
-			    mem.operation);
-		    return -EINVAL;
-	}
-	if (copy_to_user(arg, &mem, sizeof(dhahelper_memory_t)))
-	{
-		if (dhahelper_verbosity > 0)
-		    printk(KERN_ERR "dhahelper: failed copy to userspace\n");
-		return -EFAULT;
-	}
-	return 0;
-}
-
 /*******************************/
 /* Memory management functions */
-/* from kernel:/drivers/mdia/video/bttv-driver.c */
+/* from kernel:/drivers/media/video/bttv-driver.c */
 /*******************************/
 
 #define MDEBUG(x)	do { } while(0)		/* Debug memory management */
@@ -365,6 +327,46 @@ static void * rvmalloc(signed long size)
 	}
 	return mem;
 }
+
+static int pag_lock(unsigned long addr)
+{
+	unsigned long page;
+	unsigned long kva;
+
+	kva = uvirt_to_kva(pgd_offset(current->mm, addr), addr);
+	if(kva)
+	{
+	    lock_it:
+	    page = uvirt_to_pa((unsigned long)addr);
+	    LockPage(virt_to_page(__va(page)));
+	    SetPageReserved(virt_to_page(__va(page)));
+	}
+	else
+	{
+	    page = *(unsigned char *)addr; /* try access it */
+	    kva = uvirt_to_kva(pgd_offset(current->mm, addr), addr);
+	    if(kva) goto lock_it;
+	    else return EPERM;
+	}
+	return 0;
+}
+
+static int pag_unlock(unsigned long addr)
+{
+	    unsigned long page;
+	    unsigned long kva;
+
+	    kva = uvirt_to_kva(pgd_offset(current->mm, addr), addr);
+	    if(kva)
+	    {
+		page = uvirt_to_pa((unsigned long)addr);
+		UnlockPage(virt_to_page(__va(page)));
+		ClearPageReserved(virt_to_page(__va(page)));
+		return 0;
+	    }
+	    return EPERM;
+}
+
 
 static void rvfree(void * mem, signed long size)
 {
@@ -476,6 +478,62 @@ static int dhahelper_free_pa(dhahelper_mem_t *arg)
 	return 0;
 }
 
+static int dhahelper_lock_mem(dhahelper_mem_t *arg)
+{
+	dhahelper_mem_t mem;
+	int retval;
+	unsigned long i,nitems,addr;
+	if (copy_from_user(&mem, arg, sizeof(dhahelper_mem_t)))
+	{
+		if (dhahelper_verbosity > 0)
+		    printk(KERN_ERR "dhahelper: failed copy from userspace\n");
+		return -EFAULT;
+	}
+	nitems = mem.length / PAGE_SIZE;
+	if(mem.length % PAGE_SIZE) nitems++;
+	addr = (unsigned long)mem.addr;
+	for(i=0;i<nitems;i++)
+	{
+	    retval = pag_lock((unsigned long)addr);
+	    if(retval)
+	    {
+		unsigned long j;
+		addr = (unsigned long)mem.addr;
+		for(j=0;j<i;j++)
+		{
+		    pag_unlock(addr);
+		    addr +=  PAGE_SIZE;
+		}
+		return retval;
+	    }
+	    addr += PAGE_SIZE;
+	}
+	return 0;
+}
+
+static int dhahelper_unlock_mem(dhahelper_mem_t *arg)
+{
+	dhahelper_mem_t mem;
+	int retval;
+	unsigned long i,nitems,addr;
+	if (copy_from_user(&mem, arg, sizeof(dhahelper_mem_t)))
+	{
+		if (dhahelper_verbosity > 0)
+		    printk(KERN_ERR "dhahelper: failed copy from userspace\n");
+		return -EFAULT;
+	}
+	nitems = mem.length / PAGE_SIZE;
+	if(mem.length % PAGE_SIZE) nitems++;
+	addr = (unsigned long)mem.addr;
+	for(i=0;i<nitems;i++)
+	{
+	    retval = pag_unlock((unsigned long)addr);
+	    if(retval) return retval;
+	    addr += PAGE_SIZE;
+	}
+	return 0;
+}
+
 static int dhahelper_ioctl(struct inode *inode, struct file *file,
     unsigned int cmd, unsigned long arg)
 {
@@ -490,11 +548,12 @@ static int dhahelper_ioctl(struct inode *inode, struct file *file,
     {
 	case DHAHELPER_GET_VERSION: return dhahelper_get_version((int *)arg);
 	case DHAHELPER_PORT:	    return dhahelper_port((dhahelper_port_t *)arg);
-	case DHAHELPER_MEMORY:      return dhahelper_memory((dhahelper_memory_t *)arg);
 	case DHAHELPER_VIRT_TO_PHYS:return dhahelper_virt_to_phys((dhahelper_vmi_t *)arg);
 	case DHAHELPER_VIRT_TO_BUS: return dhahelper_virt_to_bus((dhahelper_vmi_t *)arg);
 	case DHAHELPER_ALLOC_PA:return dhahelper_alloc_pa((dhahelper_mem_t *)arg);
 	case DHAHELPER_FREE_PA: return dhahelper_free_pa((dhahelper_mem_t *)arg);
+	case DHAHELPER_LOCK_MEM: return dhahelper_lock_mem((dhahelper_mem_t *)arg);
+	case DHAHELPER_UNLOCK_MEM: return dhahelper_unlock_mem((dhahelper_mem_t *)arg);
 	default:
     	    if (dhahelper_verbosity > 0)
 		printk(KERN_ERR "dhahelper: invalid ioctl (%x)\n", cmd);
@@ -503,36 +562,196 @@ static int dhahelper_ioctl(struct inode *inode, struct file *file,
     return 0;
 }
 
-static int dhahelper_mmap(struct file *file, struct vm_area_struct *vma)
-{
-    if (last_mem_request.operation != MEMORY_OP_MAP)
-    {
-	if (dhahelper_verbosity > 0)
-	    printk(KERN_ERR "dhahelper: mapping not requested before mmap\n");
-	return -EFAULT;
-    }
-    
-    if (dhahelper_verbosity > 1)
-	printk(KERN_INFO "dhahelper: mapping %x (size: %x)\n",
-	    last_mem_request.start+last_mem_request.offset, last_mem_request.size);
-    
-    if (remap_page_range(0, last_mem_request.start + last_mem_request.offset,
-	last_mem_request.size, vma->vm_page_prot))
-    {
-	if (dhahelper_verbosity > 0)
-	    printk(KERN_ERR "dhahelper: error mapping memory\n");
-	return -EFAULT;
-    }
+/*
+    fops functions were shamelessly stolen from linux-kernel project ;)
+*/
 
-    return 0;
+static loff_t dhahelper_lseek(struct file * file, loff_t offset, int orig)
+{
+	switch (orig) {
+		case 0:
+			file->f_pos = offset;
+			return file->f_pos;
+		case 1:
+			file->f_pos += offset;
+			return file->f_pos;
+		default:
+			return -EINVAL;
+	}
+}
+
+/*
+ * This funcion reads the *physical* memory. The f_pos points directly to the 
+ * memory location. 
+ */
+static ssize_t dhahelper_read(struct file * file, char * buf,
+			size_t count, loff_t *ppos)
+{
+	unsigned long p = *ppos;
+	unsigned long end_mem;
+	ssize_t read;
+	
+	end_mem = __pa(high_memory);
+	if (p >= end_mem)
+		return 0;
+	if (count > end_mem - p)
+		count = end_mem - p;
+	read = 0;
+#if defined(__sparc__) || defined(__mc68000__)
+	/* we don't have page 0 mapped on sparc and m68k.. */
+	if (p < PAGE_SIZE) {
+		unsigned long sz = PAGE_SIZE-p;
+		if (sz > count) 
+			sz = count; 
+		if (sz > 0) {
+			if (clear_user(buf, sz))
+				return -EFAULT;
+			buf += sz; 
+			p += sz; 
+			count -= sz; 
+			read += sz; 
+		}
+	}
+#endif
+	if (copy_to_user(buf, __va(p), count))
+		return -EFAULT;
+	read += count;
+	*ppos += read;
+	return read;
+}
+
+static ssize_t do_write_mem(struct file * file, void *p, unsigned long realp,
+			    const char * buf, size_t count, loff_t *ppos)
+{
+	ssize_t written;
+
+	written = 0;
+#if defined(__sparc__) || defined(__mc68000__)
+	/* we don't have page 0 mapped on sparc and m68k.. */
+	if (realp < PAGE_SIZE) {
+		unsigned long sz = PAGE_SIZE-realp;
+		if (sz > count) sz = count; 
+		/* Hmm. Do something? */
+		buf+=sz;
+		p+=sz;
+		count-=sz;
+		written+=sz;
+	}
+#endif
+	if (copy_from_user(p, buf, count))
+		return -EFAULT;
+	written += count;
+	*ppos += written;
+	return written;
+}
+
+static ssize_t dhahelper_write(struct file * file, const char * buf, 
+			 size_t count, loff_t *ppos)
+{
+	unsigned long p = *ppos;
+	unsigned long end_mem;
+
+	end_mem = __pa(high_memory);
+	if (p >= end_mem)
+		return 0;
+	if (count > end_mem - p)
+		count = end_mem - p;
+	return do_write_mem(file, __va(p), p, buf, count, ppos);
+}
+
+#ifndef pgprot_noncached
+
+/*
+ * This should probably be per-architecture in <asm/pgtable.h>
+ */
+static inline pgprot_t pgprot_noncached(pgprot_t _prot)
+{
+	unsigned long prot = pgprot_val(_prot);
+
+#if defined(__i386__) || defined(__x86_64__)
+	/* On PPro and successors, PCD alone doesn't always mean 
+	    uncached because of interactions with the MTRRs. PCD | PWT
+	    means definitely uncached. */ 
+	if (boot_cpu_data.x86 > 3)
+		prot |= _PAGE_PCD | _PAGE_PWT;
+#elif defined(__powerpc__)
+	prot |= _PAGE_NO_CACHE | _PAGE_GUARDED;
+#elif defined(__mc68000__)
+#ifdef SUN3_PAGE_NOCACHE
+	if (MMU_IS_SUN3)
+		prot |= SUN3_PAGE_NOCACHE;
+	else
+#endif
+	if (MMU_IS_851 || MMU_IS_030)
+		prot |= _PAGE_NOCACHE030;
+	/* Use no-cache mode, serialized */
+	else if (MMU_IS_040 || MMU_IS_060)
+		prot = (prot & _CACHEMASK040) | _PAGE_NOCACHE_S;
+#endif
+
+	return __pgprot(prot);
+}
+
+#endif /* !pgprot_noncached */
+
+/*
+ * Architectures vary in how they handle caching for addresses 
+ * outside of main memory.
+ */
+static inline int noncached_address(unsigned long addr)
+{
+#if defined(__i386__)
+	/* 
+	 * On the PPro and successors, the MTRRs are used to set
+	 * memory types for physical addresses outside main memory, 
+	 * so blindly setting PCD or PWT on those pages is wrong.
+	 * For Pentiums and earlier, the surround logic should disable 
+	 * caching for the high addresses through the KEN pin, but
+	 * we maintain the tradition of paranoia in this code.
+	 */
+ 	return !( test_bit(X86_FEATURE_MTRR, &boot_cpu_data.x86_capability) ||
+		  test_bit(X86_FEATURE_K6_MTRR, &boot_cpu_data.x86_capability) ||
+		  test_bit(X86_FEATURE_CYRIX_ARR, &boot_cpu_data.x86_capability) ||
+		  test_bit(X86_FEATURE_CENTAUR_MCR, &boot_cpu_data.x86_capability) )
+	  && addr >= __pa(high_memory);
+#else
+	return addr >= __pa(high_memory);
+#endif
+}
+
+static int dhahelper_mmap(struct file * file, struct vm_area_struct * vma)
+{
+	unsigned long offset = vma->vm_pgoff << PAGE_SHIFT;
+
+	/*
+	 * Accessing memory above the top the kernel knows about or
+	 * through a file pointer that was marked O_SYNC will be
+	 * done non-cached.
+	 */
+	if (noncached_address(offset) || (file->f_flags & O_SYNC))
+		vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+
+	/* Don't try to swap out physical pages.. */
+	vma->vm_flags |= VM_RESERVED;
+
+	/*
+	 * Don't dump addresses that are not real memory to a core file.
+	 */
+	if (offset >= __pa(high_memory) || (file->f_flags & O_SYNC))
+		vma->vm_flags |= VM_IO;
+
+	if (remap_page_range(vma->vm_start, offset, vma->vm_end-vma->vm_start,
+			     vma->vm_page_prot))
+		return -EAGAIN;
+	return 0;
 }
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,4,0)
 static struct file_operations dhahelper_fops =
 {
-    /*llseek*/	NULL,
-    /*read*/	NULL,
-    /*write*/	NULL,
+    /*llseek*/	dhahelper_lseek,
+    /*read*/	dhahelper_read,
+    /*write*/	dhahelper_write,
     /*readdir*/	NULL,
     /*poll*/	NULL,
     /*ioctl*/	dhahelper_ioctl,
@@ -547,9 +766,12 @@ static struct file_operations dhahelper_fops =
 {
     owner:	THIS_MODULE,
     ioctl:	dhahelper_ioctl,
-    mmap:	dhahelper_mmap,
     open:	dhahelper_open,
-    release:	dhahelper_release
+    release:	dhahelper_release,
+    llseek:	dhahelper_lseek,
+    read:	dhahelper_read,
+    write:	dhahelper_write,
+    mmap:	dhahelper_mmap,
 };
 #endif
 

@@ -91,7 +91,8 @@ extern int	bm_virt_to_bus( void * virt_addr, unsigned long length,
 
 extern void *	bm_alloc_pa( unsigned long length );
 extern void	bm_free_pa( void * virt_addr, unsigned long length );
-
+extern int	bm_lock_mem( const void * addr, unsigned long length );
+extern int	bm_unlock_mem( const void * addr, unsigned long length );
 #ifdef __cplusplus
 }
 #endif

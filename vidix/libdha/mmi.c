@@ -9,7 +9,7 @@
 
 static int libdha_fd=-1;
 
-#define ALLOWED_VER 2
+#define ALLOWED_VER 0x10
 int bm_open( void )
 {
   int retv;
@@ -77,4 +77,28 @@ void	bm_free_pa( void * virt_addr, unsigned long length )
     {
 	ioctl(libdha_fd,DHAHELPER_FREE_PA,&vmi);
     }
+}
+
+int	bm_lock_mem( const void *addr, unsigned long length )
+{
+    dhahelper_mem_t vmi;
+    vmi.addr = addr;
+    vmi.length = length;
+    if(libdha_fd > 0) 
+    {
+	return ioctl(libdha_fd,DHAHELPER_LOCK_MEM,&vmi);
+    }
+    return mlock(addr,length);
+}
+
+int	bm_unlock_mem( const void * addr, unsigned long length )
+{
+    dhahelper_mem_t vmi;
+    vmi.addr = addr;
+    vmi.length = length;
+    if(libdha_fd > 0) 
+    {
+	return ioctl(libdha_fd,DHAHELPER_UNLOCK_MEM,&vmi);
+    }
+    return munlock(addr,length);
 }
