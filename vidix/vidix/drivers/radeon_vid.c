@@ -1121,15 +1121,15 @@ static void radeon_vid_display_video( void )
     switch(besr.fourcc)
     {
         case IMGFMT_RGB15:
-        case IMGFMT_BGR15: bes_flags |= SCALER_SOURCE_15BPP; break;
+        case IMGFMT_BGR15: bes_flags |= SCALER_SOURCE_15BPP | 0x10000000; break;
 	case IMGFMT_RGB16:
-	case IMGFMT_BGR16: bes_flags |= SCALER_SOURCE_16BPP; break;
+	case IMGFMT_BGR16: bes_flags |= SCALER_SOURCE_16BPP | 0x10000000; break;
 /*
         case IMGFMT_RGB24:
         case IMGFMT_BGR24: bes_flags |= SCALER_SOURCE_24BPP; break;
 */
         case IMGFMT_RGB32:
-	case IMGFMT_BGR32: bes_flags |= SCALER_SOURCE_32BPP; break;
+	case IMGFMT_BGR32: bes_flags |= SCALER_SOURCE_32BPP | 0x10000000; break;
         /* 4:1:0*/
 	case IMGFMT_IF09:
         case IMGFMT_YVU9:  bes_flags |= SCALER_SOURCE_YUV9; break;
@@ -1384,9 +1384,9 @@ static int radeon_vid_init_video( vidix_playback_t *config )
 			    |(OV0_P23_MAX_LN_IN_PER_LN_OUT & 1) : 0;
     leftUV = (left >> (is_410?18:17)) & 15;
     left = (left >> 16) & 15;
-    if(is_rgb && !is_rgb32) h_inc<<=1;
-    if(is_rgb32)
-	besr.h_inc = (h_inc >> 1) | ((h_inc >> 1) << 16);
+    if(is_rgb) 
+	besr.h_inc = (h_inc)|(h_inc<<16);
+    else
     if(is_410)
 	besr.h_inc = h_inc | ((h_inc >> 2) << 16);
     else
