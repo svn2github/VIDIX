@@ -547,12 +547,30 @@ static void restore_regs( void )
     OUTREG(OVERLAY_KEY_CNTL,savreg.overlay_key_cntl);
 }
 
-
+static int forced_irq=UINT_MAX;
 static int can_use_irq=0;
+static int irq_installed=0;
+static void init_irq(void)
+{
+	irq_installed=1;
+	if(forced_irq != UINT_MAX) pci_info.irq=forced_irq;
+	if(hwirq_install(pci_info.bus,pci_info.card,pci_info.func,
+			 2,CRTC_INT_CNTL,CRTC_BUSMASTER_EOL_INT) == 0)
+	{
+	    can_use_irq=1;
+	    if(__verbose) printf("[mach64] Will use %u irq line\n",pci_info.irq);
+	}
+	else 
+	    if(__verbose) printf("[mach64] Can't initialize irq handling: %s\n"
+				 "[mach64]irq_param: line=%u pin=%u gnt=%u lat=%u\n"
+				 ,strerror(errno)
+				 ,pci_info.irq,pci_info.ipin,pci_info.gnt,pci_info.lat);
+}
+
 int VIDIX_NAME(vixInit)(const char *args)
 {
   int err;
-  unsigned i,forced_irq=UINT_MAX;
+  unsigned i;
   if(!probed)
   {
     printf("[mach64] Driver was not probed but is being initializing\n");
@@ -641,17 +659,6 @@ int VIDIX_NAME(vixInit)(const char *args)
 	for(i=0;i<64;i++)
 	    if((mach64_dma_desc_base[i] = memalign(4096,mach64_ram_size*sizeof(bm_list_descriptor)/4096)) == 0)
 		goto out_mem;
-	if(forced_irq != UINT_MAX) pci_info.irq=forced_irq;
-	if(hwirq_install(pci_info.irq) == 0)
-	{
-	    can_use_irq=1;
-	    if(__verbose) printf("[mach64] Will use %u irq line\n",pci_info.irq);
-	}
-	else 
-	    if(__verbose) printf("[mach64] Can't initialize irq handling: %s\n"
-				 "[mach64]irq_param: line=%u pin=%u gnt=%u lat=%u\n"
-				 ,strerror(errno)
-				 ,pci_info.irq,pci_info.ipin,pci_info.gnt,pci_info.lat);
 #if 0
 	if(!is_agp)
 	{
@@ -679,7 +686,7 @@ void VIDIX_NAME(vixDestroy)(void)
   unmap_phys_mem(mach64_mmio_base,0x4000);
 #ifdef MACH64_ENABLE_BM
   bm_close();
-  if(can_use_irq) hwirq_uninstall(pci_info.irq);
+  if(can_use_irq && irq_installed) hwirq_uninstall(pci_info.bus,pci_info.card,pci_info.func);
   if(dma_phys_addrs) free(dma_phys_addrs);
   for(i=0;i<64;i++) 
   {
@@ -1343,7 +1350,7 @@ int VIDIX_NAME(vixQueryDMAStatus)( void )
     unsigned crtc_int_cntl;
     crtc_int_cntl = INREG(CRTC_INT_CNTL);
     bm_off = crtc_int_cntl & CRTC_BUSMASTER_EOL_INT;
-    if(bm_off) OUTREG(CRTC_INT_CNTL,crtc_int_cntl | CRTC_BUSMASTER_EOL_INT);
+//    if(bm_off) OUTREG(CRTC_INT_CNTL,crtc_int_cntl | CRTC_BUSMASTER_EOL_INT);
     return bm_off?0:1;
 }
 
@@ -1354,6 +1361,7 @@ int VIDIX_NAME(vixPlaybackCopyFrame)( vidix_dma_t * dmai )
     sync_mode = (dmai->flags & BM_DMA_SYNC) == BM_DMA_SYNC;
     if(sync_mode)
     {
+	if(!irq_installed) init_irq();
 	/* burn CPU instead of PCI bus here */
 	while(vixQueryDMAStatus()!=0){
 	    if(can_use_irq)	hwirq_wait(pci_info.irq);
