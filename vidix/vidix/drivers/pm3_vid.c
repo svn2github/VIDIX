@@ -495,6 +495,7 @@ VIDIX_NAME(vixPlaybackCopyFrame)(vidix_dma_t *dma)
 {
     u_int frame = dma->idx;
     struct pm3_bydma_frame *bdf;
+    static int s = 0;
 
     if(dma->internal[frame]){
 	bdf = dma->internal[frame];
@@ -511,11 +512,12 @@ VIDIX_NAME(vixPlaybackCopyFrame)(vidix_dma_t *dma)
     }
 
     if(dma->flags & BM_DMA_SYNC){
-	WRITE_REG(PM3IntEnable, (1 << 7));
-	while(READ_REG(PM3ByDMAReadMode) & PM3ByDMAReadMode_Active){
+	if(s){
 	    hwirq_wait(pci_info.irq);
+	} else {
+	    WRITE_REG(PM3IntEnable, (1 << 7));
+	    s = 1;
 	}
-	WRITE_REG(PM3IntEnable, 0);
     }
 
     WAIT_FIFO(3);
