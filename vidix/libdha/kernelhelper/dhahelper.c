@@ -539,12 +539,16 @@ static int dhahelper_unlock_mem(dhahelper_mem_t *arg)
 	return 0;
 }
 
-static struct {
+static struct dha_irq {
     spinlock_t lock;
     long flags;
     int handled;
     int rcvd;
+    volatile u32 *ack_addr;
+    u32 ack_data;
+    struct pci_dev *dev;
     wait_queue_head_t wait;
+    unsigned long count;
 } dha_irqs[256];
 
 static void dhahelper_irq_handler(int irq, void *dev_id, struct pt_regs *regs)
@@ -552,6 +556,11 @@ static void dhahelper_irq_handler(int irq, void *dev_id, struct pt_regs *regs)
     spin_lock_irqsave(&dha_irqs[irq].lock, dha_irqs[irq].flags);
     if(dha_irqs[irq].handled){
 	dha_irqs[irq].rcvd = 1;
+	dha_irqs[irq].count++;
+	if(dha_irqs[irq].ack_addr){
+	    *dha_irqs[irq].ack_addr = dha_irqs[irq].ack_data;
+	    mb();
+	}
 	wake_up_interruptible(&dha_irqs[irq].wait);
     }
     spin_unlock_irqrestore(&dha_irqs[irq].lock, dha_irqs[irq].flags);
@@ -559,67 +568,111 @@ static void dhahelper_irq_handler(int irq, void *dev_id, struct pt_regs *regs)
 
 static int dhahelper_install_irq(dhahelper_irq_t *arg)
 {
-	dhahelper_irq_t my_irq;
-	int retval;
-	if (copy_from_user(&my_irq, arg, sizeof(dhahelper_irq_t)))
-	{
-		if (dhahelper_verbosity > 0)
-		    printk(KERN_ERR "dhahelper: failed copy from userspace\n");
-		return -EFAULT;
-	}
-	/* Fixme: What should we prefer - SA_INTERRUPT or SA_SHIRQ ??? */
-	if(my_irq.num > 255) return -EINVAL;
+    dhahelper_irq_t my_irq;
+    struct pci_dev *pci;
+    long rlen;
+    int retval;
+    long ack_addr;
+    int irqn;
 
-	spin_lock_irqsave(&dha_irqs[my_irq.num].lock,
-			  dha_irqs[my_irq.num].flags);
-	if(dha_irqs[my_irq.num].handled) return 0;
+    if (copy_from_user(&my_irq, arg, sizeof(dhahelper_irq_t)))
+    {
+	if (dhahelper_verbosity > 0)
+	    printk(KERN_ERR "dhahelper: failed copy from userspace\n");
+	return -EFAULT;
+    }
 
-	dha_irqs[my_irq.num].lock = SPIN_LOCK_UNLOCKED;
-	dha_irqs[my_irq.num].flags = 0;
-	dha_irqs[my_irq.num].rcvd = 0;
-	init_waitqueue_head(&dha_irqs[my_irq.num].wait);
+    if(!(pci = pci_find_slot(my_irq.bus, PCI_DEVFN(my_irq.dev, my_irq.func))))
+	return -EINVAL;
 
-	retval = request_irq(my_irq.num, dhahelper_irq_handler,
-			     SA_SHIRQ, "dhahelper", (void *)NULL);
+    rlen = pci_resource_len(pci, my_irq.ack_region);
+    if(my_irq.ack_offset > rlen - 4)
+	return -EINVAL;
 
-	if(retval < 0)
-		goto fail;
+    irqn = pci->irq;
 
-	dha_irqs[my_irq.num].handled = 1;
+    spin_lock_irqsave(&dha_irqs[irqn].lock,
+		      dha_irqs[irqn].flags);
+
+    if(dha_irqs[irqn].handled){
+	retval = -EBUSY;
+	goto fail;
+    }
+
+    if(my_irq.ack_region >= 0){
+	ack_addr = pci_resource_start(pci, my_irq.ack_region);
+	ack_addr += my_irq.ack_offset;
+#ifdef CONFIG_ALPHA
+	ack_addr += ((struct pci_controller *) pci->sysdata)->dense_mem_base;
+#endif
+	/* FIXME:  Other architectures */
+
+	dha_irqs[irqn].ack_addr = phys_to_virt(ack_addr);
+	dha_irqs[irqn].ack_data = my_irq.ack_data;
+    } else {
+	dha_irqs[irqn].ack_addr = 0;
+    }
+
+    dha_irqs[irqn].lock = SPIN_LOCK_UNLOCKED;
+    dha_irqs[irqn].flags = 0;
+    dha_irqs[irqn].rcvd = 0;
+    dha_irqs[irqn].dev = pci;
+    init_waitqueue_head(&dha_irqs[irqn].wait);
+    dha_irqs[irqn].count = 0;
+
+    retval = request_irq(irqn, dhahelper_irq_handler,
+			 SA_SHIRQ, "dhahelper", pci);
+
+    if(retval < 0)
+	goto fail;
+
+    copy_to_user(&arg->num, &irqn, sizeof(irqn));
+
+    dha_irqs[irqn].handled = 1;
 
 out:
-	spin_unlock_irqrestore(&dha_irqs[my_irq.num].lock,
-			       dha_irqs[my_irq.num].flags);
-	return retval;
+    spin_unlock_irqrestore(&dha_irqs[irqn].lock,
+			   dha_irqs[irqn].flags);
+    return retval;
 
 fail:
-	if(retval==-EINVAL){
-		printk("dhahelper: bad irq number or handler\n");
-	} else if(retval==-EBUSY){
-		printk("dhahelper: IRQ %u busy\n", my_irq.num);
-	} else {
-		printk("dhahelper: Could not install irq handler...\n");
-	}
-	printk("dhahelper: Perhaps you need to let your BIOS assign an IRQ to your video card\n");
-	goto out;
+    if(retval == -EINVAL){
+	printk("dhahelper: bad irq number or handler\n");
+    } else if(retval == -EBUSY){
+	printk("dhahelper: IRQ %u busy\n", irqn);
+    } else {
+	printk("dhahelper: Could not install irq handler...\n");
+    }
+    printk("dhahelper: Perhaps you need to let your BIOS assign an IRQ to your video card\n");
+    goto out;
 }
 
 static int dhahelper_free_irq(dhahelper_irq_t *arg)
 {
 	dhahelper_irq_t irq;
+	struct pci_dev *pci;
+	int irqn;
+
 	if (copy_from_user(&irq, arg, sizeof(dhahelper_irq_t)))
 	{
 		if (dhahelper_verbosity > 0)
 		    printk(KERN_ERR "dhahelper: failed copy from userspace\n");
 		return -EFAULT;
 	}
-	if(irq.num > 255) return -EINVAL;
-	spin_lock_irqsave(&dha_irqs[irq.num].lock, dha_irqs[irq.num].flags);
-	if(dha_irqs[irq.num].handled) {
-		free_irq(irq.num, NULL);
-		dha_irqs[irq.num].handled = 0;
+
+	pci = pci_find_slot(irq.bus, PCI_DEVFN(irq.dev, irq.func));
+	if(!pci)
+	    return -EINVAL;
+
+	irqn = pci->irq;
+
+	spin_lock_irqsave(&dha_irqs[irqn].lock, dha_irqs[irqn].flags);
+	if(dha_irqs[irqn].handled) {
+		free_irq(irqn, pci);
+		dha_irqs[irqn].handled = 0;
+		printk("IRQ %i: %li\n", irqn, dha_irqs[irqn].count);
 	}
-	spin_unlock_irqrestore(&dha_irqs[irq.num].lock, dha_irqs[irq.num].flags);
+	spin_unlock_irqrestore(&dha_irqs[irqn].lock, dha_irqs[irqn].flags);
 	return 0;
 }
 
@@ -638,6 +691,7 @@ static int dhahelper_ack_irq(dhahelper_irq_t *arg)
 	if(!dha_irqs[irq.num].handled) return -ESRCH;
 	add_wait_queue(&dha_irqs[irq.num].wait, &wait);
 	set_current_state(TASK_INTERRUPTIBLE);
+	dha_irqs[irq.num].rcvd = 0;
 	for(;;){
 		int r;
 		spin_lock_irqsave(&dha_irqs[irq.num].lock,
@@ -973,7 +1027,7 @@ static void __exit exit_dhahelper(void)
     unsigned i;
     for(i=0;i<256;i++)
 	if(dha_irqs[i].handled)
-	    free_irq(i, NULL);
+	    free_irq(i, dha_irqs[i].dev);
 
 #ifdef CONFIG_DEVFS_FS
     devfs_unregister(dha_devfsh);

@@ -63,6 +63,10 @@ typedef struct dhahelper_mem_s
 typedef struct dhahelper_irq_s
 {
     unsigned	num;
+    int bus, dev, func;
+    int ack_region;
+    unsigned long ack_offset;
+    unsigned int ack_data;
 }dhahelper_irq_t;
 
 typedef struct dhahelper_cpu_flush_s

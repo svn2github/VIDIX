@@ -16,6 +16,8 @@
 #ifndef LIBDHA_H
 #define LIBDHA_H
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -98,9 +100,10 @@ extern int	bm_unlock_mem( const void * addr, unsigned long length );
 
 /* HWIRQ support */
 
-extern int	hwirq_install(unsigned irqnum);
+extern int	hwirq_install(int bus, int dev, int func,
+			      int areg, unsigned long aoff, uint32_t adata);
 extern int	hwirq_wait(unsigned irqnum);
-extern int	hwirq_uninstall(unsigned irqnum);
+extern int	hwirq_uninstall(int bus, int dev, int func);
 
 /* CPU flushing support */
 extern void	cpu_flush(void *va,unsigned long length);
