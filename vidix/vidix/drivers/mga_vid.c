@@ -549,15 +549,15 @@ static void mga_vid_write_regs(int restore)
 #ifdef CRTC2
     if (cregs_save.c2ctl == 0)
     {
-	int i;
+	//int i;
 	cregs_save.c2ctl = readl(C2CTL);
 	cregs_save.c2datactl = readl(C2DATACTL);
 	cregs_save.c2misc = readl(C2MISC);
 
 	//for (i = 0; i <= 8; i++) { writeb(CRTCEXTX, i); printf("CRTCEXT%d  %x\n", i, readb(CRTCEXTD)); }
-	printf("c2ctl:0x%08x c2datactl:0x%08x\n", cregs_save.c2ctl, cregs_save.c2datactl);
-	printf("c2misc:0x%08x\n", readl(C2MISC));
-	printf("c2ctl:0x%08x c2datactl:0x%08x\n", cregs.c2ctl, cregs.c2datactl);
+	//printf("c2ctl:0x%08x c2datactl:0x%08x\n", cregs_save.c2ctl, cregs_save.c2datactl);
+	//printf("c2misc:0x%08x\n", readl(C2MISC));
+	//printf("c2ctl:0x%08x c2datactl:0x%08x\n", cregs.c2ctl, cregs.c2datactl);
     }
     if (restore)
     {
@@ -703,7 +703,7 @@ void mga_handle_irq(int irq, void *dev_id/*, struct pt_regs *pregs*/) {
 
 int VIDIX_NAME(vixConfigPlayback)(vidix_playback_t *config)
 {
-    int i;
+    unsigned int i;
     int x, y, sw, sh, dw, dh;
     int besleft, bestop, ifactor, ofsleft, ofstop, baseadrofs, weight, weights;
 #ifdef CRTC2
