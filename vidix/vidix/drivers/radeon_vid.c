@@ -392,7 +392,7 @@ static const ati_card_ids_t ati_card_ids[] =
  { DEVICE_ATI_R300_AD_RADEON,		R_300 },
  { DEVICE_ATI_R300_AE_RADEON,		R_300 },
  { DEVICE_ATI_R300_AF_RADEON,		R_300 },
- { DEVICE_ATI_RADEON_9100_IGP2,		R_300|R_INTEGRATED },
+ { DEVICE_ATI_RADEON_9100_IGP2,		R_300|R_OVL_SHIFT|R_INTEGRATED },
  { DEVICE_ATI_RS300M_AGP_RADEON,	R_300|R_INTEGRATED },
  { DEVICE_ATI_R350_AH_RADEON,		R_350 },
  { DEVICE_ATI_R350_AI_RADEON,		R_350 },
@@ -979,7 +979,7 @@ unsigned VIDIX_NAME(vixGetVersion)( void ) { return VIDIX_VERSION; }
 static int find_chip(unsigned chip_id)
 {
   unsigned i;
-  for(i = 0;i < sizeof(ati_card_ids)/sizeof(unsigned short);i++)
+  for(i = 0;i < sizeof(ati_card_ids)/sizeof(ati_card_ids_t);i++)
   {
     if(chip_id == ati_card_ids[i].id) return i;
   }
