@@ -5,6 +5,7 @@
    Licence: GPL
    WARNING: THIS DRIVER IS IN BETTA STAGE
 */
+#include "../../config.h"
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,6 +13,15 @@
 #include <math.h>
 #include <inttypes.h>
 #include <fcntl.h>
+#include <sys/mman.h> /* for m(un)lock */
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#ifdef HAVE_MEMALIGN
+#define MACH64_ENABLE_BM 1
+#endif
+#endif
+
+#undef MACH64_ENABLE_BM /* it's unfinished alpha-version */
 
 #include "../vidix.h"
 #include "../fourcc.h"
@@ -23,6 +33,25 @@
 #include "../../version.h"
 
 #define UNUSED(x) ((void)(x)) /**< Removes warning about unused arguments */
+
+
+#ifdef MACH64_ENABLE_BM
+
+#define cpu_to_le32(a) (a)
+#define VIRT_TO_CARD(a,b,c) bm_virt_to_phys(a,b,c)
+#pragma pack(1)
+typedef struct
+{
+uint32_t frame_addr;
+uint32_t sys_addr;
+uint32_t command;
+uint32_t reserved;
+} bm_list_descriptor;
+#pragma pack()
+static void *mach64_dma_desc_base = 0;
+static unsigned long bus_addr_dma_desc = 0;
+static unsigned long *dma_phys_addrs = 0;
+#endif
 
 static void *mach64_mmio_base = 0;
 static void *mach64_mem_base = 0;
@@ -37,7 +66,7 @@ pciinfo_t pci_info;
 static int probed = 0;
 static int __verbose = 0;
 
-#define VERBOSE_LEVEL 1
+#define VERBOSE_LEVEL 0
 
 typedef struct bes_registers_s
 {
@@ -114,7 +143,23 @@ static video_registers_t vregs[] =
   DECLARE_VREG(VIDEO_FORMAT),
   DECLARE_VREG(VIDEO_CONFIG),
   DECLARE_VREG(VIDEO_SYNC_TEST),
-  DECLARE_VREG(VIDEO_SYNC_TEST_B)
+  DECLARE_VREG(VIDEO_SYNC_TEST_B),
+  DECLARE_VREG(BUS_CNTL),
+  DECLARE_VREG(SRC_CNTL),
+  DECLARE_VREG(GUI_STAT),
+  DECLARE_VREG(BM_ADDR),
+  DECLARE_VREG(BM_DATA),
+  DECLARE_VREG(BM_HOSTDATA),
+  DECLARE_VREG(BM_GUI_TABLE_CMD),
+  DECLARE_VREG(BM_FRAME_BUF_OFFSET),
+  DECLARE_VREG(BM_SYSTEM_MEM_ADDR),
+  DECLARE_VREG(BM_COMMAND),
+  DECLARE_VREG(BM_STATUS),
+  DECLARE_VREG(BM_GUI_TABLE),
+  DECLARE_VREG(BM_SYSTEM_TABLE),
+  DECLARE_VREG(AGP_BASE),
+  DECLARE_VREG(AGP_CNTL),
+  DECLARE_VREG(CRTC_INT_CNTL)
 };
 
 /* VIDIX exports */
@@ -173,7 +218,7 @@ static __inline__ void OUTPLL(uint32_t addr,uint32_t val)
 		_tmp |= (val);						\
 		OUTPLL(addr, _tmp);					\
 	} while (0)
-
+	
 static void mach64_engine_reset( void )
 {
   /* Kill off bus mastering with extreme predjudice... */
@@ -453,6 +498,87 @@ static void reset_regs( void )
   }
 }
 
+#ifdef MACH64_ENABLE_BM
+
+#define APERTURE_OFFSET 0x7ff800
+static int mach64_dma_test( void )
+{
+	unsigned long tablea,dataa;
+	uint32_t *table, *data;
+	uint32_t regs[3], expected[3];
+	int i, count, retval;
+
+	if(!(table = memalign(4096,4096))) return 0;
+	if(!(data  = memalign(4096,4096))) { free(table); return 0; }
+
+	OUTREG( SRC_CNTL, 0 );
+	OUTREG( VERTEX_1_S, 0x00000000 );
+	OUTREG( VERTEX_1_T, 0x00000000 );
+	OUTREG( VERTEX_1_W, 0x00000000 );
+
+	retval = 0;
+
+	if( INREG(VERTEX_1_S) != 0 || 
+	    INREG(VERTEX_1_T) != 0 ||
+	    INREG(VERTEX_1_W) != 0) goto fail;
+
+	/* use only s,t,w vertex registers so we don't have to mask any results */
+	/* fill up a buffer with sets of 3 consecutive writes starting with VERTEX_1_S */
+	count = 0;
+
+	data[count++] = cpu_to_le32(0x00020190); /* 1_90 = VERTEX_1_S */
+	data[count++] = expected[0] = 0x11111111;
+	data[count++] = expected[1] = 0x22222222;
+	data[count++] = expected[2] = 0x33333333;
+
+	while (count < 1020) {
+		data[count++] = cpu_to_le32(0x00020190);
+		data[count++] = 0x11111111;
+		data[count++] = 0x22222222;
+		data[count++] = 0x33333333;
+	}
+	data[count++] = cpu_to_le32(0x0000006d); /* SRC_CNTL */
+	data[count++] = 0;
+
+	VIRT_TO_CARD(table,1,&tablea);
+	VIRT_TO_CARD(data,1,&dataa);
+
+	table[0] = cpu_to_le32(BM_ADDR + APERTURE_OFFSET);
+	table[1] = cpu_to_le32(dataa);
+	table[2] = cpu_to_le32(count * sizeof( uint32_t ) | 0x80000000 | 0x40000000);
+	table[3] = 0;
+
+	mach64_wait_for_idle( );
+
+	OUTREG( BM_GUI_TABLE_CMD,
+		tablea |
+		CIRCULAR_BUF_SIZE_16KB );
+	
+	OUTREG( SRC_CNTL, BUS_MASTER_EN | BUS_MASTER_SYNC | BM_OP_SYSTEM_TO_REG );
+
+	/* Kick off the transfer */
+	OUTREG( DST_HEIGHT_WIDTH, 0 );
+
+	mach64_wait_for_idle( );
+	
+	/* Check register values to see if the GUI master operation succeeded */
+	for ( i = 0; i < 3; i++ ) {
+		regs[i] = INREG( (VERTEX_1_S + i*4) );
+		if (regs[i] != expected[i])
+		{
+		    printf("[mach64] dma_test_failed: value=%X should be=%X\n",regs[i],expected[i]);
+		    goto fail;
+		}
+	}
+
+	retval = 1;
+fail:
+	free(table);
+	free(data);
+	return retval;
+}
+#endif /*MACH64_ENABLE_BM*/
+
 int vixInit(void)
 {
   int err;
@@ -504,11 +630,23 @@ int vixInit(void)
   
   reset_regs();
   mach64_vid_make_default();
-
   if(__verbose > VERBOSE_LEVEL) mach64_vid_dump_regs();
-  if(bm_open() == 0) mach64_cap.flags |= FLAG_DMA | FLAG_EQ_DMA;
+#ifdef MACH64_ENABLE_BM
+  if(bm_open() == 0)
+  {
+	if (!mach64_dma_test())
+		printf( "[mach64] DMA probing failed\n");
+	else
+	if((dma_phys_addrs = malloc(mach64_ram_size*sizeof(unsigned long)/4096)) != 0)
+	{
+		mach64_cap.flags |= FLAG_DMA | FLAG_EQ_DMA;
+	}
+	else
+		printf("[mach64] Can't allocate temopary buffer for DMA\n");
+  }
   else
     if(__verbose) printf("[mach64] Can't initialize busmastering: %s\n",strerror(errno));
+#endif
   return 0;
 }
 
@@ -516,7 +654,10 @@ void vixDestroy(void)
 {
   unmap_phys_mem(mach64_mem_base,mach64_ram_size);
   unmap_phys_mem(mach64_mmio_base,0x4000);
+#ifdef MACH64_ENABLE_BM
   bm_close();
+  if(dma_phys_addrs) free(dma_phys_addrs);
+#endif
 }
 
 int vixGetCapability(vidix_capability_t *to)
@@ -884,15 +1025,28 @@ int vixQueryFourcc(vidix_fourcc_t *to)
 int vixConfigPlayback(vidix_playback_t *info)
 {
   unsigned rgb_size,nfr;
+  uint32_t mach64_video_size;
   if(!is_supported_fourcc(info->fourcc)) return ENOSYS;
   if(info->num_frames>VID_PLAY_MAXFRAMES) info->num_frames=VID_PLAY_MAXFRAMES;
 
   mach64_compute_framesize(info);
   rgb_size = mach64_get_xres()*mach64_get_yres()*((mach64_vid_get_dbpp()+7)/8);
   nfr = info->num_frames;
+  mach64_video_size = mach64_ram_size;
+#ifdef MACH64_ENABLE_BM
+  if(mach64_cap.flags & FLAG_DMA)
+  {
+     /* every descriptor describes one 4K page and takes 16 bytes in memory 
+	Note: probably it's ont good idea to locate them in video memory
+	but as initial release it's OK */
+	mach64_video_size -= mach64_ram_size * sizeof(bm_list_descriptor) / 4096;
+	mach64_dma_desc_base = (char *)mach64_mem_base + mach64_video_size;
+	VIRT_TO_CARD(mach64_dma_desc_base,1,&bus_addr_dma_desc);
+  }
+#endif
   for(;nfr>0;nfr--)
   {
-      mach64_overlay_offset = mach64_ram_size - info->frame_size*nfr;
+      mach64_overlay_offset = mach64_video_size - info->frame_size*nfr;
       mach64_overlay_offset &= 0xffff0000;
       if(mach64_overlay_offset >= (int)rgb_size ) break;
   }
@@ -901,7 +1055,7 @@ int vixConfigPlayback(vidix_playback_t *info)
    nfr = info->num_frames;
    for(;nfr>0;nfr--)
    {
-      mach64_overlay_offset = mach64_ram_size - info->frame_size*nfr;
+      mach64_overlay_offset = mach64_video_size - info->frame_size*nfr;
       mach64_overlay_offset &= 0xffff0000;
       if(mach64_overlay_offset>=0) break;
    }
@@ -938,7 +1092,10 @@ int vixPlaybackFrameSelect(unsigned int frame)
     uint32_t off[6];
     int i;
     int last_frame= (frame-1+num_mach64_buffers) % num_mach64_buffers;
-//printf("Selecting frame %d\n", frame);    
+//printf("Selecting frame %d\n", frame);
+#ifdef MACH64_ENABLE_BM
+#warning This place can cause card lookup. (Unfinished yet)
+#endif
     /*
     buf3-5 always should point onto second buffer for better
     deinterlacing and TV-in
@@ -1076,3 +1233,70 @@ int vixSetGrKeys(const vidix_grkey_t *grkey)
 
     return(0);
 }
+
+#ifdef MACH64_ENABLE_BM
+static int mach64_setup_frame( const vidix_dma_t * dmai )
+{
+    bm_list_descriptor * list = (bm_list_descriptor *)mach64_dma_desc_base;
+    unsigned long dest_ptr;
+    unsigned i,n,count;
+    int retval;
+    if(dmai->dest_offset + dmai->size > mach64_ram_size) return E2BIG;
+    n = dmai->size / 4096;
+    if(dmai->size % 4096) n++;
+    if((retval = VIRT_TO_CARD(dmai->src,dmai->size,dma_phys_addrs)) != 0) return retval;
+//    VIRT_TO_CARD(mach64_mem_base+dmai->dest_offset,1,&dest_ptr);
+    dest_ptr = dmai->dest_offset;
+    count = dmai->size;
+    for(i=0;i<n;i++)
+    {
+	list[i].frame_addr = dest_ptr; /* offset within of memory */
+	list[i].sys_addr = dma_phys_addrs[i];
+	list[i].command = (count > 4096 ? 4096 : (count | DMA_GUI_COMMAND__EOL))/*|DMA_GUI_COMMAND__HOLD_VIDEO_OFFSET*/;
+	list[i].reserved = 0;
+#if 0
+printf("MACH64_DMA_TABLE[%i] %X %X %X %X\n",i,list[i].frame_addr,list[i].sys_addr,list[i].command,list[i].reserved);
+#endif
+	dest_ptr += 4096;
+	count -= 4096;
+    }
+    return 0;
+}
+
+static int mach64_transfer_frame( void  )
+{
+    unsigned i;
+    mach64_wait_for_idle();
+    mach64_wait_vsync();
+//    OUTREG(SRC_CNTL,INREG(SRC_CNTL) | BUS_MASTER_EN | BUS_MASTER_SYNC | BM_OP_SYSTEM_TO_FRAME);
+    OUTREG(BUS_CNTL,(INREG(BUS_CNTL)|BUS_STOP_REQ_DIS|BUS_FLUSH_BUF|BUS_EXT_REG_EN) &(~BUS_MASTER_DIS));
+    OUTREG(CRTC_INT_CNTL,INREG(CRTC_INT_CNTL)|CRTC_BUSMASTER_EOL_INT);
+    OUTREG(CRTC_INT_CNTL,INREG(CRTC_INT_CNTL)|CRTC_BUSMASTER_EOL_INT_EN);
+    OUTREG(BM_SYSTEM_TABLE,bus_addr_dma_desc|SYSTEM_TRIGGER_SYSTEM_TO_VIDEO);
+    /*
+     * To start the DMA transfer, we need to initiate a GUI operation.  We can
+     * write any value to the register, as it is only used to start the engine.
+     */
+    OUTREG(DST_HEIGHT_WIDTH, 0);
+    if(__verbose > VERBOSE_LEVEL) mach64_vid_dump_regs();    
+    return 0;
+}
+
+
+int vixPlaybackCopyFrame( const vidix_dma_t * dmai )
+{
+    int retval;
+    if(mlock(dmai->src,dmai->size) != 0) return errno;
+    retval = mach64_setup_frame(dmai);
+    if(retval == 0) retval = mach64_transfer_frame();
+    munlock(dmai->src,dmai->size);
+    return retval;
+}
+
+int	vixQueryDMAStatus( void )
+{
+    int bm_off;
+    bm_off = INREG(GUI_STAT) & GUI_ACTIVE;
+    return bm_off?1:0;
+}
+#endif

@@ -11,6 +11,7 @@
 #include <string.h>
 #include <math.h>
 #include <inttypes.h>
+#include <sys/mman.h>
 #include "../../libdha/pci_ids.h"
 #include "../../libdha/pci_names.h"
 #include "../vidix.h"
@@ -29,6 +30,24 @@
 #endif
 #endif
 
+#undef RADEON_ENABLE_BM /* unfinished stuff. May corrupt your filesystem ever */
+
+#ifdef RADEON_ENABLE_BM
+static void * radeon_dma_desc_base = 0;
+static unsigned long bus_addr_dma_desc = 0;
+static unsigned long *dma_phys_addrs = 0;
+#pragma pack(1)
+typedef struct
+{
+uint32_t frame_addr;
+uint32_t sys_addr;
+uint32_t command;
+uint32_t reserved;
+} bm_list_descriptor;
+#pragma pack()
+#endif
+
+#define VERBOSE_LEVEL 0
 static int __verbose = 0;
 
 typedef struct bes_registers_s
@@ -187,7 +206,20 @@ static video_registers_t vregs[] =
   DECLARE_VREG(IDCT_LEVELS),
   DECLARE_VREG(IDCT_AUTH_CONTROL),
   DECLARE_VREG(IDCT_AUTH),
-  DECLARE_VREG(IDCT_CONTROL)
+  DECLARE_VREG(IDCT_CONTROL),
+  DECLARE_VREG(BM_FRAME_BUF_OFFSET),
+  DECLARE_VREG(BM_SYSTEM_MEM_ADDR),
+  DECLARE_VREG(BM_COMMAND),
+  DECLARE_VREG(BM_STATUS),
+  DECLARE_VREG(BM_QUEUE_STATUS),
+  DECLARE_VREG(BM_QUEUE_FREE_STATUS),
+  DECLARE_VREG(BM_CHUNK_0_VAL),
+  DECLARE_VREG(BM_CHUNK_1_VAL),
+  DECLARE_VREG(BM_VIDCAP_BUF0),
+  DECLARE_VREG(BM_VIDCAP_BUF1),
+  DECLARE_VREG(BM_VIDCAP_BUF2),
+  DECLARE_VREG(BM_VIDCAP_ACTIVE),
+  DECLARE_VREG(BM_GUI)
 };
 
 static void * radeon_mmio_base = 0;
@@ -924,9 +956,17 @@ int vixInit( void )
   printf(RADEON_MSG" Video memory = %uMb\n",radeon_ram_size/0x100000);
   err = mtrr_set_type(pci_info.base0,radeon_ram_size,MTRR_TYPE_WRCOMB);
   if(!err) printf(RADEON_MSG" Set write-combining type of video memory\n");
-  if(bm_open() == 0) def_cap.flags |= FLAG_DMA | FLAG_EQ_DMA;
+#ifdef RADEON_ENABLE_BM
+  if(bm_open() == 0)
+  {
+	if((dma_phys_addrs = malloc(radeon_ram_size*sizeof(unsigned long)/4096)) != 0)
+					    def_cap.flags |= FLAG_DMA | FLAG_EQ_DMA;
+	else
+		printf(RADEON_MSG" Can't allocate temopary buffer for DMA\n");
+  }
   else
     if(__verbose) printf(RADEON_MSG" Can't initialize busmastering: %s\n",strerror(errno));
+#endif
   return 0;  
 }
 
@@ -1100,8 +1140,8 @@ static void radeon_vid_display_video( void )
     }
     OUTREG(OV0_SCALE_CNTL,		bes_flags);
     OUTREG(OV0_REG_LOAD_CNTL,		0);
-    if(__verbose > 1) printf(RADEON_MSG"we wanted: scaler=%08X\n",bes_flags);
-    if(__verbose > 1) radeon_vid_dump_regs();
+    if(__verbose > VERBOSE_LEVEL) printf(RADEON_MSG"we wanted: scaler=%08X\n",bes_flags);
+    if(__verbose > VERBOSE_LEVEL) radeon_vid_dump_regs();
 }
 
 static unsigned radeon_query_pitch(unsigned fourcc,const vidix_yuv_t *spitch)
@@ -1338,6 +1378,7 @@ static void radeon_compute_framesize(vidix_playback_t *info)
 int vixConfigPlayback(vidix_playback_t *info)
 {
   unsigned rgb_size,nfr;
+  uint32_t radeon_video_size;
   if(!is_supported_fourcc(info->fourcc)) return ENOSYS;
   if(info->num_frames>VID_PLAY_MAXFRAMES) info->num_frames=VID_PLAY_MAXFRAMES;
   if(info->num_frames==1) besr.double_buff=0;
@@ -1346,9 +1387,21 @@ int vixConfigPlayback(vidix_playback_t *info)
     
   rgb_size = radeon_get_xres()*radeon_get_yres()*((radeon_vid_get_dbpp()+7)/8);
   nfr = info->num_frames;
+  radeon_video_size = radeon_ram_size;
+#ifdef RADEON_ENABLE_BM
+  if(def_cap.flags & FLAG_DMA)
+  {
+     /* every descriptor describes one 4K page and takes 16 bytes in memory 
+	Note: probably it's ont good idea to locate them in video memory
+	but as initial release it's OK */
+	radeon_video_size -= radeon_ram_size * sizeof(bm_list_descriptor) / 4096;
+	radeon_dma_desc_base = (char *)radeon_mem_base + radeon_video_size;
+	bm_virt_to_bus(radeon_dma_desc_base,1,&bus_addr_dma_desc);
+  }
+#endif
   for(;nfr>0; nfr--)
   {
-      radeon_overlay_off = radeon_ram_size - info->frame_size*nfr;
+      radeon_overlay_off = radeon_video_size - info->frame_size*nfr;
       radeon_overlay_off &= 0xffff0000;
       if(radeon_overlay_off >= (int)rgb_size ) break;
   }
@@ -1357,7 +1410,7 @@ int vixConfigPlayback(vidix_playback_t *info)
    nfr = info->num_frames;
    for(;nfr>0; nfr--)
    {
-      radeon_overlay_off = radeon_ram_size - info->frame_size*nfr;
+      radeon_overlay_off = radeon_video_size - info->frame_size*nfr;
       radeon_overlay_off &= 0xffff0000;
       if(radeon_overlay_off > 0) break;
    }
@@ -1411,7 +1464,7 @@ int vixPlaybackFrameSelect(unsigned frame)
     OUTREG(OV0_VID_BUF5_BASE_ADRS,	off[5]);
     OUTREG(OV0_REG_LOAD_CNTL,		0);
     if(besr.vid_nbufs == 2) radeon_wait_vsync();
-    if(__verbose > 1) radeon_vid_dump_regs();
+    if(__verbose > VERBOSE_LEVEL) radeon_vid_dump_regs();
     return 0;
 }
 
@@ -1608,3 +1661,74 @@ int vixSetGrKeys(const vidix_grkey_t *grkey)
     set_gr_key();
     return(0);
 }
+
+#ifdef RADEON_ENABLE_BM
+static int radeon_setup_frame( const vidix_dma_t * dmai )
+{
+    bm_list_descriptor * list = (bm_list_descriptor *)radeon_dma_desc_base;
+    unsigned long dest_ptr;
+    unsigned i,n,count;
+    int retval;
+    if(dmai->dest_offset + dmai->size > radeon_ram_size) return E2BIG;
+    n = dmai->size / 4096;
+    if(dmai->size % 4096) n++;
+    if((retval = bm_virt_to_bus(dmai->src,dmai->size,dma_phys_addrs)) != 0) return retval;
+//    bm_virt_to_bus(radeon_mem_base+dmai->dest_offset,1,&dest_ptr);
+    dest_ptr = dmai->dest_offset;
+    count = dmai->size;
+    for(i=0;i<n;i++)
+    {
+	list[i].frame_addr = dma_phys_addrs[i];
+	list[i].sys_addr = dest_ptr; 
+	list[i].command = (count > 4096 ? 4096 : count | DMA_GUI_COMMAND__EOL)/*|DMA_GUI_COMMAND__HOLD_VIDEO_OFFSET*/;
+	list[i].reserved = 0;
+printf("RADEON_DMA_TABLE[%i] %X %X %X %X\n",i,list[i].frame_addr,list[i].sys_addr,list[i].command,list[i].reserved);
+	dest_ptr += 4096;
+	count -= 4096;
+    }
+    return 0;
+}
+
+static int radeon_transfer_frame( void  )
+{
+    unsigned i,status;
+    radeon_engine_idle();
+#ifndef RAGE128
+    /* wait for at least one available queue */
+    do {
+	status=INREG(DMA_GUI_STATUS);
+    } while (!(status & 0x1f));
+#endif
+    for(i=0;i<1000;i++) INREG(BUS_CNTL); /* FlushWriteCombining */
+    OUTREG(BUS_CNTL,(INREG(BUS_CNTL) | BUS_STOP_REQ_DIS)&(~BUS_MASTER_DIS));
+    OUTREG(DMA_GUI_TABLE_ADDR,bus_addr_dma_desc);
+    /*
+     * To start the DMA transfer, we need to initiate a GUI operation.  We can
+     * write any value to the register, as it is only used to start the engine.
+     */
+//    OUTREG( DST_HEIGHT_WIDTH, 0 );
+    return 0;
+}
+
+
+int vixPlaybackCopyFrame( const vidix_dma_t * dmai )
+{
+    int retval;
+    if(mlock(dmai->src,dmai->size) != 0) return errno;
+    retval = radeon_setup_frame(dmai);
+    if(retval == 0) retval = radeon_transfer_frame();
+    munlock(dmai->src,dmai->size);
+    return retval;
+}
+
+int	vixQueryDMAStatus( void )
+{
+    int bm_active;
+#ifdef RAGE128
+    bm_active = INREG(GUI_STAT) & GUI_ACTIVE;
+#else
+    bm_active = INREG(RBBM_STATUS) & RBBM_ACTIVE;
+#endif
+    return bm_active?1:0;
+}
+#endif
