@@ -517,7 +517,7 @@ static void save_regs( void )
     savreg.overlay_video_key_clr	= INREG(OVERLAY_VIDEO_KEY_CLR);
     savreg.overlay_video_key_msk	= INREG(OVERLAY_VIDEO_KEY_MSK);
     savreg.overlay_graphics_key_clr	= INREG(OVERLAY_GRAPHICS_KEY_CLR);
-    savreg.overlay_graphics_key_clr	= INREG(OVERLAY_GRAPHICS_KEY_CLR);
+    savreg.overlay_graphics_key_msk	= INREG(OVERLAY_GRAPHICS_KEY_MSK);
     savreg.overlay_key_cntl		= INREG(OVERLAY_KEY_CNTL);
 }
 
@@ -527,7 +527,7 @@ static void restore_regs( void )
     OUTREG(OVERLAY_VIDEO_KEY_CLR,savreg.overlay_video_key_clr);
     OUTREG(OVERLAY_VIDEO_KEY_MSK,savreg.overlay_video_key_msk);
     OUTREG(OVERLAY_GRAPHICS_KEY_CLR,savreg.overlay_graphics_key_clr);
-    OUTREG(OVERLAY_GRAPHICS_KEY_CLR,savreg.overlay_graphics_key_clr);
+    OUTREG(OVERLAY_GRAPHICS_KEY_MSK,savreg.overlay_graphics_key_msk);
     OUTREG(OVERLAY_KEY_CNTL,savreg.overlay_key_cntl);
 }
 

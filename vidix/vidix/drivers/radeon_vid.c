@@ -1071,7 +1071,7 @@ static void save_regs( void )
     savreg.ov0_vid_key_clr	= INREG(OV0_VID_KEY_CLR);
     savreg.ov0_vid_key_msk	= INREG(OV0_VID_KEY_MSK);
     savreg.ov0_graphics_key_clr = INREG(OV0_GRAPHICS_KEY_CLR);
-    savreg.ov0_graphics_key_clr = INREG(OV0_GRAPHICS_KEY_CLR);
+    savreg.ov0_graphics_key_msk = INREG(OV0_GRAPHICS_KEY_MSK);
     savreg.ov0_key_cntl		= INREG(OV0_KEY_CNTL);
 }
 
@@ -1081,7 +1081,7 @@ static void restore_regs( void )
     OUTREG(OV0_VID_KEY_CLR,savreg.ov0_vid_key_clr);
     OUTREG(OV0_VID_KEY_MSK,savreg.ov0_vid_key_msk);
     OUTREG(OV0_GRAPHICS_KEY_CLR,savreg.ov0_graphics_key_clr);
-    OUTREG(OV0_GRAPHICS_KEY_CLR,savreg.ov0_graphics_key_clr);
+    OUTREG(OV0_GRAPHICS_KEY_MSK,savreg.ov0_graphics_key_msk);
     OUTREG(OV0_KEY_CNTL,savreg.ov0_key_cntl);
 }
 
