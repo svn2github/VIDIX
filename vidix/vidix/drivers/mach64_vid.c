@@ -1325,7 +1325,7 @@ static int mach64_transfer_frame( unsigned long ba_dma_desc,int sync_mode )
 {
     uint32_t crtc_int;
     mach64_wait_for_idle();
-    mach64_fifo_wait(10);
+    mach64_fifo_wait(4);
     OUTREG(BUS_CNTL,(INREG(BUS_CNTL)|BUS_EXT_REG_EN)&(~BUS_MASTER_DIS));
     crtc_int = INREG(CRTC_INT_CNTL);
     if(sync_mode && can_use_irq) OUTREG(CRTC_INT_CNTL,crtc_int|CRTC_BUSMASTER_EOL_INT|CRTC_BUSMASTER_EOL_INT_EN);
