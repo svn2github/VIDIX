@@ -33,8 +33,10 @@ extern unsigned vixGetVersion( void );
 			             device_id (danger but useful for new devices)
 			   Returns 0 if ok else errno */
 extern int	vixProbe( int verbose, int force );
-			/* Initializes driver. Returns 0 if ok else errno */
-extern int	vixInit( void );
+			/* Initializes driver.
+			   args	    - specifies driver specific parameters
+			   Returns 0 if ok else errno */
+extern int	vixInit( const char *args );
 			/* Destroys driver */
 extern void	vixDestroy( void );
 

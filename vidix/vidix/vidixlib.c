@@ -38,7 +38,7 @@ typedef struct vdl_stream_s
 	int 	(*playback_on)( void );
 	int 	(*playback_off)( void );
         /* Functions below can be missed in driver ;) */
-	int	(*init)(void);
+	int	(*init)(const char *);
 	void    (*destroy)(void);
 	int 	(*frame_sel)( unsigned frame_idx );
 	int 	(*get_eq)( vidix_video_eq_t * );
@@ -213,6 +213,7 @@ static int vdl_find_driver(VDL_HANDLE stream,const char *path,unsigned cap,int v
 VDL_HANDLE vdlOpen(const char *path,const char *name,unsigned cap,int verbose)
 {
   vdl_stream_t *stream;
+  const char *drv_args=NULL;
   int errcode;
   if(!(stream = malloc(sizeof(vdl_stream_t)))) return NULL;
   memset(stream,0,sizeof(vdl_stream_t));
@@ -221,6 +222,9 @@ VDL_HANDLE vdlOpen(const char *path,const char *name,unsigned cap,int verbose)
     unsigned (*ver)(void);
     int (*probe)(int,int);
     unsigned version = 0;
+    unsigned char *arg_sep;
+    arg_sep = strchr(name,':');
+    if(arg_sep) { *arg_sep='\0'; drv_args = &arg_sep[1]; }
     strcpy(drv_name,path);
     strcat(drv_name,name);
     {
@@ -264,7 +268,7 @@ VDL_HANDLE vdlOpen(const char *path,const char *name,unsigned cap,int verbose)
   if(t_vdl(stream)->init)
   {
    if(verbose) printf("vidixlib: Attempt to initialize driver at: %p\n",t_vdl(stream)->init);
-   if((errcode=t_vdl(stream)->init())!=0)
+   if((errcode=t_vdl(stream)->init(drv_args))!=0)
    {
     if(verbose) printf("vidixlib: Can't init driver: %s\n",strerror(errcode));
     goto err;
