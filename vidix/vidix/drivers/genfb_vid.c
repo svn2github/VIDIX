@@ -10,6 +10,7 @@
 #include "../fourcc.h"
 #include "../../libdha/libdha.h"
 #include "../../libdha/pci_ids.h"
+#include "../../libdha/pci_names.h"
 
 #define DEMO_DRIVER 1
 
@@ -50,6 +51,7 @@ unsigned int vixGetVersion(void)
 
 int vixProbe(int verbose,int force)
 {
+#if 0
     int err = 0;
 #ifdef DEMO_DRIVER
     err = ENOSYS;
@@ -67,6 +69,31 @@ int vixProbe(int verbose,int force)
     probed = 1;
 
     return(err);
+#else
+  pciinfo_t lst[MAX_PCI_DEVICES];
+  unsigned i,num_pci;
+  int err;
+  err = pci_scan(lst,&num_pci);
+  if(err)
+  {
+    printf(GENFB_MSG"Error occured during pci scan: %s\n",strerror(err));
+    return err;
+  }
+  else
+  {
+    err = ENXIO;
+    for(i=0;i<num_pci;i++)
+    {
+	if(verbose)
+	    printf(GENFB_MSG" Found chip [%04X:%04X] '%s' '%s'\n"
+	    ,lst[i].vendor
+	    ,lst[i].device
+	    ,pci_vendor_name(lst[i].vendor)
+	    ,pci_device_name(lst[i].vendor,lst[i].device));
+    }
+  }
+  return ENOSYS;
+#endif
 }
 
 int vixInit(void)
