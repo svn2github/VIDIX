@@ -1277,11 +1277,12 @@ static void radeon_vid_exclusive( void )
     OUTREG(OV0_EXCLUSIVE_VERT,(((screenh-1)<<16)&EXCL_VERT_END_MASK));
     OUTREG(OV0_EXCLUSIVE_HORZ,(((screenw/8+1)<<8)&EXCL_HORZ_END_MASK)|EXCL_HORZ_EXCLUSIVE_EN);
 }
-#endif
+
 static void radeon_vid_non_exclusive( void )
 {
     OUTREG(OV0_EXCLUSIVE_HORZ,0);
 }
+#endif
 
 static unsigned radeon_query_pitch(unsigned fourcc,const vidix_yuv_t *spitch)
 {
