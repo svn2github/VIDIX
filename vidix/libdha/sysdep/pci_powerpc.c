@@ -78,6 +78,56 @@ static long pci_config_read_long(
     }
     return retval;
 }
+
+static long pci_config_read_word(
+	  unsigned char bus,
+	  unsigned char dev,
+	  int func, 
+	  unsigned cmd)
+{
+    long retval;
+    char path[100];
+    int fd;
+    sprintf(path,"/proc/bus/pci/%02d/%02x.0", bus, dev);
+    fd = open(path,O_RDONLY|O_SYNC);
+    if (fd == -1) {
+	    retval=0;
+    }
+    else if (pread(fd, &retval, 2, cmd) == 4) {
+	    retval = bswap_32(retval);
+    } else {
+	    retval = 0;
+    }   
+    if (fd > 0) {
+	    close(fd);
+    }
+    return retval;
+}
+
+static long pci_config_read_byte(
+	  unsigned char bus,
+	  unsigned char dev,
+	  int func, 
+	  unsigned cmd)
+{
+    long retval;
+    char path[100];
+    int fd;
+    sprintf(path,"/proc/bus/pci/%02d/%02x.0", bus, dev);
+    fd = open(path,O_RDONLY|O_SYNC);
+    if (fd == -1) {
+	    retval=0;
+    }
+    else if (pread(fd, &retval, 1, cmd) == 4) {
+	    retval = bswap_32(retval);
+    } else {
+	    retval = 0;
+    }   
+    if (fd > 0) {
+	    close(fd);
+    }
+    return retval;
+}
 #else
 static long pci_config_read_long(
           unsigned char bus,
@@ -87,6 +137,28 @@ static long pci_config_read_long(
 {
     long retval;
     pciconfig_read(bus, dev<<3, cmd, 4, &retval);
+    return retval;
+}
+
+static long pci_config_read_word(
+          unsigned char bus,
+          unsigned char dev,
+          int func, 
+          unsigned cmd)
+{
+    long retval;
+    pciconfig_read(bus, dev<<3, cmd, 2, &retval);
+    return retval;
+}
+
+static long pci_config_read_byte(
+          unsigned char bus,
+          unsigned char dev,
+          int func, 
+          unsigned cmd)
+{
+    long retval;
+    pciconfig_read(bus, dev<<3, cmd, 1, &retval);
     return retval;
 }
 #endif

@@ -58,3 +58,27 @@ static long pci_config_read_long(
     OUTPORT32(PCI_MODE1_ADDRESS_REG, config_cmd | cmd);
     return INPORT32(PCI_MODE1_DATA_REG);
 }
+
+static long pci_config_read_word(
+          unsigned char bus,
+          unsigned char dev,
+          int func, 
+          unsigned cmd)
+{
+    unsigned long config_cmd;
+    config_cmd = PCI_EN | (bus<<16) | (dev<<11) | (func<<8);
+    OUTPORT32(PCI_MODE1_ADDRESS_REG, config_cmd | cmd);
+    return INPORT16(PCI_MODE1_DATA_REG);
+}
+
+static long pci_config_read_byte(
+          unsigned char bus,
+          unsigned char dev,
+          int func, 
+          unsigned cmd)
+{
+    unsigned long config_cmd;
+    config_cmd = PCI_EN | (bus<<16) | (dev<<11) | (func<<8);
+    OUTPORT32(PCI_MODE1_ADDRESS_REG, config_cmd | cmd);
+    return INPORT8(PCI_MODE1_DATA_REG);
+}

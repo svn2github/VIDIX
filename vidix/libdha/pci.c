@@ -424,6 +424,9 @@ struct pci_config_reg {
 #define PCI_MAP_REG_START       0x10
 #define PCI_MAP_ROM_REG         0x30
 #define PCI_INTERRUPT_REG       0x3C
+#define PCI_INTERRUPT_PIN	0x3D	/* 8 bits */
+#define PCI_MIN_GNT		0x3E	/* 8 bits */
+#define PCI_MAX_LAT		0x3F	/* 8 bits */
 #define PCI_REG_USERCONFIG      0x40
  
 static int pcibus=-1, pcicard=-1, pcifunc=-1 ;
@@ -478,6 +481,9 @@ static void identify_card(struct pci_config_reg *pcr)
   pci_lst[pcicards].base0   = 0xFFFFFFFF ;
   pci_lst[pcicards].base1   = 0xFFFFFFFF ;
   pci_lst[pcicards].base2   = 0xFFFFFFFF ;
+  pci_lst[pcicards].base3   = 0xFFFFFFFF ;
+  pci_lst[pcicards].base4   = 0xFFFFFFFF ;
+  pci_lst[pcicards].base5   = 0xFFFFFFFF ;
   pci_lst[pcicards].baserom = 0x000C0000 ;
   if (pcr->_base0) pci_lst[pcicards].base0 = pcr->_base0 &
                      ((pcr->_base0&0x1) ? 0xFFFFFFFC : 0xFFFFFFF0) ;
@@ -485,7 +491,17 @@ static void identify_card(struct pci_config_reg *pcr)
                      ((pcr->_base1&0x1) ? 0xFFFFFFFC : 0xFFFFFFF0) ;
   if (pcr->_base2) pci_lst[pcicards].base2 = pcr->_base2 &
                      ((pcr->_base2&0x1) ? 0xFFFFFFFC : 0xFFFFFFF0) ;
+  if (pcr->_base3) pci_lst[pcicards].base3 = pcr->_base3 &
+                     ((pcr->_base0&0x1) ? 0xFFFFFFFC : 0xFFFFFFF0) ;
+  if (pcr->_base4) pci_lst[pcicards].base4 = pcr->_base4 &
+                     ((pcr->_base1&0x1) ? 0xFFFFFFFC : 0xFFFFFFF0) ;
+  if (pcr->_base5) pci_lst[pcicards].base5 = pcr->_base5 &
+                     ((pcr->_base2&0x1) ? 0xFFFFFFFC : 0xFFFFFFF0) ;
   if (pcr->_baserom) pci_lst[pcicards].baserom = pcr->_baserom ;
+  pci_lst[pcicards].irq = pcr->_int_line;
+  pci_lst[pcicards].ipin= pcr->_int_pin;
+  pci_lst[pcicards].gnt = pcr->_min_gnt;
+  pci_lst[pcicards].lat = pcr->_max_lat;
  
   pcicards++;
 }
@@ -559,8 +575,19 @@ int pci_scan(pciinfo_t *pci_list,unsigned *num_pci)
 					pcr._cardnum,func,PCI_MAP_REG_START+0x14);
 	    pcr._baserom = pci_config_read_long(pcr._pcibuses[pcr._pcibusidx],
 					pcr._cardnum,func,PCI_MAP_ROM_REG);
+#if 0
+	    pcr._int_pin = pci_config_read_byte(pcr._pcibuses[pcr._pcibusidx],
+					pcr._cardnum,func,PCI_INTERRUPT_PIN);
+	    pcr._int_line = pci_config_read_byte(pcr._pcibuses[pcr._pcibusidx],
+					pcr._cardnum,func,PCI_INTERRUPT_REG);
+	    pcr._min_gnt = pci_config_read_byte(pcr._pcibuses[pcr._pcibusidx],
+					pcr._cardnum,func,PCI_MIN_GNT);
+	    pcr._max_lat = pci_config_read_byte(pcr._pcibuses[pcr._pcibusidx],
+					pcr._cardnum,func,PCI_MAX_LAT);
+#else
 	    pcr._max_min_ipin_iline = pci_config_read_long(pcr._pcibuses[pcr._pcibusidx],
 					pcr._cardnum,func,PCI_INTERRUPT_REG);
+#endif
 	    pcr._user_config = pci_config_read_long(pcr._pcibuses[pcr._pcibusidx],
 					pcr._cardnum,func,PCI_REG_USERCONFIG);
             /* check for pci-pci bridges */
@@ -641,7 +668,7 @@ int pci_scan(pciinfo_t *pci_list,unsigned *num_pci)
             pcr._base4 = INPORT32(pcr._ioaddr + 0x20);
             pcr._base5 = INPORT32(pcr._ioaddr + 0x24);
             pcr._baserom = INPORT32(pcr._ioaddr + 0x30);
-            pcr._max_min_ipin_iline = INPORT32(pcr._ioaddr + 0x3C);
+            pcr._max_min_ipin_iline = INPORT8(pcr._ioaddr + 0x3C);
             pcr._user_config = INPORT32(pcr._ioaddr + 0x40);
 	    OUTPORT8(PCI_MODE2_FORWARD_REG, 0x00); /* bus 0 for now */
  
@@ -682,16 +709,23 @@ int pci_config_read(unsigned char bus, unsigned char dev, unsigned char func,
 {
     int ret;
     
-    if (len != 4)
-    {
-	printf("pci_config_read: reading non-dword not supported!\n");
-	return(ENOTSUP);
-    }
-    
     ret = enable_app_io();
     if (ret != 0)
 	return(ret);
-    ret = pci_config_read_long(bus, dev, func, cmd);
+    switch(len)
+    {
+	case 4:
+	    ret = pci_config_read_long(bus, dev, func, cmd);
+	    break;
+	case 2:
+	    ret = pci_config_read_word(bus, dev, func, cmd);
+	    break;
+	case 1:
+	    ret = pci_config_read_byte(bus, dev, func, cmd);
+	    break;
+	default:
+	    printf("libdha_pci: wrong length to read: %u\n",len);
+    }
     disable_app_io();
 
     *val = ret;

@@ -17,8 +17,12 @@ install: dhahelper.o
 	if test ! -d $(MDIR) ; then mkdir -p $(MDIR) ; fi
 	install -m 644 dhahelper.o $(MDIR)/dhahelper.o
 	depmod -a
+	rm -f /dev/dhahelper
+	mknod -m 666 /dev/dhahelper c 252 0
+
+
 nodes:
-	mknod -m 666 /dev/dhahelper c 180 0
+	echo Obsolete!!!
 
 dep:
 

@@ -2,7 +2,7 @@
 
 include ../config.mak
 
-VERSION = 0.2
+VERSION = 0.3
 
 ifeq ($(TARGET_OS),CYGWIN)
 SHORTNAME = libdha.dll
@@ -11,7 +11,7 @@ SHORTNAME = libdha.so
 endif
 LIBNAME = libdha-$(VERSION).so
 
-SRCS=libdha.c mtrr.c pci.c pci_names.c mmi.c ports.c
+SRCS=libdha.c mtrr.c pci.c pci_names.c mmi.c ports.c irq.c
 OBJS=$(SRCS:.c=.o)
 
 CFLAGS  = $(OPTFLAGS) -fPIC -I. -I.. -Wall -W

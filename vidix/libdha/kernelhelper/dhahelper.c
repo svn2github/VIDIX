@@ -539,6 +539,101 @@ static int dhahelper_unlock_mem(dhahelper_mem_t *arg)
 	return 0;
 }
 
+static char handled_irqs[255];
+static DECLARE_WAIT_QUEUE_HEAD(hwirq_wait);
+static spinlock_t hwirq_lock = SPIN_LOCK_UNLOCKED;
+static unsigned long hwirq_flags;
+static char queued_irq;
+
+static void dhahelper_irq_handler(int irq, void *dev_id, struct pt_regs *regs)
+{
+	char my_irq;
+	spin_lock_irqsave(&hwirq_lock, hwirq_flags);
+	my_irq = queued_irq;
+	spin_unlock_irqrestore(&hwirq_lock, hwirq_flags);
+	if(my_irq == irq) wake_up_interruptible(&hwirq_wait);	
+}
+
+static int dhahelper_install_irq(dhahelper_irq_t *arg)
+{
+	dhahelper_irq_t my_irq;
+	int retval;
+	if (copy_from_user(&my_irq, arg, sizeof(dhahelper_irq_t)))
+	{
+		if (dhahelper_verbosity > 0)
+		    printk(KERN_ERR "dhahelper: failed copy from userspace\n");
+		return -EFAULT;
+	}
+	/* Fixme: What should we prefer - SA_INTERRUPT or SA_SHIRQ ??? */
+	if(my_irq.num > 255) return -EINVAL;
+	if(handled_irqs[my_irq.num]) return 0;
+	retval=request_irq(my_irq.num, dhahelper_irq_handler, SA_SHIRQ, "dhahelper", (void *)NULL);
+	if(retval==-EINVAL){
+	    printk("dhahelper: bad irq number or handler\n");
+	    goto fail;
+	}
+	if(retval==-EBUSY){
+	    printk("dhahelper: IRQ %u busy\n", my_irq.num);
+	    goto fail;
+	}
+	if(retval<0){
+	    printk("dhahelper: could not install irq handler\n");
+	    goto fail;
+	}
+	handled_irqs[my_irq.num]=1;
+	return 0;
+	fail:
+	    printk("dhahelper: Could not install irq handler...\n");
+	    printk("dhahelper: Perhaps you need to let your BIOS assign an IRQ to your video card\n");
+	    return -1;
+}
+
+static int dhahelper_free_irq(dhahelper_irq_t *arg)
+{
+	dhahelper_irq_t irq;
+	if (copy_from_user(&irq, arg, sizeof(dhahelper_irq_t)))
+	{
+		if (dhahelper_verbosity > 0)
+		    printk(KERN_ERR "dhahelper: failed copy from userspace\n");
+		return -EFAULT;
+	}
+	if(irq.num > 255) return -EINVAL;
+	if(handled_irqs[irq.num]) { free_irq(irq.num, NULL); handled_irqs[irq.num]=0; }
+	return 0;
+}
+
+static int dhahelper_ack_irq(dhahelper_irq_t *arg)
+{
+	dhahelper_irq_t irq;
+	int retval;
+	DECLARE_WAITQUEUE(wait, current);
+	if (copy_from_user(&irq, arg, sizeof(dhahelper_irq_t)))
+	{
+		if (dhahelper_verbosity > 0)
+		    printk(KERN_ERR "dhahelper: failed copy from userspace\n");
+		return -EFAULT;
+	}
+	if(irq.num > 255) return -EINVAL;
+	if(!handled_irqs[irq.num]) return -ESRCH;
+	spin_lock_irqsave(&hwirq_lock, hwirq_flags);
+	queued_irq = irq.num;
+	spin_unlock_irqrestore(&hwirq_lock, hwirq_flags);
+	add_wait_queue(&hwirq_wait, &wait);
+	current->state = TASK_INTERRUPTIBLE;
+	do {
+		if (signal_pending(current)) {
+			retval = -ERESTARTSYS;
+			goto out;
+		}
+		schedule();
+	} while (1);
+	retval = 0;
+	current->state = TASK_RUNNING;
+out:
+	remove_wait_queue(&hwirq_wait, &wait);	
+	return retval;
+}
+
 static int dhahelper_ioctl(struct inode *inode, struct file *file,
     unsigned int cmd, unsigned long arg)
 {
@@ -559,6 +654,9 @@ static int dhahelper_ioctl(struct inode *inode, struct file *file,
 	case DHAHELPER_FREE_PA: return dhahelper_free_pa((dhahelper_mem_t *)arg);
 	case DHAHELPER_LOCK_MEM: return dhahelper_lock_mem((dhahelper_mem_t *)arg);
 	case DHAHELPER_UNLOCK_MEM: return dhahelper_unlock_mem((dhahelper_mem_t *)arg);
+	case DHAHELPER_INSTALL_IRQ: return dhahelper_install_irq((dhahelper_irq_t *)arg);
+	case DHAHELPER_ACK_IRQ: return dhahelper_ack_irq((dhahelper_irq_t *)arg);
+	case DHAHELPER_FREE_IRQ: return dhahelper_free_irq((dhahelper_irq_t *)arg);
 	default:
     	    if (dhahelper_verbosity > 0)
 		printk(KERN_ERR "dhahelper: invalid ioctl (%x)\n", cmd);
@@ -813,7 +911,7 @@ static int __init init_dhahelper(void)
 		dhahelper_major);
 	return err;
     }
-    
+    memset(handled_irqs,0,sizeof(handled_irqs));
     return 0;
 }
 
@@ -823,6 +921,8 @@ void cleanup_module(void)
 static void __exit exit_dhahelper(void)
 #endif
 {
+    unsigned i;
+    for(i=0;i<255;i++) if(handled_irqs[i]) free_irq(i, NULL);
 #ifdef CONFIG_DEVFS_FS
     devfs_unregister(dha_devfsh);
 #else

@@ -27,3 +27,23 @@ static long pci_config_read_long(
     printf("pci_config_read_long: generic function call\n");
     return 0;
 }
+
+static long pci_config_read_word(
+          unsigned char bus,
+          unsigned char dev,
+          int func, 
+          unsigned cmd)
+{
+    printf("pci_config_read_word: generic function call\n");
+    return 0;
+}
+
+static long pci_config_read_byte(
+          unsigned char bus,
+          unsigned char dev,
+          int func, 
+          unsigned cmd)
+{
+    printf("pci_config_read_byte: generic function call\n");
+    return 0;
+}

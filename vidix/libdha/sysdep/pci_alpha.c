@@ -27,3 +27,24 @@ static long pci_config_read_long(
     return retval;
 }
 
+static long pci_config_read_word(
+          unsigned char bus,
+          unsigned char dev,
+          int func, 
+          unsigned cmd)
+{
+    unsigned long retval;
+    pciconfig_read(bus, dev<<3, cmd, 2, &retval);
+    return retval;
+}
+
+static long pci_config_read_byte(
+          unsigned char bus,
+          unsigned char dev,
+          int func, 
+          unsigned cmd)
+{
+    unsigned long retval;
+    pciconfig_read(bus, dev<<3, cmd, 1, &retval);
+    return retval;
+}
