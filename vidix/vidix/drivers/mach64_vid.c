@@ -826,9 +826,8 @@ static void mach64_vid_display_video( void )
 	
        As for me - I would prefer to limit movie's width with 360 but it provides only
        half of picture but with perfect quality. (NK) */
-    mach64_fifo_wait(4);
+    mach64_fifo_wait(10);
     OUTREG(OVERLAY_SCALE_CNTL, sc);
-
     mach64_wait_for_idle();
 
     switch(besr.fourcc)
@@ -1012,7 +1011,6 @@ for(i=0; i<32; i++){
     if(mach64_is_interlace()) y_pos/=2;
     besr.y_x_end = y_pos | ((config->dest.x + dest_w) << 16);
     besr.height_width = ((src_w - left)<<16) | (src_h - top);
-
     return 0;
 }
 
@@ -1314,13 +1312,15 @@ printf("MACH64_DMA_TABLE[%i] fboff=%X pa=%X cmd=%X rsrvd=%X\n",i,list[i].framebu
     return 0;
 }
 
-static int mach64_transfer_frame( unsigned long ba_dma_desc )
+static int mach64_transfer_frame( unsigned long ba_dma_desc,int sync_mode )
 {
+    uint32_t crtc_int;
     mach64_wait_for_idle();
     mach64_fifo_wait(10);
-    OUTREG(BUS_CNTL,(INREG(BUS_CNTL)|BUS_EXT_REG_EN));
-    OUTREG(BUS_CNTL,(INREG(BUS_CNTL))&(~BUS_MASTER_DIS));
-    OUTREG(CRTC_INT_CNTL,INREG(CRTC_INT_CNTL)|CRTC_BUSMASTER_EOL_INT/*|CRTC_BUSMASTER_EOL_INT_EN*/);
+    OUTREG(BUS_CNTL,(INREG(BUS_CNTL)|BUS_EXT_REG_EN)&(~BUS_MASTER_DIS));
+    crtc_int = INREG(CRTC_INT_CNTL);
+    if(sync_mode && can_use_irq) OUTREG(CRTC_INT_CNTL,crtc_int|CRTC_BUSMASTER_EOL_INT|CRTC_BUSMASTER_EOL_INT_EN);
+    else			 OUTREG(CRTC_INT_CNTL,crtc_int|CRTC_BUSMASTER_EOL_INT);
     OUTREG(BM_SYSTEM_TABLE,ba_dma_desc|SYSTEM_TRIGGER_SYSTEM_TO_VIDEO);
     if(__verbose > VERBOSE_LEVEL) mach64_vid_dump_regs();    
 #if 0
@@ -1349,9 +1349,10 @@ int VIDIX_NAME(vixQueryDMAStatus)( void )
 
 int VIDIX_NAME(vixPlaybackCopyFrame)( vidix_dma_t * dmai )
 {
-    int retval;
+    int retval,sync_mode;
     if(!(dmai->flags & BM_DMA_FIXED_BUFFS)) if(bm_lock_mem(dmai->src,dmai->size) != 0) return errno;
-    if((dmai->flags & BM_DMA_SYNC) == BM_DMA_SYNC)
+    sync_mode = (dmai->flags & BM_DMA_SYNC) == BM_DMA_SYNC;
+    if(sync_mode)
     {
 	/* burn CPU instead of PCI bus here */
 	while(vixQueryDMAStatus()!=0){
@@ -1362,7 +1363,7 @@ int VIDIX_NAME(vixPlaybackCopyFrame)( vidix_dma_t * dmai )
     mach64_engine_reset();
     retval = mach64_setup_frame(dmai);
     VIRT_TO_CARD(mach64_dma_desc_base[dmai->idx],1,&bus_addr_dma_desc);
-    if(retval == 0) retval = mach64_transfer_frame(bus_addr_dma_desc);
+    if(retval == 0) retval = mach64_transfer_frame(bus_addr_dma_desc,sync_mode);
     if(!(dmai->flags & BM_DMA_FIXED_BUFFS)) bm_unlock_mem(dmai->src,dmai->size);
     return retval;
 }
