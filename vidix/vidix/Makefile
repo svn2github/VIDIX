@@ -22,7 +22,7 @@ all:	$(SUBDIRS) $(LIBNAME)
 	$(DO_MAKE)
 
 $(LIBNAME):	$(OBJS)
-	$(LD) -shared -soname $(LIBNAME) -o $(LIBNAME) $(OBJS) -lc
+	$(LD) -shared -soname $(LIBNAME) -o $(LIBNAME) $(OBJS) -lc -ldl
 
 clean:
 	rm -f *.o $(LIBNAME) *~
