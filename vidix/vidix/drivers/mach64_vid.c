@@ -60,6 +60,8 @@ static uint32_t mach64_ram_size = 0;
 static uint32_t mach64_buffer_base[10][3];
 static int num_mach64_buffers=-1;
 static int supports_planar=0;
+static int supports_idct=0;
+static int supports_subpic=0;
 static int supports_lcd_v_stretch=0;
 
 pciinfo_t pci_info;
@@ -617,9 +619,17 @@ int vixInit(void)
 
 	if(INREG(SCALER_BUF0_OFFSET_U)) 	supports_planar=1;
   }
-  if(supports_planar)	printf("[mach64] Planar YUV formats are supported :)\n");
-  else			printf("[mach64] Planar YUV formats are not supported :(\n");
-  
+  printf("[mach64] Planar YUV formats are %s supported\n",supports_planar?"":"not");
+  supports_idct=0;
+  OUTREG(IDCT_CONTROL,-1);
+  if(INREG(IDCT_CONTROL)) supports_idct=1;
+  OUTREG(IDCT_CONTROL,0);
+  printf("[mach64] IDCT is %s supported\n",supports_idct?"":"not");
+  supports_subpic=0;
+  OUTREG(SUBPIC_CNTL,-1);
+  if(INREG(SUBPIC_CNTL)) supports_subpic=1;
+  OUTREG(SUBPIC_CNTL,0);
+  printf("[mach64] subpictures are %s supported\n",supports_subpic?"":"not");
   if(   mach64_cap.device_id==DEVICE_ATI_RAGE_MOBILITY_P_M
      || mach64_cap.device_id==DEVICE_ATI_RAGE_MOBILITY_P_M2
      || mach64_cap.device_id==DEVICE_ATI_RAGE_MOBILITY_L

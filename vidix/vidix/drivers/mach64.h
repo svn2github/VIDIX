@@ -1853,38 +1853,39 @@ This means that this sources don't support ISA and VLB cards */
 #define VERTEX_2_SECONDARY_S	BlockIOTag(0x1cdu)	/* GTPro */
 #define VERTEX_2_SECONDARY_T	BlockIOTag(0x1ceu)	/* GTPro */
 #define VERTEX_2_SECONDARY_W	BlockIOTag(0x1cfu)	/* GTPro */
-/*	?			BlockIOTag(0x1d0u) */
-/*	?			BlockIOTag(0x1d1u) */
+/* IDCT and DVD's subpicture direct support (Rage Mobility only) */
+#define SUBPIC_CNTL		BlockIOTag(0x1d0u)
+#define SUBPIC_DEFCOLON		BlockIOTag(0x1d1u)
 /*	?			BlockIOTag(0x1d2u) */
-/*	?			BlockIOTag(0x1d3u) */
-/*	?			BlockIOTag(0x1d4u) */
-/*	?			BlockIOTag(0x1d5u) */
-/*	?			BlockIOTag(0x1d6u) */
-/*	?			BlockIOTag(0x1d7u) */
-/*	?			BlockIOTag(0x1d8u) */
-/*	?			BlockIOTag(0x1d9u) */
-/*	?			BlockIOTag(0x1dau) */
-/*	?			BlockIOTag(0x1dbu) */
-/*	?			BlockIOTag(0x1dcu) */
-/*	?			BlockIOTag(0x1ddu) */
-/*	?			BlockIOTag(0x1deu) */
-/*	?			BlockIOTag(0x1dfu) */
-/*	?			BlockIOTag(0x1e0u) */
-/*	?			BlockIOTag(0x1e1u) */
-/*	?			BlockIOTag(0x1e2u) */
-/*	?			BlockIOTag(0x1e3u) */
+#define SUBPIC_Y_X_START	BlockIOTag(0x1d3u)
+#define SUBPIC_Y_X_END		BlockIOTag(0x1d4u)
+#define SUBPIC_V_INC		BlockIOTag(0x1d5u)
+#define SUBPIC_H_INC		BlockIOTag(0x1d6u)
+#define SUBPIC_BUF0_OFFSET	BlockIOTag(0x1d7u)
+#define SUBPIC_BUF1_OFFSET	BlockIOTag(0x1d8u)
+#define SUBPIC_LC0_OFFSET	BlockIOTag(0x1d9u)
+#define SUBPIC_LC1_OFFSET	BlockIOTag(0x1dau)
+#define SUBPIC_PITCH		BlockIOTag(0x1dbu)
+#define SUBPIC_BTN_HLI_COLCON	BlockIOTag(0x1dcu)
+#define SUBPIC_BTN_Y_X_START	BlockIOTag(0x1ddu)
+#define SUBPIC_BTN_Y_X_END	BlockIOTag(0x1deu)
+#define SUBPIC_H_ACCUM_INIT	BlockIOTag(0x1dfu)
+#define IDCT_RUNS		BlockIOTag(0x1e0u)
+#define IDCT_LEVELS		BlockIOTag(0x1e1u)
+#define IDCT_RESERVE_REGISTER1	BlockIOTag(0x1e2u)
+#define IDCT_RESERVE_REGISTER2	BlockIOTag(0x1e3u)
 /*	?			BlockIOTag(0x1e4u) */
 /*	?			BlockIOTag(0x1e5u) */
-/*	?			BlockIOTag(0x1e6u) */
-/*	?			BlockIOTag(0x1e7u) */
-/*	?			BlockIOTag(0x1e8u) */
+#define SUBPIC_V_ACCUM_INIT	BlockIOTag(0x1e6u)
+#define SUBPIC_PALETTE_INDEX	BlockIOTag(0x1e7u)
+#define SUBPIC_PALETTE_DATA	BlockIOTag(0x1e8u)
 /*	?			BlockIOTag(0x1e9u) */
 /*	?			BlockIOTag(0x1eau) */
 /*	?			BlockIOTag(0x1ebu) */
 /*	?			BlockIOTag(0x1ecu) */
 /*	?			BlockIOTag(0x1edu) */
 /*	?			BlockIOTag(0x1eeu) */
-/*	?			BlockIOTag(0x1efu) */
+#define IDCT_CONTROL		BlockIOTag(0x1efu)
 /*	?			BlockIOTag(0x1f0u) */
 /*	?			BlockIOTag(0x1f1u) */
 /*	?			BlockIOTag(0x1f2u) */
