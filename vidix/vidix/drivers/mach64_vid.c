@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 #include <math.h>
 #include <inttypes.h>
@@ -524,6 +525,7 @@ typedef struct saved_regs_s
     uint32_t overlay_graphics_key_clr;
     uint32_t overlay_graphics_key_msk;
     uint32_t overlay_key_cntl;
+    uint32_t bus_cntl;
 }saved_regs_t;
 static saved_regs_t savreg;
 
@@ -535,6 +537,7 @@ static void save_regs( void )
     savreg.overlay_graphics_key_clr	= INREG(OVERLAY_GRAPHICS_KEY_CLR);
     savreg.overlay_graphics_key_msk	= INREG(OVERLAY_GRAPHICS_KEY_MSK);
     savreg.overlay_key_cntl		= INREG(OVERLAY_KEY_CNTL);
+    savreg.bus_cntl			= INREG(BUS_CNTL);
 }
 
 static void restore_regs( void )
@@ -545,15 +548,16 @@ static void restore_regs( void )
     OUTREG(OVERLAY_GRAPHICS_KEY_CLR,savreg.overlay_graphics_key_clr);
     OUTREG(OVERLAY_GRAPHICS_KEY_MSK,savreg.overlay_graphics_key_msk);
     OUTREG(OVERLAY_KEY_CNTL,savreg.overlay_key_cntl);
+    OUTREG(BUS_CNTL,savreg.bus_cntl|BUS_MASTER_DIS);
 }
 
-static int forced_irq=UINT_MAX;
+static int forced_irq=INT_MAX;
 static int can_use_irq=0;
 static int irq_installed=0;
 static void init_irq(void)
 {
 	irq_installed=1;
-	if(forced_irq != UINT_MAX) pci_info.irq=forced_irq;
+	if(forced_irq != INT_MAX) pci_info.irq=forced_irq;
 	if(hwirq_install(pci_info.bus,pci_info.card,pci_info.func,
 			 2,CRTC_INT_CNTL,CRTC_BUSMASTER_EOL_INT) == 0)
 	{
