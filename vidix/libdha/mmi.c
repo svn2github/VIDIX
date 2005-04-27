@@ -6,14 +6,22 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include "libdha.h"
+#ifdef CONFIG_LINUXHELPER
 #include "kernelhelper/dhahelper.h"
-
+#endif
 static int libdha_fd=-1;
+
+#ifndef HAVE_MLOCK
+/* stubs */
+int mlock(const void *addr,size_t len) { return ENOSYS; }
+int munlock(const void *addr,size_t len) { return ENOSYS; }
+#endif
 
 #define ALLOWED_VER 0x10
 int bm_open( void )
 {
-  int retv;
+  int retv=ENXIO;
+#ifdef CONFIG_LINUXHELPER
   libdha_fd = open("/dev/dhahelper",O_RDWR);
   retv = libdha_fd > 0 ? 0 : ENXIO;
   if(!retv)
@@ -29,6 +37,7 @@ int bm_open( void )
     }
   }
   else printf("libdha: Can't open /dev/dhahelper\n");
+#endif
   return retv;
 }
 
@@ -39,21 +48,25 @@ void bm_close( void )
 
 int bm_virt_to_phys( void * virt_addr, unsigned long length, unsigned long * parray )
 {
+#ifdef CONFIG_LINUXHELPER
     dhahelper_vmi_t vmi;
     vmi.virtaddr = virt_addr;
     vmi.length = length;
     vmi.realaddr = parray;
     if(libdha_fd > 0) return ioctl(libdha_fd,DHAHELPER_VIRT_TO_PHYS,&vmi);
+#endif
     return ENXIO;
 }
 
 int bm_virt_to_bus( void * virt_addr, unsigned long length, unsigned long * barray )
 {
+#ifdef CONFIG_LINUXHELPER
     dhahelper_vmi_t vmi;
     vmi.virtaddr = virt_addr;
     vmi.length = length;
     vmi.realaddr = barray;
     if(libdha_fd > 0) return ioctl(libdha_fd,DHAHELPER_VIRT_TO_BUS,&vmi);
+#endif
     return ENXIO;
 }
 
@@ -88,6 +101,7 @@ void	bm_free_pci_shmem(void * pci_shmem)
 
 int	bm_lock_mem( const void *addr, unsigned long length )
 {
+#ifdef CONFIG_LINUXHELPER
     dhahelper_mem_t vmi;
     vmi.addr = addr;
     vmi.length = length;
@@ -95,11 +109,13 @@ int	bm_lock_mem( const void *addr, unsigned long length )
     {
 	return ioctl(libdha_fd,DHAHELPER_LOCK_MEM,&vmi);
     }
+#endif
     return mlock(addr,length);
 }
 
 int	bm_unlock_mem( const void * addr, unsigned long length )
 {
+#ifdef CONFIG_LINUXHELPER
     dhahelper_mem_t vmi;
     vmi.addr = addr;
     vmi.length = length;
@@ -107,5 +123,6 @@ int	bm_unlock_mem( const void * addr, unsigned long length )
     {
 	return ioctl(libdha_fd,DHAHELPER_UNLOCK_MEM,&vmi);
     }
+#endif
     return munlock(addr,length);
 }

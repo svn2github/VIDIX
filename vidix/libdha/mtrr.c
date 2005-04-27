@@ -13,7 +13,9 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
+#ifdef CONFIG_LINUXHELPER
 #include "kernelhelper/dhahelper.h"
+#endif
 #include "libdha.h"
 
 #if defined (__i386__) && defined (__NetBSD__)
@@ -28,6 +30,7 @@
 
 int	mtrr_set_type(unsigned base,unsigned size,int type)
 {
+#ifdef CONFIG_LINUXHELPER
     int dhahelper_fd;
     dhahelper_fd = open("/dev/dhahelper",O_RDWR);
     if(dhahelper_fd > 0)
@@ -42,6 +45,7 @@ int	mtrr_set_type(unsigned base,unsigned size,int type)
 	close(dhahelper_fd);
 	return retval;
     }
+#endif
 #if defined (__NetBSD__) && (__NetBSD_Version__) > 105240000
     {
     struct mtrr *mtrrp;

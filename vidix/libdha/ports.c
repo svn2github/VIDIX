@@ -64,8 +64,9 @@
 
 #include "libdha.h"
 #include "AsmMacros.h"
+#ifdef CONFIG_LINUXHELPER
 #include "kernelhelper/dhahelper.h"
-
+#endif
 /* OS depended stuff */
 #if defined (linux)
 #include "sysdep/pci_linux.c"
@@ -104,13 +105,18 @@ static int dhahelper_fd=-1;
 static unsigned dhahelper_counter=0;
 int enable_app_io( void )
 {
+#ifdef CONFIG_LINUXHELPER
     if((dhahelper_fd=open("/dev/dhahelper",O_RDWR)) < 0) return enable_os_io();
     dhahelper_counter++;
     return 0;
+#else
+    return enable_os_io();
+#endif
 }
 
 int disable_app_io( void )
 {
+#ifdef CONFIG_LINUXHELPER
   dhahelper_counter--;
   if(dhahelper_fd > 0)
   {
@@ -122,10 +128,14 @@ int disable_app_io( void )
   }
   else return disable_os_io();
   return 0;
+#else
+  return disable_os_io();
+#endif
 }
 
 unsigned char  INPORT8(unsigned idx)
 {
+#ifdef CONFIG_LINUXHELPER
     if (dhahelper_fd > 0)
     {
 	dhahelper_port_t _port;
@@ -136,11 +146,13 @@ unsigned char  INPORT8(unsigned idx)
         if (ioctl(dhahelper_fd, DHAHELPER_PORT, &_port) == 0)
 	    return _port.value;
     }
+#endif
     return inb(idx);
 }
 
 unsigned short INPORT16(unsigned idx)
 {
+#ifdef CONFIG_LINUXHELPER
     if (dhahelper_fd > 0)
     {
 	dhahelper_port_t _port;
@@ -151,11 +163,13 @@ unsigned short INPORT16(unsigned idx)
         if (ioctl(dhahelper_fd, DHAHELPER_PORT, &_port) == 0)
 	    return _port.value;
     }
+#endif
     return inw(idx);
 }
 
 unsigned       INPORT32(unsigned idx)
 {
+#ifdef CONFIG_LINUXHELPER
     if (dhahelper_fd > 0)
     {
 	dhahelper_port_t _port;
@@ -166,11 +180,13 @@ unsigned       INPORT32(unsigned idx)
         if (ioctl(dhahelper_fd, DHAHELPER_PORT, &_port) == 0)
 	    return _port.value;
     }
+#endif
     return inl(idx);
 }
 
 void          OUTPORT8(unsigned idx,unsigned char val)
 {
+#ifdef CONFIG_LINUXHELPER
     if (dhahelper_fd > 0)
     {
 	dhahelper_port_t _port;
@@ -182,11 +198,14 @@ void          OUTPORT8(unsigned idx,unsigned char val)
         if (ioctl(dhahelper_fd, DHAHELPER_PORT, &_port) == 0)
 	    return;
     }
-    else outb(idx,val);
+    else
+#endif
+	outb(idx,val);
 }
 
 void          OUTPORT16(unsigned idx,unsigned short val)
 {
+#ifdef CONFIG_LINUXHELPER
     if (dhahelper_fd > 0)
     {
 	dhahelper_port_t _port;
@@ -198,11 +217,14 @@ void          OUTPORT16(unsigned idx,unsigned short val)
         if (ioctl(dhahelper_fd, DHAHELPER_PORT, &_port) == 0)
 	    return;
     }
-    else outw(idx,val);
+    else
+#endif
+	outw(idx,val);
 }
 
 void          OUTPORT32(unsigned idx,unsigned val)
 {
+#ifdef CONFIG_LINUXHELPER
     if (dhahelper_fd > 0)
     {
 	dhahelper_port_t _port;
@@ -214,6 +236,8 @@ void          OUTPORT32(unsigned idx,unsigned val)
         if (ioctl(dhahelper_fd, DHAHELPER_PORT, &_port) == 0)
 	    return;
     }
-    else outl(idx,val);
+    else
+#endif
+	outl(idx,val);
 }
 

@@ -1,10 +1,15 @@
+include ../config.mak
+
+ifeq ($(TARGET_OS),CYGWIN)
+LIBNAME = libvidix.dll
+else
 LIBNAME = libvidix.so
+endif
 BINDIR = $(prefix)/lib
 INCDIR = $(prefix)/include/vidix
 SUBDIRS = drivers
 DO_MAKE = @ for i in $(SUBDIRS); do $(MAKE) -C $$i $@ || exit; done
 
-include ../config.mak
 
 SRCS    = vidixlib.c
 OBJS	= $(SRCS:.c=.o)
@@ -22,7 +27,7 @@ all:	$(SUBDIRS) $(LIBNAME)
 	$(DO_MAKE)
 
 $(LIBNAME):	$(OBJS)
-	$(LD) -shared -soname $(LIBNAME) -o $(LIBNAME) $(OBJS) -lc -ldl
+	$(LD) -shared -soname $(LIBNAME) -o $(LIBNAME) $(OBJS) -lc $(LIBDL)
 
 clean:
 	rm -f *.o $(LIBNAME) *~

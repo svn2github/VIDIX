@@ -5,10 +5,12 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include "libdha.h"
+#ifdef CONFIG_LINUXHELPER
 #include "kernelhelper/dhahelper.h"
-
+#endif
 void	cpu_flush(void *va,unsigned long length)
 {
+#ifdef CONFIG_LINUXHELPER
   int retval;
   int libdha_fd=-1;
   if( libdha_fd == -1) libdha_fd = open("/dev/dhahelper",O_RDWR);
@@ -20,4 +22,5 @@ void	cpu_flush(void *va,unsigned long length)
 	retval = ioctl(libdha_fd, DHAHELPER_CPU_FLUSH, &_l2);
 	close(libdha_fd);
   }
+#endif
 }

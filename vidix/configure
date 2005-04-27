@@ -1,5 +1,81 @@
 #!/bin/sh
 # The simplest configure for the vidix
+cc_check() {
+  echo >> "$TMPLOG"
+  cat "$TMPC" >> "$TMPLOG"
+  echo >> "$TMPLOG"
+  echo "$_cc $_inc_extra $_ld_static $_ld_extra $TMPC -o $TMPO $@" >> "$TMPLOG"
+  > "$TMPO"
+  ( "$_cc" $_inc_extra $_ld_static $_ld_extra "$TMPC" -o "$TMPO" "$@" ) >> "$TMPLOG" 2>&1
+  TMP="$?"
+  echo >> "$TMPLOG"
+  echo "ldd $TMPO" >> "$TMPLOG"
+  ( ldd "$TMPO" ) >> "$TMPLOG" 2>&1
+  echo >> "$TMPLOG"
+  return "$TMP"
+}
+
+# Display error message, flushes tempfile, exit
+die() {
+  echo
+  echo "Error: $@" >&2
+  echo >&2
+  rm -f "$TMPO" "$TMPC" "$TMPS" "$TMPCPP"
+  echo "Check "$TMPLOG" if you do not understand why it failed."
+  exit 1
+}
+
+# OS test booleans functions
+issystem() {
+  test "`echo $system_name | tr A-Z a-z`" = "`echo $1 | tr A-Z a-z`"
+}
+linux()   { issystem "Linux"   ; return "$?" ; }
+sunos()   { issystem "SunOS"   ; return "$?" ; }
+irix()    { issystem "IRIX"    ; return "$?" ; }
+cygwin()  { issystem "CYGWIN"  ; return "$?" ; }
+freebsd() { issystem "FreeBSD" ; return "$?" ; }
+netbsd()  { issystem "NetBSD"  ; return "$?" ; }
+bsdos()   { issystem "BSD/OS"  ; return "$?" ; }
+openbsd() { issystem "OpenBSD" ; return "$?" ; }
+bsd()     { freebsd || netbsd || bsdos || openbsd ; return "$?" ; }
+qnx()     { issystem "QNX"     ; return "$?" ; }
+
+# arch test boolean functions
+x86() {
+  case "$host_arch" in
+    i*86|x86|x86pc) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+x86_64() {
+  case "$host_arch" in
+    x86_64) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# Use this before starting a check
+echocheck() {
+  echo "============ Checking for $@ ============" >> "$TMPLOG"
+  echo ${_echo_n} "Checking for $@ ... ${_echo_c}"
+}
+
+# Use this to echo the results of a check
+echores() {
+  echo "Result is: $@" >> "$TMPLOG"
+  echo "##########################################" >> "$TMPLOG"
+  echo "" >> "$TMPLOG"
+  echo "$@"
+}
+#############################################################################
+
+# Check how echo works in this /bin/sh
+case `echo -n` in
+  -n)	_echo_n=	_echo_c='\c'	;;	# SysV echo
+  *)	_echo_n='-n '	_echo_c=	;;	# BSD echo
+esac
+
 
 for parm in "$@" ; do
   if test "$parm" = "--help" || test "$parm" = "-help" || test "$parm" = "-h" ; then
@@ -46,12 +122,6 @@ TMPS="$I/vidix-conf-$RANDOM-$$.S"
 _cc=gcc
 _prefix="/usr/local"
 
-# Check how echo works in this /bin/sh
-case `echo -n` in
-  -n)	_echo_n=	_echo_c='\c'	;;	# SysV echo
-  *)	_echo_n='-n '	_echo_c=	;;	# BSD echo
-esac
-
 # checking for OS name
 if test -z "$system_name" ; then
   # OS name
@@ -85,7 +155,15 @@ case "$host_arch" in
       # recognize.
 
       case "`( uname -m ) 2>&1`" in
-      i[3-9]86|x86*) host_arch=i386 ;;
+      i*86|x86|x86pc) host_arch=i386 ;;
+      x86_64|amd64)
+        if [ "`$_cc -dumpmachine | grep x86_64 | cut -d- -f1`" = "x86_64" -a \
+             -z "`echo $CFLAGS | grep -- -m32`"  ]; then
+          host_arch=x86_64
+        else
+          host_arch=i386
+        fi
+      ;;
       ppc) host_arch=ppc ;;
       alpha) host_arch=alpha ;;
       sparc*) host_arch=sparc ;;
@@ -98,9 +176,15 @@ fi
 
 # Printout architecture
 case "$host_arch" in
-  i[3-9]86|x86*)
+  i*86|x86|x86pc)
   _def_arch="#define ARCH_X86 1"
   _target_arch="TARGET_ARCH_X86 = yes"
+  _def_words_endian="#undef WORDS_BIGENDIAN"
+    ;;
+
+  x86_64)
+  _def_arch="#define ARCH_X86_64 1"
+  _target_arch="TARGET_ARCH_X86_64 = yes"
   _def_words_endian="#undef WORDS_BIGENDIAN"
     ;;
 
@@ -183,60 +267,24 @@ echo "Detected operating system: $system_name"
 echo "Detected host architecture: $host_arch"
 
 # Atmos: moved this here, to be correct, if --prefix is specified
+case "$system_name" in
+  CYGWIN|MINGW32)
+# Keep everything in .exe folder
+test -z "$_datadir" && _datadir="."
+test -z "$_confdir" && _confdir="."
+test -z "$_libdir" && _libdir="."
+    ;;
+  *)
 test -z "$_datadir" && _datadir="$_prefix/share/vidix"
 test -z "$_confdir" && _confdir="$_datadir"
 test -z "$_libdir" && _libdir="$_prefix/lib/vidix"
+    ;;
+  esac
 
 # Checking for CFLAGS
 if test -z "$CFLAGS" ; then
     CFLAGS="-O2"
 fi
-
-# Checking for mman
-echo -n "Checking for mman.h ... "
-cat > $TMPC << EOF
-#include <sys/types.h>
-#include <sys/mman.h>
-int main(void) { (void) mmap(0, 0, 0, 0, 0, 0); return 0; }
-EOF
-_mman=yes
-if "$_cc" -o $TMPO $TMPC 2> /dev/null ; then
-  _def_mman='#define HAVE_SYS_MMAN_H 1'
-else
-  _def_mman='#undef HAVE_SYS_MMAN_H'
-  _mman=no
-fi
-echo "$_mman"
-
-# Checking for malloc.h
-echo -n "Checking for malloc.h ... "
-cat > $TMPC << EOF
-#include <malloc.h>
-int main(void) { (void) malloc(0); return 0; }
-EOF
-_malloc=yes
-if "$_cc" -o $TMPO $TMPC 2> /dev/null ; then
-  _def_malloc='#define HAVE_MALLOC_H 1'
-else
-  _def_malloc='#undef HAVE_MALLOC_H'
-  _malloc=no
-fi
-echo "$_malloc"
-
-# Checking for memalign
-echo -n "Checking for memalign ... "
-cat > $TMPC << EOF
-#include <malloc.h>
-int main (void) { (void) memalign(64, sizeof(char)); return 0; }
-EOF
-_memalign=yes
-if "$_cc" -o $TMPO $TMPC 2> /dev/null ; then
-  _def_memalign='#define HAVE_MEMALIGN 1'
-else
-  _def_memalign='#undef HAVE_MEMALIGN'
-  _memalign=no
-fi
-echo "$_memalign"
 
 # checking for a working awk, I'm using mawk first, because it's fastest - atmos
 _awk=
@@ -253,9 +301,89 @@ echo "$_awk"
 if test "$_awk_verc_fail" = yes; then
 echo "VIDIX needs Awk, but there was no working implementation found!"
 echo "Try the GNU implementation, which can be downloaded from:"
-echo "ftp://ftp.gnu.org/gnu/gawk/"
-exit
+die  "ftp://ftp.gnu.org/gnu/gawk/"
 fi
+
+# Checking for mman
+echocheck "mman.h"
+cat > $TMPC << EOF
+#include <sys/types.h>
+#include <sys/mman.h>
+int main(void) { (void) mmap(0, 0, 0, 0, 0, 0); return 0; }
+EOF
+_mman=no
+cc_check && _mman=yes
+if test "$_mman" = yes ; then
+  _def_mman='#define HAVE_SYS_MMAN_H 1'
+else
+  _def_mman='#undef HAVE_SYS_MMAN_H'
+fi
+echores "$_mman"
+
+# Checking for malloc.h
+echocheck "malloc.h"
+cat > $TMPC << EOF
+#include <malloc.h>
+int main(void) { (void) malloc(0); return 0; }
+EOF
+_malloc=no
+cc_check && _malloc=yes
+if test "$_malloc" = yes ; then
+  _def_malloc='#define HAVE_MALLOC_H 1'
+else
+  _def_malloc='#undef HAVE_MALLOC_H'
+fi
+echores "$_malloc"
+
+# Checking for memalign
+echocheck "memalign"
+cat > $TMPC << EOF
+#include <malloc.h>
+int main (void) { (void) memalign(64, sizeof(char)); return 0; }
+EOF
+_memalign=no
+cc_check && _memalign=yes
+if test "$_memalign" = yes ; then
+  _def_memalign='#define HAVE_MEMALIGN 1'
+else
+  _def_memalign='#undef HAVE_MEMALIGN'
+fi
+echores "$_memalign"
+
+# Checking for mlock
+echocheck "mlock"
+cat > $TMPC << EOF
+#include <sys/mman.h>
+int main (void) { return mlock(0,0); }
+EOF
+_mlock=no
+cc_check && _mlock=yes
+if test "$_mlock" = yes ; then
+  _def_mlock='#define HAVE_MLOCK 1'
+else
+  _def_mlock='#undef HAVE_MLOCK'
+fi
+echores "$_mlock"
+
+echocheck "dynamic loader"
+cat > $TMPC << EOF
+#include <dlfcn.h>
+int main(void) { dlopen(0, 0); dlclose(0); dlsym(0, 0); return 0; }
+EOF
+_dl=no
+_ld_dl=''
+if cc_check ; then
+  _dl=yes
+elif cc_check -ldl ; then
+  _dl=yes
+  _ld_dl='-ldl'
+fi
+if test "$_dl" = yes ; then
+ _def_dl='#define HAVE_LIBDL 1'
+else
+ die "dynamic loader was not found"
+fi
+echores "$_dl (using '$_ld_dl')"
 
 #############################################################################
 echo "Creating config.mak"
@@ -271,6 +399,8 @@ AWK = $_awk
 CC=$_cc
 
 $_target_arch
+TARGET_OS=$system_name
+LIBDL=$_ld_dl
 EOF
 
 
@@ -278,6 +408,7 @@ EOF
 echo "Creating config.h"
 cat > config.h << EOF
 /* -------- This file has been automatically generated by configure --------- */
+$_def_arch
 
 /* Common data directory (for fonts, etc) */
 #define DATADIR "$_datadir"
@@ -296,10 +427,15 @@ $_def_memalign
 # define memalign(a,b) malloc(b)
 #endif
 
-$_def_arch
+/* Define this if your system has the mlock() in "sys/mman.h" header file */
+$_def_mlock
+
 /* Define if your processor stores words with the most significant
    byte first (like Motorola and SPARC, unlike Intel and VAX).  */
 $_def_words_endian
+
+/* Define this if you have the elf dynamic linker -ldl library */
+$_def_dl
 EOF
 
 # Last move:

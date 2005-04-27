@@ -64,7 +64,9 @@ void libdha_exit(const char *message, int level)
 #define DEV_MEM "/dev/mem"
 #endif
 
+#ifdef CONFIG_LINUXHELPER
 #include "kernelhelper/dhahelper.h"
+#endif
 
 static int devmem_fd=-1;
 static unsigned devmem_locks=0;

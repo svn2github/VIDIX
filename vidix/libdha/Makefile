@@ -6,15 +6,19 @@ VERSION = 0.4
 
 ifeq ($(TARGET_OS),CYGWIN)
 SHORTNAME = libdha.dll
+LIBNAME = libdha.dll
 else
 SHORTNAME = libdha.so
-endif
 LIBNAME = libdha-$(VERSION).so
+endif
 
 SRCS=libdha.c mtrr.c pci.c pci_names.c mmi.c ports.c irq.c cpu_flush.c
 OBJS=$(SRCS:.c=.o)
 
-CFLAGS  = $(OPTFLAGS) -fPIC -I. -I.. -Wall -W
+CFLAGS  = $(OPTFLAGS) -I. -I.. -Wall -W
+ifneq ($(TARGET_OS),CYGWIN)
+CFLAGS += -fPIC
+endif
 LIBS = 
 ifeq ($(TARGET_OS),OpenBSD)
 ifeq ($(TARGET_ARCH_X86),yes)
@@ -31,8 +35,9 @@ endif
 
 $(LIBNAME):     $(OBJS)
 	$(CC) -shared -o $(LIBNAME) $(OBJS) $(LIBS)
+ifneq  ($(TARGET_OS),CYGWIN)
 	ln -sf $(LIBNAME) $(SHORTNAME)
-
+endif
 all:    $(LIBNAME) $(SHORTNAME)
 
 pci_names.c: oth/pci.db

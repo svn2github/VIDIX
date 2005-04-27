@@ -58,7 +58,9 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
+#ifdef CONFIG_LINUXHELPER
 #include "kernelhelper/dhahelper.h"
+#endif
 
 #ifdef __unix__
 #include <unistd.h>
@@ -711,6 +713,7 @@ static int __pci_scan(pciinfo_t *pci_list,unsigned *num_pci)
 
 int pci_scan(pciinfo_t *pci_list,unsigned *num_pci)
 {
+#ifdef CONFIG_LINUXHELPER
   int libdha_fd;
   if ( (libdha_fd = open("/dev/dhahelper",O_RDWR)) < 0)
   {
@@ -745,12 +748,16 @@ int pci_scan(pciinfo_t *pci_list,unsigned *num_pci)
 	close(libdha_fd);
   }
   return 0;
+#else
+  return __pci_scan(pci_list,num_pci);
+#endif
 }
 
 int pci_config_read(unsigned char bus, unsigned char dev, unsigned char func,
 		    unsigned char cmd, int len, unsigned long *val)
 {
     int ret;
+#ifdef CONFIG_LINUXHELPER
     int dhahelper_fd;
     if ( (dhahelper_fd = open("/dev/dhahelper",O_RDWR)) > 0)
     {
@@ -767,6 +774,7 @@ int pci_config_read(unsigned char bus, unsigned char dev, unsigned char func,
 	*val = pcic.ret;
 	return retval;
     }
+#endif
     ret = enable_app_io();
     if (ret != 0)
 	return(ret);
@@ -795,6 +803,7 @@ int pci_config_write(unsigned char bus, unsigned char dev, unsigned char func,
 {
     int ret;
     
+#ifdef CONFIG_LINUXHELPER
     int dhahelper_fd;
     if ( (dhahelper_fd = open("/dev/dhahelper",O_RDWR)) > 0)
     {
@@ -811,6 +820,7 @@ int pci_config_write(unsigned char bus, unsigned char dev, unsigned char func,
 	close(dhahelper_fd);
 	return retval;
     }
+#endif
     ret = enable_app_io();
     if (ret != 0)
 	return ret;
