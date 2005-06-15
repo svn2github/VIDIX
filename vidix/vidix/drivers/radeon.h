@@ -201,6 +201,7 @@
 #	define CRTC2_DISP_DIS			(1 << 23)
 #	define CRTC2_EN				(1 << 25)
 #	define CRTC2_DISP_REQ_EN_B		(1 << 26)
+#       define CRTC2_CSYNC_EN			(1 << 27)
 #	define CRTC2_HSYNC_DIS			(1 << 28)
 #	define CRTC2_VSYNC_DIS			(1 << 29)
 #define	MEM_CNTL				0x0140
@@ -586,7 +587,7 @@
 #	define SCALER_SOURCE_UNK7		0x00000F00L /* 16BPP_ARGB4444 */
 #	define SCALER_ADAPTIVE_DEINT		0x00001000L
 #	define R200_SCALER_TEMPORAL_DEINT	0x00002000L
-#	define SCALER_UNKNOWN_FLAG1		0x00004000L /* ??? */
+#	define SCALER_USE_OV1			0x00004000L /* Use/force Ov1 instead of Ov0 */
 #	define SCALER_SMART_SWITCH		0x00008000L
 #ifdef RAGE128
 #	define SCALER_BURST_PER_PLANE		0x00ff0000L
@@ -766,6 +767,8 @@
 #	define OV0_CR_TO_G			0x00FF0000L
 #	define OV0_CR_TO_R			0x7F000000L
 #	define OV0_NEW_COL_CONV			0x80000000L
+#define OV1_Y_X_START				0x0600
+#define OV1_Y_X_END				0x0604
 #define	OV0_LIN_TRANS_A				0x0D20
 #define	OV0_LIN_TRANS_B				0x0D24
 #define	OV0_LIN_TRANS_C				0x0D28

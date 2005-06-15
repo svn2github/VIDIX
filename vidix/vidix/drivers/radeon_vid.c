@@ -136,6 +136,8 @@ static video_registers_t vregs[] =
   DECLARE_VREG(VIPPAD1_Y),
   DECLARE_VREG(OV0_Y_X_START),
   DECLARE_VREG(OV0_Y_X_END),
+  DECLARE_VREG(OV1_Y_X_START),
+  DECLARE_VREG(OV1_Y_X_END),
   DECLARE_VREG(OV0_PIPELINE_CNTL),
   DECLARE_VREG(OV0_EXCLUSIVE_HORZ),
   DECLARE_VREG(OV0_EXCLUSIVE_VERT),
@@ -482,6 +484,85 @@ static __inline__ uint32_t INPLL(uint32_t addr)
 		OUTPLL(addr, _tmp);					\
 	} while (0)
 
+#ifndef RAGE128
+enum radeon_montype
+{
+    MT_NONE,
+    MT_CRT, /* CRT-(cathode ray tube) analog monitor. (15-pin VGA connector) */
+    MT_LCD, /* Liquid Crystal Display */
+    MT_DFP, /* DFP-digital flat panel monitor. (24-pin DVI-I connector) */
+    MT_CTV, /* Composite TV out (not in VE) */
+    MT_STV  /* S-Video TV out (probably in VE only) */
+};
+
+typedef struct radeon_info_s
+{
+	int hasCRTC2;
+	int crtDispType;
+	int dviDispType;
+}rinfo_t;
+
+static rinfo_t rinfo;
+
+static char * GET_MON_NAME(int type)
+{
+  char *pret;
+  switch(type)
+  {
+    case MT_NONE: pret = "no"; break;
+    case MT_CRT:  pret = "CRT"; break;
+    case MT_DFP:  pret = "DFP"; break;
+    case MT_LCD:  pret = "LCD"; break;
+    case MT_CTV:  pret = "CTV"; break;
+    case MT_STV:  pret = "STV"; break;
+    default:	  pret = "Unknown";
+  }
+  return pret;
+}
+
+static void radeon_get_moninfo (rinfo_t *rinfo)
+{
+	unsigned int tmp;
+
+	tmp = INREG(RADEON_BIOS_4_SCRATCH);
+
+	if (rinfo->hasCRTC2) {
+		/* primary DVI port */
+		if (tmp & 0x08)
+			rinfo->dviDispType = MT_DFP;
+		else if (tmp & 0x4)
+			rinfo->dviDispType = MT_LCD;
+		else if (tmp & 0x200)
+			rinfo->dviDispType = MT_CRT;
+		else if (tmp & 0x10)
+			rinfo->dviDispType = MT_CTV;
+		else if (tmp & 0x20)
+			rinfo->dviDispType = MT_STV;
+
+		/* secondary CRT port */
+		if (tmp & 0x2)
+			rinfo->crtDispType = MT_CRT;
+		else if (tmp & 0x800)
+			rinfo->crtDispType = MT_DFP;
+		else if (tmp & 0x400)
+			rinfo->crtDispType = MT_LCD;
+		else if (tmp & 0x1000)
+			rinfo->crtDispType = MT_CTV;
+		else if (tmp & 0x2000)
+			rinfo->crtDispType = MT_STV;
+	} else {
+		rinfo->dviDispType = MT_NONE;
+
+		tmp = INREG(FP_GEN_CNTL);
+
+		if (tmp & FP_EN_TMDS)
+			rinfo->crtDispType = MT_DFP;
+		else
+			rinfo->crtDispType = MT_CRT;
+	}
+}
+#endif
+
 static uint32_t radeon_vid_get_dbpp( void )
 {
   uint32_t dbpp,retval;
@@ -509,18 +590,28 @@ static int radeon_is_interlace( void )
 
 static uint32_t radeon_get_xres( void )
 {
-  /* FIXME: currently we extract that from CRTC!!!*/
   uint32_t xres,h_total;
-  h_total = INREG(CRTC_H_TOTAL_DISP);
+#ifndef RAGE128
+  if(rinfo.hasCRTC2 && 
+       (rinfo.dviDispType == MT_CTV || rinfo.dviDispType == MT_STV))
+	h_total = INREG(CRTC2_H_TOTAL_DISP);
+  else
+#endif
+	h_total = INREG(CRTC_H_TOTAL_DISP);
   xres = (h_total >> 16) & 0xffff;
   return (xres + 1)*8;
 }
 
 static uint32_t radeon_get_yres( void )
 {
-  /* FIXME: currently we extract that from CRTC!!!*/
   uint32_t yres,v_total;
-  v_total = INREG(CRTC_V_TOTAL_DISP);
+#ifndef RAGE128
+  if(rinfo.hasCRTC2 && 
+       (rinfo.dviDispType == MT_CTV || rinfo.dviDispType == MT_STV))
+	v_total = INREG(CRTC2_V_TOTAL_DISP);
+  else
+#endif
+	v_total = INREG(CRTC_V_TOTAL_DISP);
   yres = (v_total >> 16) & 0xffff;
   return yres + 1;
 }
@@ -1087,85 +1178,6 @@ int VIDIX_NAME(vixProbe)( int verbose,int force )
   return err;
 }
 
-#ifndef RAGE128
-enum radeon_montype
-{
-    MT_NONE,
-    MT_CRT, /* CRT-(cathode ray tube) analog monitor. (15-pin VGA connector) */
-    MT_LCD, /* Liquid Crystal Display */
-    MT_DFP, /* DFP-digital flat panel monitor. (24-pin DVI-I connector) */
-    MT_CTV, /* Composite TV out (not in VE) */
-    MT_STV  /* S-Video TV out (probably in VE only) */
-};
-
-typedef struct radeon_info_s
-{
-	int hasCRTC2;
-	int crtDispType;
-	int dviDispType;
-}rinfo_t;
-
-static rinfo_t rinfo;
-
-static char * GET_MON_NAME(int type)
-{
-  char *pret;
-  switch(type)
-  {
-    case MT_NONE: pret = "no"; break;
-    case MT_CRT:  pret = "CRT"; break;
-    case MT_DFP:  pret = "DFP"; break;
-    case MT_LCD:  pret = "LCD"; break;
-    case MT_CTV:  pret = "CTV"; break;
-    case MT_STV:  pret = "STV"; break;
-    default:	  pret = "Unknown";
-  }
-  return pret;
-}
-
-static void radeon_get_moninfo (rinfo_t *rinfo)
-{
-	unsigned int tmp;
-
-	tmp = INREG(RADEON_BIOS_4_SCRATCH);
-
-	if (rinfo->hasCRTC2) {
-		/* primary DVI port */
-		if (tmp & 0x08)
-			rinfo->dviDispType = MT_DFP;
-		else if (tmp & 0x4)
-			rinfo->dviDispType = MT_LCD;
-		else if (tmp & 0x200)
-			rinfo->dviDispType = MT_CRT;
-		else if (tmp & 0x10)
-			rinfo->dviDispType = MT_CTV;
-		else if (tmp & 0x20)
-			rinfo->dviDispType = MT_STV;
-
-		/* secondary CRT port */
-		if (tmp & 0x2)
-			rinfo->crtDispType = MT_CRT;
-		else if (tmp & 0x800)
-			rinfo->crtDispType = MT_DFP;
-		else if (tmp & 0x400)
-			rinfo->crtDispType = MT_LCD;
-		else if (tmp & 0x1000)
-			rinfo->crtDispType = MT_CTV;
-		else if (tmp & 0x2000)
-			rinfo->crtDispType = MT_STV;
-	} else {
-		rinfo->dviDispType = MT_NONE;
-
-		tmp = INREG(FP_GEN_CNTL);
-
-		if (tmp & FP_EN_TMDS)
-			rinfo->crtDispType = MT_DFP;
-		else
-			rinfo->crtDispType = MT_CRT;
-	}
-}
-#endif
-
 typedef struct saved_regs_s
 {
     uint32_t ov0_vid_key_clr;
@@ -1366,13 +1378,23 @@ static void radeon_vid_stop_video( void )
 
 static void radeon_vid_display_video( void )
 {
-    int bes_flags;
+    int bes_flags,force_second;
     radeon_fifo_wait(2);
     OUTREG(OV0_REG_LOAD_CNTL,		REG_LD_CTL_LOCK);
     radeon_engine_idle();
     while(!(INREG(OV0_REG_LOAD_CNTL)&REG_LD_CTL_LOCK_READBACK));
     radeon_fifo_wait(15);
 
+    force_second=0;
+#if 0 /* Warning: for now we have black screen only! :( */
+#ifndef RAGE128
+    if(rinfo.hasCRTC2 && 
+       (rinfo.dviDispType == MT_CTV || rinfo.dviDispType == MT_STV))
+    {
+	force_second=1;
+    }
+#endif
+#endif
     /* Shutdown capturing */
     OUTREG(FCP_CNTL, FCP_CNTL__GND);
     OUTREG(CAP0_TRIG_CNTL, 0);
@@ -1395,8 +1417,16 @@ static void radeon_vid_display_video( void )
 
     OUTREG(OV0_H_INC,			besr.h_inc);
     OUTREG(OV0_STEP_BY,			besr.step_by);
-    OUTREG(OV0_Y_X_START,		besr.y_x_start);
-    OUTREG(OV0_Y_X_END,			besr.y_x_end);
+    if(force_second)
+    {
+	OUTREG(OV1_Y_X_START,		besr.y_x_start);
+	OUTREG(OV1_Y_X_END,		besr.y_x_end);
+    }
+    else
+    {
+	OUTREG(OV0_Y_X_START,		besr.y_x_start);
+	OUTREG(OV0_Y_X_END,		besr.y_x_end);
+    }
     OUTREG(OV0_V_INC,			besr.v_inc);
     OUTREG(OV0_P1_BLANK_LINES_AT_TOP,	besr.p1_blank_lines_at_top);
     OUTREG(OV0_P23_BLANK_LINES_AT_TOP,	besr.p23_blank_lines_at_top);
@@ -1433,14 +1463,9 @@ static void radeon_vid_display_video( void )
 #endif
     bes_flags |= (besr.surf_id << 8) & SCALER_SURFAC_FORMAT;
     if(besr.load_prg_start) bes_flags |= SCALER_PRG_LOAD_START;
+    if(force_second)	bes_flags |= SCALER_USE_OV1;
+    else		bes_flags &= ~SCALER_USE_OV1;
     OUTREG(OV0_SCALE_CNTL,		bes_flags);
-#ifndef RAGE128
-    if(rinfo.hasCRTC2 && 
-       (rinfo.dviDispType == MT_CTV || rinfo.dviDispType == MT_STV))
-    {
-	/* TODO: suppress scaler output to CRTC here and enable TVO only */
-    }
-#endif
     radeon_fifo_wait(6);
     OUTREG(OV0_FILTER_CNTL,besr.filter_cntl);
     OUTREG(OV0_FOUR_TAP_COEF_0,besr.four_tap_coeff[0]);
