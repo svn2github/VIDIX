@@ -62,6 +62,7 @@
 #endif
 #include <unistd.h>
 
+#include "config.h"
 #include "libdha.h"
 #include "AsmMacros.h"
 #ifdef CONFIG_LINUXHELPER

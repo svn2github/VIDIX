@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include "config.h"
 #include "libdha.h"
 #ifdef CONFIG_LINUXHELPER
 #include "kernelhelper/dhahelper.h"
