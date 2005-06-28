@@ -1278,7 +1278,7 @@ static int __init init_dhahelper(void)
 #endif
 {
     int err = 0;
-    printk(KERN_INFO "Direct Hardware Access kernel helper (C) Alex Beregszaszi\n");
+    printk(KERN_INFO "Direct Hardware Access kernel helper\n");
 
     err = register_dev();
     if(err){
