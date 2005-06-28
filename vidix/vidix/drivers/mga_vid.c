@@ -84,10 +84,10 @@
 #define GETREG(TYPE,PTR,OFFZ)		(*((volatile TYPE*)((PTR)+(OFFZ))))
 #define SETREG(TYPE,PTR,OFFZ,VAL)	(*((volatile TYPE*)((PTR)+(OFFZ))))=VAL
 
-#define readb(addr)	  GETREG(uint8_t,(uint32_t)(mga_mmio_base + addr),0)
-#define writeb(addr, val) SETREG(uint8_t,(uint32_t)(mga_mmio_base + addr),0,val)
-#define readl(addr)	  GETREG(uint32_t,(uint32_t)(mga_mmio_base + addr),0)
-#define writel(addr, val) SETREG(uint32_t,(uint32_t)(mga_mmio_base + addr),0,val)
+#define readb(addr)	  GETREG(uint8_t,(uint8_t *)(mga_mmio_base + addr),0)
+#define writeb(addr, val) SETREG(uint8_t,(uint8_t *)(mga_mmio_base + addr),0,val)
+#define readl(addr)	  GETREG(uint32_t,(uint8_t *)(mga_mmio_base + addr),0)
+#define writel(addr, val) SETREG(uint32_t,(uint8_t *)(mga_mmio_base + addr),0,val)
 
 static int mga_verbose = 0;
 
@@ -103,7 +103,7 @@ static int vid_overlay_on = 0;
 
 /* mapped physical addresses */
 static uint8_t *mga_mmio_base = 0;
-static uint8_t* mga_mem_base = 0;
+static uint8_t *mga_mem_base = 0;
 
 static int mga_src_base = 0; /* YUV buffer position in video memory */
 

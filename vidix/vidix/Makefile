@@ -14,7 +14,7 @@ DO_MAKE = @ for i in $(SUBDIRS); do $(MAKE) -C $$i $@ || exit; done
 SRCS    = vidixlib.c
 OBJS	= $(SRCS:.c=.o)
 
-CFLAGS  = $(OPTFLAGS) -W -Wall
+CFLAGS  = $(OPTFLAGS) -W -Wall -fPIC
 
 .SUFFIXES: .c .o
 

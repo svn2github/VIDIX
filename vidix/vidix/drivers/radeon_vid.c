@@ -452,13 +452,13 @@ static uint32_t radeon_ram_size = 0;
 #define GETREG(TYPE,PTR,OFFZ)		(*((volatile TYPE*)((PTR)+(OFFZ))))
 #define SETREG(TYPE,PTR,OFFZ,VAL)	(*((volatile TYPE*)((PTR)+(OFFZ))))=VAL
 
-#define INREG8(addr)		GETREG(uint8_t,(uint32_t)(radeon_mmio_base),addr)
-#define OUTREG8(addr,val)	SETREG(uint8_t,(uint32_t)(radeon_mmio_base),addr,val)
+#define INREG8(addr)		GETREG(uint8_t,(uint8_t *)(radeon_mmio_base),addr)
+#define OUTREG8(addr,val)	SETREG(uint8_t,(uint8_t *)(radeon_mmio_base),addr,val)
 static inline uint32_t INREG (uint32_t addr) {
-    uint32_t tmp = GETREG(uint32_t,(uint32_t)(radeon_mmio_base),addr);
+    uint32_t tmp = GETREG(uint32_t,(uint8_t *)(radeon_mmio_base),addr);
     return le2me_32(tmp);
 }
-#define OUTREG(addr,val)	SETREG(uint32_t,(uint32_t)(radeon_mmio_base),addr,le2me_32(val))
+#define OUTREG(addr,val)	SETREG(uint32_t,(uint8_t *)(radeon_mmio_base),addr,le2me_32(val))
 #define OUTREGP(addr,val,mask)						\
 	do {								\
 		unsigned int _tmp = INREG(addr);			\
@@ -1211,6 +1211,9 @@ static void restore_regs( void )
 int VIDIX_NAME(vixInit)( const char *args )
 {
   int err;
+
+  if(__verbose>0) printf("[radeon_vid] version %d args='%s'\n", VIDIX_VERSION, args);
+
   if(!probed) 
   {
     printf(RADEON_MSG" Driver was not probed but is being initializing\n");
@@ -3032,7 +3035,7 @@ int VIDIX_NAME(vixConfigPlayback)(vidix_playback_t *info)
 	Note: probably it's ont good idea to locate them in video memory
 	but as initial release it's OK */
 	radeon_video_size -= radeon_ram_size * sizeof(bm_list_descriptor) / 4096;
-	radeon_dma_desc_base = pci_info.base0 + radeon_video_size;
+	radeon_dma_desc_base = (void *)(pci_info.base0 + radeon_video_size);
   }
 #endif
   for(;nfr>0; nfr--)

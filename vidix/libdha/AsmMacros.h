@@ -76,6 +76,7 @@
 #include "sysdep/AsmMacros_powerpc.h"
 #elif defined (__i386__)
 #include "sysdep/AsmMacros_x86.h"
+#elif defined (__x86_64__)
 #else
 #include "sysdep/AsmMacros_generic.h"
 #endif

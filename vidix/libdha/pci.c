@@ -51,6 +51,7 @@
  *
  */
  
+#include "config.h"
 #include "libdha.h"
 #include <errno.h>
 #include <string.h>
@@ -466,6 +467,8 @@ static int pcibus=-1, pcicard=-1, pcifunc=-1 ;
 #include "sysdep/pci_arm32.c"
 #elif defined(__powerpc__)
 #include "sysdep/pci_powerpc.c"
+#elif defined(__x86_64__)
+#include "sysdep/pci_linux.c"
 #elif defined( __i386__ )
 #include "sysdep/pci_x86.c"
 #else
