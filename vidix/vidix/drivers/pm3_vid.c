@@ -50,7 +50,7 @@
 
 static pciinfo_t pci_info;
 
-static void *pm3_reg_base;
+/* static void *pm3_reg_base; */ /* defined in pm3_regs.h */
 static void *pm3_mem;
 
 static int pm3_vidmem = PM3_VIDMEM;
@@ -147,7 +147,7 @@ int VIDIX_NAME(vixProbe)(int verbose, int force)
 int VIDIX_NAME(vixInit)(const char *args)
 {
     if(args != NULL){
-	char *ac = strdup(args), *s, *opt;
+	char *ac = strdup(args), *s = NULL, *opt;
 
 	opt = strtok_r(ac, ",", &s);
 	while(opt){
@@ -289,7 +289,7 @@ compute_scale_factor(int* src_w, int* dst_w,
 static void
 pm3_setup_overlay(vidix_playback_t *info)
 {
-    int shrink, zoom;
+    u_int shrink, zoom;
     int format = 0;
     int filter = 0;
     int sw = src_w;
@@ -495,7 +495,7 @@ pm3_setup_bydma(vidix_dma_t *dma, struct pm3_bydma_frame *bdf)
 {
     u_int size = dma->size;
     u_int pages = (size + page_size-1) / page_size;
-    long baddr[pages];
+    u_long baddr[pages];
     u_int i;
     uint32_t dest;
 

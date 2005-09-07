@@ -1187,7 +1187,7 @@
 #define write_mem_barrier()
 #endif
 
-extern void *pm3_reg_base;
+static void *pm3_reg_base;
 
 #define WRITE_REG(offset,val)						\
     do {								\
