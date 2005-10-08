@@ -1465,8 +1465,10 @@ int VIDIX_NAME(vixQueryFourcc)(vidix_fourcc_t *to)
     case IMGFMT_IYUV:
     case IMGFMT_I420:
 	supports = is_g400 ? 1 : 0;
+	break;
     case IMGFMT_NV12:
 	supports = is_g400 ? 0 : 1;
+	break;
     case IMGFMT_YUY2:
     case IMGFMT_UYVY:
 	supports = 1;
