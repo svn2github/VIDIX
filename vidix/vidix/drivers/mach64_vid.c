@@ -587,7 +587,7 @@ int VIDIX_NAME(vixInit)(const char *args)
     if(__verbose>0) printf("[mach64] forcing IRQ to %u\n",forced_irq);     
   }
 
-  if((mach64_mmio_base = map_phys_mem(pci_info.base2,0x4000))==(void *)-1) return ENOMEM;
+  if((mach64_mmio_base = map_phys_mem(pci_info.base2,0x1000))==(void *)-1) return ENOMEM;
   mach64_wait_for_idle();
   mach64_ram_size = INREG(MEM_CNTL) & CTL_MEM_SIZEB;
   if (mach64_ram_size < 8) mach64_ram_size = (mach64_ram_size + 1) * 512;
@@ -687,7 +687,7 @@ void VIDIX_NAME(vixDestroy)(void)
   mach64_engine_reset();
 #endif
   unmap_phys_mem(mach64_mem_base,mach64_ram_size);
-  unmap_phys_mem(mach64_mmio_base,0x4000);
+  unmap_phys_mem(mach64_mmio_base,0x1000);
 #ifdef MACH64_ENABLE_BM
   bm_close();
   if(can_use_irq && irq_installed) hwirq_uninstall(pci_info.bus,pci_info.card,pci_info.func);
