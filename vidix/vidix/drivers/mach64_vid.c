@@ -176,7 +176,7 @@ static video_registers_t vregs[] =
 #define INREG8(addr)		GETREG(uint8_t,(uint8_t *)mach64_mmio_base,((addr)^0x100)<<2)
 #define OUTREG8(addr,val)	SETREG(uint8_t,(uint8_t *)mach64_mmio_base,((addr)^0x100)<<2,val)
 static inline uint32_t INREG (uint32_t addr) {
-    uint32_t tmp = GETREG(uint32_t,(uint32_t)mach64_mmio_base,((addr)^0x100)<<2);
+    uint32_t tmp = GETREG(uint32_t,(uint8_t *)mach64_mmio_base,((addr)^0x100)<<2);
     return le2me_32(tmp);
 }
 #define OUTREG(addr,val)	SETREG(uint32_t,(uint8_t *)mach64_mmio_base,((addr)^0x100)<<2,me2le_32(val))
