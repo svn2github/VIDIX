@@ -55,6 +55,7 @@ BEGIN {
 	line++;
 	n=split($0, field, "[\t]");
 	name_field = kill_double_quoting(field[3])
+# field[4] = "1" entries are new submissions not approved by the maintainers yet.
 	if(field[1] == "v" && length(field[3])>0 && field[4] == "0")
 	{
 		init_device_db()
