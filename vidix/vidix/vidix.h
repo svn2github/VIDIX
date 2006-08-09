@@ -127,6 +127,7 @@ typedef struct vidix_color_key_s
 #define CKEY_TRUE	1
 #define CKEY_EQ		2
 #define CKEY_NEQ	3
+#define CKEY_ALPHA	4
 	unsigned	op;		/* defines logical operation */
 	unsigned char	red;
 	unsigned char	green;

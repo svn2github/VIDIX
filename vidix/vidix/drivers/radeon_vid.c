@@ -112,6 +112,7 @@ typedef struct bes_registers_s
   uint32_t graphics_key_clr;
   uint32_t graphics_key_msk;
   uint32_t ckey_cntl;
+  uint32_t merge_cntl;
   
   int deinterlace_on;
   uint32_t deinterlace_pattern;
@@ -1247,6 +1248,7 @@ typedef struct saved_regs_s
     uint32_t ov0_graphics_key_clr;
     uint32_t ov0_graphics_key_msk;
     uint32_t ov0_key_cntl;
+    uint32_t disp_merge_cntl;
 }saved_regs_t;
 static saved_regs_t savreg;
 
@@ -1258,6 +1260,7 @@ static void save_regs( void )
     savreg.ov0_graphics_key_clr = INREG(OV0_GRAPHICS_KEY_CLR);
     savreg.ov0_graphics_key_msk = INREG(OV0_GRAPHICS_KEY_MSK);
     savreg.ov0_key_cntl		= INREG(OV0_KEY_CNTL);
+    savreg.disp_merge_cntl	= INREG(DISP_MERGE_CNTL);
 }
 
 static void restore_regs( void )
@@ -1268,6 +1271,7 @@ static void restore_regs( void )
     OUTREG(OV0_GRAPHICS_KEY_CLR,savreg.ov0_graphics_key_clr);
     OUTREG(OV0_GRAPHICS_KEY_MSK,savreg.ov0_graphics_key_msk);
     OUTREG(OV0_KEY_CNTL,savreg.ov0_key_cntl);
+    OUTREG(DISP_MERGE_CNTL,savreg.disp_merge_cntl);
 }
 
 int VIDIX_NAME(vixInit)( const char *args )
@@ -1402,7 +1406,8 @@ int VIDIX_NAME(vixQueryFourcc)(vidix_fourcc_t *to)
 		    VID_DEPTH_12BPP| VID_DEPTH_15BPP|
 		    VID_DEPTH_16BPP| VID_DEPTH_24BPP|
 		    VID_DEPTH_32BPP;
-	to->flags = VID_CAP_EXPAND | VID_CAP_SHRINK | VID_CAP_COLORKEY;
+	to->flags = VID_CAP_EXPAND | VID_CAP_SHRINK | VID_CAP_COLORKEY |
+		    VID_CAP_BLEND;
 	return 0;
     }
     else  to->depth = to->flags = 0;
@@ -3300,8 +3305,12 @@ int	VIDIX_NAME(vixPlaybackGetDeint)( vidix_deinterlace_t * info)
 /* Graphic keys */
 static vidix_grkey_t radeon_grkey;
 
-static void set_gr_key( void )
+static int set_gr_key( void )
 {
+    int result = 0;
+
+    besr.merge_cntl = 0xff000000 | /* overlay alpha */
+		      0x00ff0000;  /* graphic alpha */
     if(radeon_grkey.ckey.op == CKEY_TRUE)
     {
 	int dbpp=radeon_vid_get_dbpp();
@@ -3358,6 +3367,30 @@ static void set_gr_key( void )
 	besr.ckey_cntl = VIDEO_KEY_FN_TRUE|CMP_MIX_AND|GRAPHIC_KEY_FN_EQ;
 #endif
     }
+    else if(radeon_grkey.ckey.op == CKEY_ALPHA)
+    {
+	int dbpp=radeon_vid_get_dbpp();
+	besr.ckey_on=1;
+
+	switch(dbpp)
+	{
+	case 32:
+		besr.ckey_on=1;
+		besr.graphics_key_msk=0;
+		besr.graphics_key_clr=0;
+		besr.ckey_cntl = VIDEO_KEY_FN_TRUE|GRAPHIC_KEY_FN_TRUE|CMP_MIX_AND;
+		besr.merge_cntl = 0xff000000 | /* overlay alpha */
+				  0x00ff0000 | /* graphic alpha */
+				  0x00000001;  /* DISP_ALPHA_MODE_PER_PIXEL */
+		break;
+	default:
+		besr.ckey_on=0;
+		besr.graphics_key_msk=0;
+		besr.graphics_key_clr=0;
+		besr.ckey_cntl = VIDEO_KEY_FN_TRUE|GRAPHIC_KEY_FN_TRUE|CMP_MIX_AND;
+		result = 1;
+	}
+    }
     else
     {
 	besr.ckey_on=0;
@@ -3369,6 +3402,8 @@ static void set_gr_key( void )
     OUTREG(OV0_GRAPHICS_KEY_MSK, besr.graphics_key_msk);
     OUTREG(OV0_GRAPHICS_KEY_CLR, besr.graphics_key_clr);
     OUTREG(OV0_KEY_CNTL,besr.ckey_cntl);
+    OUTREG(DISP_MERGE_CNTL, besr.merge_cntl);
+    return result;
 }
 
 int VIDIX_NAME(vixGetGrKeys)(vidix_grkey_t *grkey)
@@ -3380,8 +3415,7 @@ int VIDIX_NAME(vixGetGrKeys)(vidix_grkey_t *grkey)
 int VIDIX_NAME(vixSetGrKeys)(const vidix_grkey_t *grkey)
 {
     memcpy(&radeon_grkey, grkey, sizeof(vidix_grkey_t));
-    set_gr_key();
-    return(0);
+    return (set_gr_key());
 }
 
 #ifdef RADEON_ENABLE_BM
