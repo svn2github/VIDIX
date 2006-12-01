@@ -77,6 +77,10 @@
 #include <linux/slab.h>
 #endif
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,5)
+#include <linux/moduleparam.h>
+#endif
+
 #include <linux/pci.h>
 #include <linux/ioport.h>
 #include <linux/init.h>
@@ -116,14 +120,18 @@ MODULE_LICENSE("GPL");
 #endif
 
 static int dhahelper_major = DEFAULT_MAJOR;
+static int dhahelper_verbosity = 1;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,5)
+module_param_named(dhahelper_major, "i", int, 0644);
+module_param_named(dhahelper_verbosity, "i", int, 0644);
+#else
 MODULE_PARM(dhahelper_major, "i");
-MODULE_PARM_DESC(dhahelper_major, "Major number of dhahelper characterdevice");
-
 /* 0 = silent */
 /* 1 = report errors (default) */
 /* 2 = debug */
-static int dhahelper_verbosity = 1;
 MODULE_PARM(dhahelper_verbosity, "i");
+#endif
+MODULE_PARM_DESC(dhahelper_major, "Major number of dhahelper characterdevice");
 MODULE_PARM_DESC(dhahelper_verbosity, "Level of verbosity (0 = silent, 1 = only errors, 2 = debug)");
 
 static int dhahelper_open(struct inode *inode, struct file *file)
