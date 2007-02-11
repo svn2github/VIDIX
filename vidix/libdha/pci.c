@@ -486,6 +486,7 @@ static void identify_card(struct pci_config_reg *pcr)
   pci_lst[pcicards].bus     = pcibus ;
   pci_lst[pcicards].card    = pcicard ;
   pci_lst[pcicards].func    = pcifunc ;
+  pci_lst[pcicards].command = pcr->_status_command & 0xFFFF ;
   pci_lst[pcicards].vendor  = pcr->_vendor ;
   pci_lst[pcicards].device  = pcr->_device ;
   pci_lst[pcicards].base0   = 0xFFFFFFFF ;
