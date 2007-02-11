@@ -843,7 +843,7 @@ int vixProbe(int verbose, int force){
  *          a negative error code otherwise.
  */
 int
-vixInit (const char *args)
+vixInit (const char *args __attribute__ ((unused)))
 {
 	int mtrr;
   unsigned char config1, tmp;
@@ -1177,7 +1177,7 @@ vixPlaybackGetEq (vidix_video_eq_t * eq)
  * @return 0.
  */
 int
-vixPlaybackSetEq (const vidix_video_eq_t * eq)
+vixPlaybackSetEq (const vidix_video_eq_t * eq __attribute__ ((unused)))
 {
   return 0;
 }
