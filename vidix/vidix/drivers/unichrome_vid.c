@@ -597,7 +597,6 @@ int vixConfigPlayback(vidix_playback_t *info)
 	uint32_t win_start, win_end;
 	uint32_t zoom, mini;
 	uint32_t dcount, falign, qwfetch;
-	uint32_t y_start, u_start, v_start;
 	uint32_t v_ctrl, fifo_ctrl;
 
 	if(!is_supported_fourcc(info->fourcc))
