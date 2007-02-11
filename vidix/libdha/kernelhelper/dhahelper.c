@@ -1,7 +1,7 @@
 /*
     Direct Hardware Access kernel helper
     
-    (C) 2002 Alex Beregszaszi <alex@naxine.org>
+    (C) 2002 Alex Beregszaszi <alex@fsn.hu>
     (C) 2002-2003 Nick Kurshev <nickols_k@mail.ru>
     (C) 2002-2004 Måns Rullgård <mru@users.sourceforge.net>
 
@@ -113,7 +113,7 @@
 #define irqreturn(n) return
 #endif
 
-MODULE_AUTHOR("Alex Beregszaszi <alex@naxine.org>, Nick Kurshev <nickols_k@mail.ru>, Måns Rullgård <mru@users.sf.net>");
+MODULE_AUTHOR("Alex Beregszaszi <alex@fsn.hu>, Nick Kurshev <nickols_k@mail.ru>, Måns Rullgård <mru@users.sf.net>");
 MODULE_DESCRIPTION("Provides userspace access to hardware");
 #ifdef MODULE_LICENSE
 MODULE_LICENSE("GPL");

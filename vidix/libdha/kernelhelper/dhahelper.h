@@ -1,7 +1,7 @@
 /*
     Direct Hardware Access kernel helper
     
-    (C) 2002 Alex Beregszaszi <alex@naxine.org>
+    (C) 2002 Alex Beregszaszi <alex@fsn.hu>
     (C) 2002-2003 Nick Kurshev <nickols_k@mail.ru>
 */
 
