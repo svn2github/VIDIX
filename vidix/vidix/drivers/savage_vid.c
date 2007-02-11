@@ -971,7 +971,7 @@ vixInit (const char *args __attribute__ ((unused)))
   udelay (10000);
 
   VGAOUT8 (0x3d4, 0x66);
-  VGAOUT8 (0x3d5, cr66 & ~0x02); /* clear reset flag */
+  VGAOUT8 (0x3d5, cr66 & ~0x02); *//* clear reset flag */
  /* udelay (10000); */
 
 	/* This maps framebuffer @6MB, thus 2MB are left for video. */
