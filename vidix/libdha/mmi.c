@@ -71,7 +71,7 @@ int bm_virt_to_bus( void * virt_addr, unsigned long length, unsigned long * barr
     return ENXIO;
 }
 
-void *	bm_alloc_pci_shmem(pciinfo_t *pi, unsigned mem_bitness, unsigned long length,int op )
+void *	bm_alloc_pci_shmem(pciinfo_t *pi __attribute__ ((unused)), unsigned mem_bitness __attribute__ ((unused)), unsigned long length __attribute__ ((unused)),int op __attribute__ ((unused)) )
 {
     printf("libdha: Pure virtual function call - bm_alloc_pci_shmem()\n");
 #if 0
@@ -86,7 +86,7 @@ void *	bm_alloc_pci_shmem(pciinfo_t *pi, unsigned mem_bitness, unsigned long len
     return NULL;
 }
 
-void	bm_free_pci_shmem(void * pci_shmem)
+void	bm_free_pci_shmem(void * pci_shmem __attribute__ ((unused)))
 {
     printf("libdha: Pure virtual function call - bm_free_pci_shmem()\n");
 #if 0
