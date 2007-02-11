@@ -24,7 +24,8 @@
     Changes:
     2004-03-10
       Initial version
-
+    2004-11-08
+      Added h/w revision detection (Timothy Lee <timothy.lee@siriushk.com>)
     To Do:
 */
 
@@ -51,6 +52,7 @@ static vidix_grkey_t uc_grkey;
 static int frames[VID_PLAY_MAXFRAMES];
 uint8_t *vio;
 uint8_t mclk_save[3];
+uint8_t hwrev;
 
 #define VIA_OUT(hwregs, reg, val)	*(volatile uint32_t *)((hwregs) + (reg)) = (val)
 #define VIA_IN(hwregs, reg)		*(volatile uint32_t *)((hwregs) + (reg))
@@ -461,6 +463,25 @@ int vixInit(const char *args __attribute__ ((unused)))
 	uc_grkey.ckey.green = 0x00;
 	uc_grkey.ckey.red   = 0x00;
 
+        /* Detect whether we have a CLE266Ax or CLE266Cx */
+        outb (0x4f, 0x3d4);
+        tmp = inb (0x3d5);
+        outb (0x4f, 0x3d4);
+        outb (0x55, 0x3d5);
+        outb (0x4f, 0x3d4);
+        if (0x55 == inb (0x3d5))
+        {
+          /* Only CLE266Cx supports CR4F */
+          hwrev = 0x11;
+        }
+        else
+        {
+          /* Otherwise assume to be a CLE266Ax */
+          hwrev = 0x00;
+        }
+        outb (0x4f, 0x3d4);
+        outb (tmp, 0x3d5);
+        
 #ifdef DEBUG_LOGFILE
 	logfile=fopen("/tmp/uc_vidix.log","w");
 #endif
@@ -612,7 +633,7 @@ int vixConfigPlayback(vidix_playback_t *info)
 	uc_ovl_setup_fifo(&extfifo_on, src_w);
 
 	// Get image format, FIFO size, etc.
-	uc_ovl_map_v1_control(info->fourcc, src_w, 3, extfifo_on,
+	uc_ovl_map_v1_control(info->fourcc, src_w, hwrev, extfifo_on,
 		&v_ctrl, &fifo_ctrl);
 
 	// Setup layer window
@@ -692,9 +713,17 @@ int vixConfigPlayback(vidix_playback_t *info)
 	// Configure diy_pitchlay parameters now
 	if (v_ctrl & V1_COLORSPACE_SIGN)
 	{
+           if (hwrev >= 0x10)
+           {
+                VIDEO_OUT (vio, V1_ColorSpaceReg_2, ColorSpaceValue_2_3123C0);
+                VIDEO_OUT (vio, V1_ColorSpaceReg_1, ColorSpaceValue_1_3123C0);
+           }
+           else
+           {
 		VIDEO_OUT (vio, V1_ColorSpaceReg_2, ColorSpaceValue_2);
 		VIDEO_OUT (vio, V1_ColorSpaceReg_1, ColorSpaceValue_1);
-	}
+           }
+        }
 
 	VIDEO_OUT(vio, V1_CONTROL, v_ctrl);
 	VIDEO_OUT(vio, V_FIFO_CONTROL, fifo_ctrl);
