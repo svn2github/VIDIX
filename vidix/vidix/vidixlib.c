@@ -236,7 +236,7 @@ VDL_HANDLE vdlOpen(const char *path,const char *name,unsigned cap,int verbose)
     unsigned (*ver)(void);
     int (*probe)(int,int);
     unsigned version = 0;
-    unsigned char *arg_sep;
+    char *arg_sep;
     arg_sep = strchr(name,':');
     if(arg_sep) { *arg_sep='\0'; drv_args = &arg_sep[1]; }
     strncpy(drv_name,path,sizeof(drv_name));
