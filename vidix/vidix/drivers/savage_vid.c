@@ -129,12 +129,6 @@ void SavageStreamsOn(void);
  */
 pciinfo_t pci_info;
 
-/**
- * @brief Unichrome driver colorkey settings.
- */
-static vidix_grkey_t savage_grkey;
-
-static int frames[VID_PLAY_MAXFRAMES];
 uint8_t *vio;
 uint8_t mclk_save[3];
 
@@ -1181,11 +1175,6 @@ vixPlaybackSetEq (const vidix_video_eq_t * eq __attribute__ ((unused)))
 {
   return 0;
 }
-
-/**
- * @brief Y, U, V offsets.
- */
-static int YOffs, UOffs, VOffs;
 
 /**
  * @brief Configure driver for playback. Driver should prepare BES.
