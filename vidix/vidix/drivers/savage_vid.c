@@ -668,7 +668,6 @@ SavageStreamsOn(void)
 
 static void savage_getscreenproperties(struct savage_info *info){
   unsigned char bpp=0;
-  uint32_t width=0;
 
   uint32_t vgaIOBase, vgaCRIndex, vgaCRReg;
 
@@ -847,14 +846,14 @@ int
 vixInit (const char *args)
 {
 	int mtrr;
-  unsigned char config1, m, n, n1, n2, sr8, cr3f, cr66 = 0, tmp;
+  unsigned char config1, tmp;
 
   static unsigned char RamSavage3D[] = { 8, 4, 4, 2 };
   static unsigned char RamSavage4[] =  { 2, 4, 8, 12, 16, 32, 64, 32 };
   static unsigned char RamSavageMX[] = { 2, 8, 4, 16, 8, 16, 4, 16 };
   static unsigned char RamSavageNB[] = { 0, 2, 4, 8, 16, 32, 16, 2 };
 
-  int videoRam, videoRambytes;
+  int videoRam;
 
   uint32_t   vgaIOBase, vgaCRIndex, vgaCRReg ;
 
@@ -1201,15 +1200,6 @@ vixConfigPlayback (vidix_playback_t * vinfo)
 {
   int uv_size, swap_uv;
   unsigned int i;
-  int extfifo_on;
-  int srcPitch,srcPitch2;
-
-  /* Overlay register settings */
-  uint32_t win_start, win_end;
-  uint32_t zoom, mini;
-  uint32_t dcount, falign, qwfetch;
-  uint32_t y_start, u_start, v_start;
-  uint32_t v_ctrl, fifo_ctrl;
 
   if (!is_supported_fourcc (vinfo->fourcc))
     return -1;
