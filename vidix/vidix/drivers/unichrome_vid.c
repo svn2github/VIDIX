@@ -156,7 +156,7 @@ int uc_ovl_map_vzoom(int sh, int dh, uint32_t* zoom, uint32_t* mini)
 		sh1 = sh;
 		for (d = 1; d < 5; d++) {
 			sh1 >>= 1;
-			if (sh1 <= dh) break;
+			if (sh1 <= (uint32_t) dh) break;
 		}
 		if (d == 5) { // Too small.
 			d = 4;
@@ -167,7 +167,7 @@ int uc_ovl_map_vzoom(int sh, int dh, uint32_t* zoom, uint32_t* mini)
 
 		// Add scaling
 
-		if (sh1 < dh)  {
+		if (sh1 < (uint32_t) dh)  {
 			tmp = (sh1 * 0x400) / dh;
 			*zoom |= ((tmp & 0x3ff) | V1_Y_ZOOM_ENABLE);
 			*mini |= V1_Y_INTERPOLY | V1_YCBCR_INTERPOLY;
@@ -223,7 +223,7 @@ int uc_ovl_map_hzoom(int sw, int dw,  uint32_t* zoom, uint32_t* mini,
 		sw1 = sw;
 		for (d = 1; d < 5; d++) {
 			sw1 >>= 1;
-			if (sw1 <= dw) break;
+			if (sw1 <= (uint32_t) dw) break;
 		}
 		if (d == 5) { // Too small.
 			d = 4;
@@ -237,7 +237,7 @@ int uc_ovl_map_hzoom(int sw, int dw,  uint32_t* zoom, uint32_t* mini,
 
 		// Add scaling
 
-		if (sw1 < dw) {
+		if (sw1 < (uint32_t) dw) {
 			//CLE bug
 			//tmp = sw1*0x0800 / dw;
 			tmp = (sw1 - 2) * 0x0800 / dw;
@@ -625,7 +625,7 @@ int vixConfigPlayback(vidix_playback_t *info)
 	zoom = 0;
 	mini = 0;
 	uc_ovl_map_vzoom(src_h, drw_h, &zoom, &mini);
-	uc_ovl_map_hzoom(src_w, drw_w, &zoom, &mini, &falign, &dcount);
+	uc_ovl_map_hzoom(src_w, drw_w, &zoom, &mini, (int *) &falign, (int *) &dcount);
 	qwfetch = uc_ovl_map_qwfetch(info->fourcc, src_w);
 
 	// Calculate buffer sizes
