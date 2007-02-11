@@ -66,26 +66,10 @@ FILE *logfile=0;
 
 /* Helper functions for reading registers. */    
 
-static int CRINW(int reg)
-{
-	int result;
-	result=CRINB(reg);
-	result|=CRINB(reg+1)<<8;
-	return(result);
-}
-
 static void CROUTW(int reg,int val)
 {
 	CROUTB(reg,val&255);
 	CROUTB(reg+1,(val>>8)&255);
-}
-
-static int SRINW(int reg)
-{
-	int result;
-	result=SRINB(reg);
-	result|=SRINB(reg+1)<<8;
-	return(result);
 }
 
 static void SROUTW(int reg,int val)
@@ -96,8 +80,8 @@ static void SROUTW(int reg,int val)
 
 void DumpRegisters(void)
 {
-        int reg,val;
 #ifdef DEBUG_LOGFILE
+        int reg,val;
         if(logfile)
         {
                 LOGWRITE("CRTC Register Dump:\n")
@@ -162,7 +146,7 @@ static int find_chip(unsigned chip_id)
   return -1;
 }
 
-int vixProbe(int verbose, int force)
+int vixProbe(int verbose, int force __attribute__ ((unused)))
 {
 	pciinfo_t lst[MAX_PCI_DEVICES];
 	unsigned i,num_pci;
@@ -206,7 +190,7 @@ int vixProbe(int verbose, int force)
 }
 
 
-int vixInit(const char *args)
+int vixInit(const char *args __attribute__ ((unused)))
 {
 	cyberblade_mem = map_phys_mem(pci_info.base0, 0x800000); 
 	enable_app_io();
@@ -383,7 +367,6 @@ static int YOffs,UOffs,VOffs;
 
 int vixConfigPlayback(vidix_playback_t *info)
 {
-	int shrink, zoom;
 	int src_w, drw_w;
 	int src_h, drw_h;
 	int hscale,vscale;
