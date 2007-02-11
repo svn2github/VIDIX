@@ -65,12 +65,13 @@ all:    $(LIBNAME) $(SHORTNAME)
 pci_names.c: oth/pci.db
 	LC_ALL=C $(AWK) -f pci_db2c.awk $<
 
-test:
+test: pci_names.c $(LIBNAME) $(SHORTNAME)
 	$(CC) test.c -o test $(SHORTNAME)
 
 clean:
 	rm -f *.o *.a *.so.* *.so *~
 	rm -f pci_*.c pci_*.h pci.db
+	rm -f test
 
 distclean: clean
 	rm -f .depend test
