@@ -21,8 +21,20 @@
 #include <errno.h>
 #include <string.h>
 
+#ifndef WIN32
 #include <dlfcn.h> /* GLIBC specific. Exists under cygwin too! */
 #include <dirent.h>
+#else
+#include <windows.h>
+#define dlsym(h,s) GetProcAddress(h,s)
+#define dlopen(h,s) LoadLibrary(h)
+#define dlclose(h) FreeLibrary(h)
+static char* dlerror(){
+  char errormsg[10];
+  sprintf(errormsg,"%i\n",GetLastError());
+  return errormsg;
+}
+#endif /* WIN32 */
 
 #include "vidixlib.h"
 #include "../bswap.h"
