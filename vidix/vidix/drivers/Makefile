@@ -59,7 +59,6 @@ genfb_vid.so: genfb_vid.o
 	$(CC) -shared $< $(VIDIX_LIBS_M) -Wl,-soname,$@ -o $@
 
 mach64_vid.so: mach64_vid.o
-	$(CC) -shared $< $(VIDIX_LIBS) -Wl,-soname,$@ -o $@
 
 mga_crtc2_vid.so: mga_crtc2_vid.o
 	$(CC) -shared $< $(VIDIX_LIBS_M) -Wl,-soname,$@ -o $@
@@ -74,16 +73,13 @@ nvidia_vid.so: nvidia_vid.o
 	$(CC) -shared $< $(VIDIX_LIBS_M) -Wl,-soname,$@ -o $@
 
 pm2_vid.so: pm2_vid.o
-	$(CC) -shared $< $(VIDIX_LIBS) -Wl,-soname,$@ -o $@
 
 pm3_vid.so: pm3_vid.o
-	$(CC) -shared $< $(VIDIX_LIBS) -Wl,-soname,$@ -o $@
 
 radeon_vid.so: radeon_vid.o
 	$(CC) -shared $< $(VIDIX_LIBS_M) -Wl,-soname,$@ -o $@
 
 rage128_vid.so: rage128_vid.o
-	$(CC) -shared $< $(VIDIX_LIBS) -Wl,-soname,$@ -o $@
 
 savage_vid.so: savage_vid.o
 	$(CC) -shared $< $(VIDIX_LIBS_M) -Wl,-soname,$@ -o $@
