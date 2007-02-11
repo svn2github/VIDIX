@@ -371,7 +371,7 @@ int vixConfigPlayback(vidix_playback_t *info)
 	int src_h, drw_h;
 	int hscale,vscale;
 	long base0;
-	int y_pitch, uv_pitch;
+	int y_pitch = 0, uv_pitch = 0;
 	int protect=0;
 	int layout=0;
 	unsigned int i;
