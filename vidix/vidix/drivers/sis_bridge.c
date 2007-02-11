@@ -70,8 +70,10 @@ static void sis_sense_30x(void)
     unsigned char testvga2_tempbl, testvga2_tempbh;
     unsigned char testvga2_tempcl, testvga2_tempch;
     int myflag, result = 0, i, j, haveresult;
+#if 0
     unsigned short temp;
-
+#endif
+    
     inSISIDXREG(SISPART4, 0x0d, backupP4_0d);
     outSISIDXREG(SISPART4, 0x0d, (backupP4_0d | 0x04));
 
@@ -396,7 +398,7 @@ static void sis_detect_crt1(void)
 
 static void sis_detect_lcd(void)
 {
-    unsigned char CR32, CR36, CR37;
+    unsigned char CR32;
 
     if (!(sis_vbflags & VB_VIDEOBRIDGE)) {
 	return;
