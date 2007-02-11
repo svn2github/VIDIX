@@ -1,15 +1,23 @@
 include ../config.mak
 
-ifeq ($(TARGET_OS),CYGWIN)
-LIBNAME = libvidix.dll
-else
-LIBNAME = libvidix.so
-endif
-BINDIR = $(prefix)/lib
-INCDIR = $(prefix)/include/vidix
-SUBDIRS = drivers
-DO_MAKE = @ for i in $(SUBDIRS); do $(MAKE) -C $$i $@ || exit; done
+NAME = libvidix
 
+MAJOR_VERSION = 0
+MINOR_VERSION = 9
+MICRO_VERSION = 9.3
+VERSION = $(MAJOR_VERSION).$(MINOR_VERSION).$(MICRO_VERSION)
+
+ifeq ($(TARGET_OS),CYGWIN)
+SHORTNAME = $(NAME).dll
+LIBNAME = $(NAME).dll
+else
+SHORTNAME = $(NAME).so.$(MAJOR_VERSION)
+VSHORTNAME = $(NAME).so
+LIBNAME = $(NAME).so.$(VERSION)
+endif
+
+LIBDIR = $(prefix)/lib
+INCDIR = $(prefix)/include/vidix
 
 SRCS    = vidixlib.c
 OBJS	= $(SRCS:.c=.o)
@@ -23,30 +31,34 @@ CFLAGS  = $(OPTFLAGS) -W -Wall -fPIC
 .c.o:
 	$(CC) -c $(CFLAGS) -o $@ $<
 
-all:	$(SUBDIRS) $(LIBNAME)
-	$(DO_MAKE)
+all:	$(LIBNAME) do_drivers
 
-$(LIBNAME):	$(OBJS)
-	$(LD) -shared -soname $(LIBNAME) -o $(LIBNAME) $(OBJS) -lc $(LIBDL)
+do_drivers:
+	$(MAKE) -C drivers
+
+$(LIBNAME): $(OBJS)
+	$(CC) -shared -Wl,-soname -Wl,$(LIBNAME) \
+	   -o $(LIBNAME) $(OBJS) -lc $(LIBDL)
+ifneq  ($(TARGET_OS),CYGWIN)
+	ln -sf $(LIBNAME) $(SHORTNAME)
+	ln -sf $(LIBNAME) $(VSHORTNAME)
+endif
 
 clean:
-	rm -f *.o $(LIBNAME) *~
-	$(DO_MAKE)
+	rm -f *.o *.so *.so.* *~
+	$(MAKE) -C drivers clean
 
 distclean:
-	rm -f test *.o $(LIBNAME) *~ .depend
-	$(DO_MAKE)
+	rm -f *.o *.so *.so.* *~ .depend
+	$(MAKE) -C drivers distclean
 
-dep:    depend
-	$(DO_MAKE)
-
-depend:
+dep depend:
 	$(CC) -MM $(CFLAGS) $(SRCS) 1>.depend
+	$(MAKE) -C drivers depend
 
-install:
-	$(DO_MAKE)
-	mkdir -p $(BINDIR)
-	install -m 755 -s -p $(LIBNAME) $(BINDIR)
+install: $(LIBNAME)
+	mkdir -p $(LIBDIR)
+	install -m 755 -s -p $(LIBNAME) $(LIBDIR)
 ifeq ($(TARGET_OS),OpenBSD)
 	$(LDCONFIG) -R
 else
@@ -56,17 +68,15 @@ endif
 	install -m 644 fourcc.h $(INCDIR)/fourcc.h
 	install -m 644 vidix.h $(INCDIR)/vidix.h
 	install -m 644 vidixlib.h $(INCDIR)/vidixlib.h
+	$(MAKE) -C drivers install
 
 uninstall:
-	$(DO_MAKE)
-	rm -f $(BINDIR)/$(LIBNAME)
-	rmdir -p --ignore-fail-on-non-empty $(BINDIR)
+	rm -f $(LIBDIR)/$(LIBNAME)
+	rmdir -p --ignore-fail-on-non-empty $(LIBDIR)
 	rm -f $(INCDIR)/*
 	rmdir -p --ignore-fail-on-non-empty $(INCDIR)
+	$(MAKE) -C drivers uninstall
 
-#
-# include dependency files if they exist
-#
 ifneq ($(wildcard .depend),)
 include .depend
 endif
