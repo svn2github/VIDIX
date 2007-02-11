@@ -368,7 +368,7 @@ int vixInit(const char *args __attribute__ ((unused)))
     inSISIDXREG(SISCR, 0x07, cr_data2);
     sis_screen_height =
 	((cr_data & 0xff) | ((uint16_t) (cr_data2 & 0x02) << 7) |
-	 ((uint16_t) (cr_data2 & 0x40) << 3) | ((uint16_t) (sr_data & 0x02)
+	 ((uint16_t) (cr_data2 & 0x40) << 3) | ((uint16_t) (cr_data & 0x02)
 						<< 9)) + 1;
 
     inSISIDXREG(SISSR, 0x0b, sr_data);
