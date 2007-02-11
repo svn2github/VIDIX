@@ -867,7 +867,7 @@ vixInit (const char *args)
 	fprintf(stderr, "vixInit enter \n");
 //	//getc(stdin);
 	
-  info = (savage_info*)calloc(1,sizeof(savage_info));
+  info = calloc(1,sizeof(savage_info));
   
 
   /* need this if we want direct outb and inb access? */
