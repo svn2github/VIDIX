@@ -404,7 +404,7 @@ void uc_ovl_vcmd_wait(volatile uint8_t* vio)
 }
 
 
-int vixProbe(int verbose, int force)
+int vixProbe(int verbose, int force __attribute__ ((unused)))
 {
 	pciinfo_t lst[MAX_PCI_DEVICES];
 	unsigned i,num_pci;
@@ -443,7 +443,7 @@ int vixProbe(int verbose, int force)
 }
 
 
-int vixInit(const char *args)
+int vixInit(const char *args __attribute__ ((unused)))
 {
 	long tmp;
 	uc_mem = map_phys_mem(pci_info.base0, 0x800000); 
@@ -576,7 +576,7 @@ int vixPlaybackGetEq( vidix_video_eq_t * eq)
 	return 0;
 }
 
-int vixPlaybackSetEq( const vidix_video_eq_t * eq)
+int vixPlaybackSetEq( const vidix_video_eq_t * eq __attribute__ ((unused)))
 {
 	return 0;
 }
