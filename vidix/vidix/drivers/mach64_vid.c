@@ -471,7 +471,7 @@ int VIDIX_NAME(vixProbe)(int verbose,int force)
   err = pci_scan(lst,&num_pci);
   if(err)
   {
-    printf("[mach64] Error occured during pci scan: %s\n",strerror(err));
+    printf("[mach64] Error occurred during pci scan: %s\n",strerror(err));
     return err;
   }
   else

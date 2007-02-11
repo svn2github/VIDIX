@@ -65,7 +65,7 @@ int VIDIX_NAME(vixProbe)(int verbose,int force)
     fd = open("/dev/fb0", O_RDWR);
     if (fd < 0)
     {
-	printf(GENFB_MSG"Error occured durint open: %s\n", strerror(errno));
+	printf(GENFB_MSG"Error occurred durint open: %s\n", strerror(errno));
 	err = errno;
     }
     
@@ -79,7 +79,7 @@ int VIDIX_NAME(vixProbe)(int verbose,int force)
   err = pci_scan(lst,&num_pci);
   if(err)
   {
-    printf(GENFB_MSG"Error occured during pci scan: %s\n",strerror(err));
+    printf(GENFB_MSG"Error occurred during pci scan: %s\n",strerror(err));
     return err;
   }
   else
