@@ -52,7 +52,7 @@ unsigned int VIDIX_NAME(vixGetVersion)(void)
     return(VIDIX_VERSION);
 }
 
-int VIDIX_NAME(vixProbe)(int verbose,int force)
+int VIDIX_NAME(vixProbe)(int verbose,int force __attribute__ ((unused)))
 {
 #if 0
     int err = 0;
@@ -99,7 +99,7 @@ int VIDIX_NAME(vixProbe)(int verbose,int force)
 #endif
 }
 
-int VIDIX_NAME(vixInit)(const char *args)
+int VIDIX_NAME(vixInit)(const char *args __attribute__ ((unused)))
 {
     printf(GENFB_MSG"init\n");
     
