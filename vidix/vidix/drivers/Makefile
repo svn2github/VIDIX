@@ -78,25 +78,25 @@ SIS_VID=sis_vid.so
 SIS_SRCS=sis_vid.c sis_bridge.c
 SIS_OBJS=sis_vid.o sis_bridge.o
 SIS_LIBS=-L../../libdha -ldha
-SIS_CFLAGS=$(OPTFLAGS) -I. -I..
+SIS_CFLAGS=$(OPTFLAGS) -I. -I.. -Wall -W
 
 UNICHROME_VID=unichrome_vid.so
 UNICHROME_SRCS=unichrome_vid.c
 UNICHROME_OBJS=unichrome_vid.o
 UNICHROME_LIBS=-L../../libdha -ldha
-UNICHROME_CFLAGS=$(OPTFLAGS) -I. -I..
+UNICHROME_CFLAGS=$(OPTFLAGS) -I. -I.. -Wall -W
 
 CYBERBLADE_VID=cyberblade_vid.so
 CYBERBLADE_SRCS=cyberblade_vid.c
 CYBERBLADE_OBJS=cyberblade_vid.o
 CYBERBLADE_LIBS=-L../../libdha -ldha -lm
-CYBERBLADE_CFLAGS=$(OPTFLAGS) -I. -I..
+CYBERBLADE_CFLAGS=$(OPTFLAGS) -I. -I.. -Wall -W
 
 SAVAGE_VID=savage_vid.so
 SAVAGE_SRCS=savage_vid.c
 SAVAGE_OBJS=savage_vid.o
 SAVAGE_LIBS=-L../../libdha -ldha -lm
-SAVAGE_CFLAGS=$(OPTFLAGS) -I. -I..
+SAVAGE_CFLAGS=$(OPTFLAGS) -I. -I.. -Wall -W
 
 all:    $(RADEON_VID) $(RAGE128_VID) $(MACH64_VID) $(NVIDIA_VID) $(GENFB_VID) $(MGA_VID) $(MGA_CRTC2_VID) $(MGA_TV_VID) $(PM3_VID) $(PM2_VID) $(SIS_VID) $(UNICHROME_VID) $(CYBERBLADE_VID) $(SAVAGE_VID)
 
