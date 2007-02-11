@@ -25,7 +25,7 @@ test: test.c
 	$(CC) -g -O -Wall $(INCLUDES) -o $@ $@.c
 
 install: $(MODULE)
-	test -d $(MDIR) || mkdir -p $(MDIR)
+	-mkdir -p $(MDIR)
 	install -m 644 $(MODULE) $(MDIR)
 	depmod -a
 	if [ ! -c /dev/.devfsd ]; then		 \
