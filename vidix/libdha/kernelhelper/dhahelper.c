@@ -46,8 +46,6 @@
 #define __KERNEL__
 #endif
 
-#include <linux/config.h>
-
 #ifdef CONFIG_MODVERSION
 #define MODVERSION
 #include <linux/modversions.h>
@@ -70,6 +68,10 @@
 #include <asm/pgtable.h>
 #include <asm/unistd.h>
 #include <asm/uaccess.h>
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
+#include <linux/config.h>
+#endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,4,0)
 #include <linux/malloc.h>
