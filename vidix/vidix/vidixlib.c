@@ -38,6 +38,7 @@ static char* dlerror(){
 
 #include "vidixlib.h"
 #include "../bswap.h"
+#include "../config.h"
 
 #define t_vdl(p) (((vdl_stream_t *)p))
 
