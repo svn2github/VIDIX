@@ -588,8 +588,8 @@ int vixConfigPlayback(vidix_playback_t *info)
 {
 	int src_w, drw_w;
 	int src_h, drw_h;
-	long base0, pitch;
-	int uv_size, swap_uv;
+	long base0, pitch = 0;
+	int uv_size = 0, swap_uv;
 	unsigned int i;
 	int extfifo_on;
 
