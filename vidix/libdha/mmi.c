@@ -104,7 +104,7 @@ int	bm_lock_mem( const void *addr, unsigned long length )
 {
 #ifdef CONFIG_LINUXHELPER
     dhahelper_mem_t vmi;
-    vmi.addr = addr;
+    vmi.addr = (void *) addr;
     vmi.length = length;
     if(libdha_fd > 0) 
     {
@@ -118,7 +118,7 @@ int	bm_unlock_mem( const void * addr, unsigned long length )
 {
 #ifdef CONFIG_LINUXHELPER
     dhahelper_mem_t vmi;
-    vmi.addr = addr;
+    vmi.addr = (void *) addr;
     vmi.length = length;
     if(libdha_fd > 0) 
     {
