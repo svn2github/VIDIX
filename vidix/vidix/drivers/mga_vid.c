@@ -112,10 +112,12 @@ static uint32_t mga_ram_size = 0; /* how much megabytes videoram we have */
 /* Graphic keys */
 static vidix_grkey_t mga_grkey;
 
+#ifdef BES
 static int colkey_saved = 0;
 static int colkey_on = 0;
 static unsigned char colkey_color[4];
 static unsigned char colkey_mask[4];
+#endif /* BES */
 
 /* for IRQ */
 static int mga_irq = -1;
