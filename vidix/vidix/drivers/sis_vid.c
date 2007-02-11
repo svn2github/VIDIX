@@ -346,7 +346,7 @@ int vixProbe(int verbose, int force)
     return err;
 }
 
-int vixInit(const char *args)
+int vixInit(const char *args __attribute__ ((unused)))
 {
     uint8_t sr_data, cr_data, cr_data2;
     char *env_overlay_crt;
