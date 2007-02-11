@@ -1228,7 +1228,7 @@ int VIDIX_NAME(vixPlaybackOff)(void)
     return(0);
 }
 
-int VIDIX_NAME(vixProbe)(int verbose,int force)
+int VIDIX_NAME(vixProbe)(int verbose,int force __attribute__ ((unused)))
 {
     pciinfo_t lst[MAX_PCI_DEVICES];
     unsigned int i, num_pci;
@@ -1301,7 +1301,7 @@ card_found:
     return(0);
 }
 
-int VIDIX_NAME(vixInit)(const char *args)
+int VIDIX_NAME(vixInit)(const char *args __attribute__ ((unused)))
 {
     unsigned int card_option = 0;
     int err;
