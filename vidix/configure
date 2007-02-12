@@ -289,7 +289,7 @@ test -z "$_libdir" && _libdir="$_prefix/lib/vidix"
 
 # Checking for CFLAGS
 if test -z "$CFLAGS" ; then
-    CFLAGS="-O2"
+    CFLAGS="-O2 -Wall -W"
 fi
 
 # checking for a working awk, I'm using mawk first, because it's fastest - atmos

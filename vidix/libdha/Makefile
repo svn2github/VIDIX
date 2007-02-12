@@ -29,7 +29,7 @@ SRCS = libdha.c \
 
 OBJS = $(SRCS:.c=.o)
 
-CFLAGS = -fPIC -I. -I.. -Wall -W $(OPTFLAGS)
+CFLAGS = -fPIC -I. -I.. $(OPTFLAGS)
 ifneq ($(TARGET_OS),CYGWIN)
 CFLAGS += -fPIC
 endif

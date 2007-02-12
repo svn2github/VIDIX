@@ -19,7 +19,7 @@ INCDIR = $(prefix)/include/vidix
 SRCS    = vidixlib.c
 OBJS	= $(SRCS:.c=.o)
 
-CFLAGS  = $(OPTFLAGS) -W -Wall -fPIC
+CFLAGS  = $(OPTFLAGS) -fPIC
 
 .SUFFIXES: .c .o
 
