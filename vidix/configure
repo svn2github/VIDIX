@@ -1,4 +1,10 @@
 #!/bin/sh
+
+# DHA/vidix version number
+VERSION_MAJOR=1
+VERSION_MINOR=0
+VERSION_MICRO=0
+
 # The simplest configure for the vidix
 cc_check() {
   echo >> "$TMPLOG"
@@ -401,6 +407,10 @@ CC=$_cc
 $_target_arch
 TARGET_OS=$system_name
 LIBDL=$_ld_dl
+
+VIDIX_VERSION_MAJOR = $VERSION_MAJOR
+VIDIX_VERSION_MINOR = $VERSION_MINOR
+VIDIX_VERSION_MICRO = $VERSION_MICRO
 EOF
 
 _lc_build_os=`echo $system_name | tr [:lower:] [:upper:]`
@@ -438,6 +448,11 @@ $_def_words_endian
 
 /* Define this if you have the elf dynamic linker -ldl library */
 $_def_dl
+
+/* DHA/vidix library version number */
+#define VIDIX_VERSION_MAJOR $VERSION_MAJOR
+#define VIDIX_VERSION_MINOR $VERSION_MINOR
+#define VIDIX_VERSION_MICRO $VERSION_MICRO
 EOF
 
 # Last move:
