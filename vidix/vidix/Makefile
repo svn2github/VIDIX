@@ -2,76 +2,94 @@ include ../config.mak
 
 NAME = libvidix
 
-VERSION = $(VIDIX_VERSION_MAJOR).$(VIDIX_VERSION_MINOR).$(VIDIX_VERSION_MICRO)
-
-ifeq ($(TARGET_OS),CYGWIN)
-SHORTNAME = $(NAME).dll
-LIBNAME = $(NAME).dll
-else
-SHORTNAME = $(NAME).so.$(VIDIX_VERSION_MAJOR)
-VSHORTNAME = $(NAME).so
-LIBNAME = $(NAME).so.$(VERSION)
-endif
+LIBNAME_SHARED         = $(NAME).so
+LIBNAME_SHARED_MAJOR   = $(NAME).so.$(VIDIX_VERSION_MAJOR)
+LIBNAME_SHARED_VERSION = $(NAME).so.$(VIDIX_VERSION)
+LIBNAME_STATIC         = $(NAME).a
+LIBNAME_WIN32          = $(NAME).dll
 
 LIBDIR = $(prefix)/lib
 INCDIR = $(prefix)/include/vidix
 
-SRCS    = vidixlib.c
-OBJS	= $(SRCS:.c=.o)
+SRCS        = vidixlib.c
+OBJS_SHARED = vidixlib.o
+OBJS_STATIC = vidixlib_static.o
 
 CFLAGS  = $(OPTFLAGS) -fPIC
+
+ifeq ($(TARGET_OS),OpenBSD)
+LDCONFIG_FLAGS += -R
+endif
 
 .SUFFIXES: .c .o
 
 # .PHONY: all clean
 
-.c.o:
-	$(CC) -c $(CFLAGS) -o $@ $<
+LIB_TARGETS=
+ifeq ($(VIDIX_BUILD_SHARED),yes)
+LIB_TARGETS += $(LIBNAME_SHARED_VERSION)
+endif
+ifeq ($(VIDIX_BUILD_STATIC),yes)
+LIB_TARGETS += $(LIBNAME_STATIC)
+endif
 
-all:	$(LIBNAME) do_drivers
+all:	$(LIB_TARGETS) do_drivers
+
+$(LIBNAME_SHARED_VERSION): $(SRCS)
+	$(CC) -c $(CFLAGS) -o $(OBJS_SHARED) $<
+	$(CC) -shared -Wl,-soname -Wl,$@ -o $@ $(OBJS_SHARED) -lc $(LIBDL)
+ifneq  ($(TARGET_OS),CYGWIN)
+	ln -sf $@ $(LIBNAME_SHARED)
+	ln -sf $@ $(LIBNAME_SHARED_MAJOR)
+endif
+
+$(LIBNAME_STATIC): $(SRCS)
+	$(CC) -c $(CFLAGS) -DVIDIX_BUILD_STATIC -o $(OBJS_STATIC) $<
+	$(AR) r $@ $(OBJS_STATIC)
 
 do_drivers:
 	$(MAKE) -C drivers
 
-$(LIBNAME): $(OBJS)
-	$(CC) -shared -Wl,-soname -Wl,$(LIBNAME) \
-	   -o $(LIBNAME) $(OBJS) -lc $(LIBDL)
-ifneq  ($(TARGET_OS),CYGWIN)
-	ln -sf $(LIBNAME) $(SHORTNAME)
-	ln -sf $(LIBNAME) $(VSHORTNAME)
-endif
-
 clean:
-	rm -f *.o *.so *.so.* *~
+	rm -f *.a *.o *.so *.so.* *~
 	$(MAKE) -C drivers clean
 
-distclean:
-	rm -f *.o *.so *.so.* *~ .depend
+distclean: clean
+	rm -f .depend
 	$(MAKE) -C drivers distclean
 
 dep depend:
 	$(CC) -MM $(CFLAGS) $(SRCS) 1>.depend
 	$(MAKE) -C drivers depend
 
-install: $(LIBNAME)
+install:
 	mkdir -p $(LIBDIR)
-	install -m 755 -s -p $(LIBNAME) $(LIBDIR)
-ifeq ($(TARGET_OS),OpenBSD)
-	$(LDCONFIG) -R
-else
-	$(LDCONFIG)
+ifeq ($(VIDIX_BUILD_SHARED),yes)
+	install -m 755 -s -p $(LIBNAME_SHARED_VERSION) $(LIBDIR)
+	ln -sf $(LIBNAME_SHARED_VERSION) $(prefix)/lib/$(LIBNAME_SHARED)
+	ln -sf $(LIBNAME_SHARED_VERSION) $(prefix)/lib/$(LIBNAME_SHARED_MAJOR)
+	-$(LDCONFIG) $(LDCONFIG_FLAGS)
 endif
+ifeq ($(VIDIX_BUILD_STATIC),yes)
+	cp -f $(LIBNAME_STATIC) $(prefix)/lib
+endif
+
 	mkdir -p $(INCDIR)
-	install -m 644 fourcc.h $(INCDIR)/fourcc.h
-	install -m 644 vidix.h $(INCDIR)/vidix.h
-	install -m 644 vidixlib.h $(INCDIR)/vidixlib.h
+	install -m 644 fourcc.h $(INCDIR)
+	install -m 644 vidix.h $(INCDIR)
+	install -m 644 vidixlib.h $(INCDIR)
+
 	$(MAKE) -C drivers install
 
 uninstall:
-	rm -f $(LIBDIR)/$(LIBNAME)
-	rmdir -p --ignore-fail-on-non-empty $(LIBDIR)
-	rm -f $(INCDIR)/*
-	rmdir -p --ignore-fail-on-non-empty $(INCDIR)
+ifeq ($(VIDIX_BUILD_SHARED),yes)
+	rm -f $(LIBDIR)/$(LIBNAME_SHARED)*
+	-$(LDCONFIG) $(LDCONFIG_FLAGS)
+endif
+ifeq ($(VIDIX_BUILD_STATIC),yes)
+	rm -f $(LIBDIR)/$(LIBNAME_STATIC)
+endif
+	rm -f $(INCDIR)/fourcc.h $(INCDIR)/vidix.h $(INCDIR)/vidixlib.h
 	$(MAKE) -C drivers uninstall
 
 ifneq ($(wildcard .depend),)

@@ -2,21 +2,11 @@ include ../config.mak
 
 NAME = libdha
 
-VERSION = $(VIDIX_VERSION_MAJOR).$(VIDIX_VERSION_MINOR).$(VIDIX_VERSION_MICRO)
-
-ifeq ($(TARGET_OS),CYGWIN)
-SHORTNAME = $(NAME).dll
-else
-SHORTNAME = $(NAME).so.$(VIDIX_VERSION_MAJOR)
-SONAME_FLAGS = -Wl,-soname,$(SHORTNAME)
-VSHORTNAME = $(NAME).so
-endif
-ifeq ($(TARGET_WIN32),yes)
-LIBNAME = $(NAME).a
-SHORTNAME = $(NAME).a
-else
-LIBNAME = $(NAME).so.$(VERSION)
-endif
+LIBNAME_SHARED         = $(NAME).so
+LIBNAME_SHARED_MAJOR   = $(NAME).so.$(VIDIX_VERSION_MAJOR)
+LIBNAME_SHARED_VERSION = $(NAME).so.$(VIDIX_VERSION)
+LIBNAME_STATIC         = $(NAME).a
+LIBNAME_WIN32          = $(NAME).dll
 
 SRCS = libdha.c \
        mtrr.c \
@@ -35,6 +25,7 @@ CFLAGS += -fPIC
 endif
 
 ifeq ($(TARGET_OS),OpenBSD)
+LDCONFIG_FLAGS += -R
 ifeq ($(TARGET_ARCH_X86),yes)
 LIBS += -li386
 endif
@@ -47,18 +38,31 @@ endif
 .c.o: pci_names.c
 	$(CC) -c $(CFLAGS) -o $@ $<
 
-$(LIBNAME): $(OBJS)
-ifeq ($(TARGET_WIN32),yes)
-	$(AR) r $(LIBNAME) $(OBJS)
-else
-	$(CC) -shared -Wl,-soname -Wl,$(LIBNAME) -o $(LIBNAME) $(OBJS) $(LIBS)
+$(LIBNAME_SHARED_VERSION): $(OBJS)
+	$(CC) -shared -Wl,-soname -Wl,$@ -o $@ $(OBJS) $(LIBS)
 ifneq  ($(TARGET_OS),CYGWIN)
-	ln -sf $(LIBNAME) $(SHORTNAME)
-	ln -sf $(LIBNAME) $(VSHORTNAME)
-endif
+	ln -sf $@ $(LIBNAME_SHARED)
+	ln -sf $@ $(LIBNAME_SHARED_MAJOR)
 endif
 
-all:    $(LIBNAME) $(SHORTNAME)
+$(LIBNAME_STATIC): $(OBJS)
+	$(AR) r $@ $(OBJS)
+
+$(LIBNAME_WIN32): $(OBJS)
+	$(AR) r $@ $(OBJS)
+
+LIB_TARGETS=
+ifeq ($(VIDIX_BUILD_SHARED),yes)
+LIB_TARGETS += $(LIBNAME_SHARED_VERSION)
+endif
+ifeq ($(VIDIX_BUILD_STATIC),yes)
+LIB_TARGETS += $(LIBNAME_STATIC)
+endif
+ifeq ($(TARGET_WIN32),yes)
+LIB_TARGETS += $(LIBNAME_WIN32)
+endif
+
+all: $(LIB_TARGETS)
 
 pci_names.c: oth/pci.db
 	LC_ALL=C $(AWK) -f pci_db2c.awk $<
@@ -72,30 +76,30 @@ clean:
 	rm -f test
 
 distclean: clean
-	rm -f .depend test
+	rm -f .depend
 
 dep depend: pci_names.c
 	$(CC) -MM $(CFLAGS) $(SRCS) 1>.depend
 
 install:
 	-mkdir -p $(prefix)/lib
-	install -D -m 755 -s -p $(LIBNAME) $(prefix)/lib/$(LIBNAME)
-	rm -f $(prefix)/lib/$(NAME).so
-	ln -sf $(LIBNAME) $(prefix)/lib/$(SHORTNAME)
-ifeq ($(TARGET_OS),OpenBSD)
-	-$(LDCONFIG) -R
-else
-	-$(LDCONFIG)
+ifeq ($(VIDIX_BUILD_SHARED),yes)
+	install -D -m 755 -s -p $(LIBNAME_SHARED_VERSION) $(prefix)/lib
+	ln -sf $(LIBNAME_SHARED_VERSION) $(prefix)/lib/$(LIBNAME_SHARED)
+	ln -sf $(LIBNAME_SHARED_VERSION) $(prefix)/lib/$(LIBNAME_SHARED_MAJOR)
+	-$(LDCONFIG) $(LDCONFIG_FLAGS)
+endif
+ifeq ($(VIDIX_BUILD_STATIC),yes)
+	cp -f $(LIBNAME_STATIC) $(prefix)/lib
 endif
 
 uninstall:
-	rm -f $(prefix)/lib/$(LIBNAME) $(prefix)/lib/$(SHORTNAME)
-	rm -f $(prefix)/lib/$(NAME).so
-	rmdir -p --ignore-fail-on-non-empty $(prefix)/lib
-ifeq ($(TARGET_OS),OpenBSD)
-	-$(LDCONFIG) -R
-else
-	-$(LDCONFIG)
+ifeq ($(VIDIX_BUILD_SHARED),yes)
+	rm -f $(prefix)/lib/$(LIBNAME_SHARED)*
+	-$(LDCONFIG) $(LDCONFIG_FLAGS)
+endif
+ifeq ($(VIDIX_BUILD_STATIC),yes)
+	rm -f $(prefix)/lib/$(LIBNAME_STATIC)
 endif
 
 ifneq ($(wildcard .depend),)

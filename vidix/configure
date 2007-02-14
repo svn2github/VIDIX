@@ -103,6 +103,12 @@ Use these options if autodetection fails:
   --with-extraincdir=DIR   extra headers in DIR
   --with-extralibdir=DIR   extra library files in DIR
 
+Use these options if autodetection fails:
+  --enable-static        build as static library
+  --disable-static       don't build as static library
+  --enable-shared        build as shared library
+  --disable-shared       don't build as shared library
+
 Miscellaneous options:
   --cc=COMPILER          use this C compiler to build VIDIX [gcc]
   --target=PLATFORM      target platform (i386-linux, arm-linux, etc)
@@ -258,6 +264,18 @@ for ac_option do
   --cc=*)
     _cc=`echo $ac_option | cut -d '=' -f 2`
     ;;
+  --enable-static)
+    _static=yes
+    ;;
+  --disable-static)
+    _static=no
+    ;;
+  --enable-shared)
+    _shared=yes
+    ;;
+  --disable-shared)
+    _shared=no
+    ;;
   *)
     ;;
   esac
@@ -391,6 +409,27 @@ else
 fi
 echores "$_dl (using '$_ld_dl')"
 
+_def_static=no
+echocheck "static library build"
+if test "$_static" = no; then
+  _def_static=no
+elif test "$_static" = yes; then
+  _def_static=yes
+fi
+echores "$_def_static"
+
+_def_shared=yes
+echocheck "shared library build"
+if test "$_shared" = no; then
+  _def_shared=no
+elif test "$_shared" = yes; then
+  _def_shared=yes
+fi
+if test "$_def_static" = no -a "$_def_shared" = no; then
+  _def_shared=yes
+fi
+echores "$_def_shared"
+
 #############################################################################
 echo "Creating config.mak"
 cat > config.mak << EOF
@@ -408,9 +447,13 @@ $_target_arch
 TARGET_OS=$system_name
 LIBDL=$_ld_dl
 
+VIDIX_BUILD_STATIC = $_def_static
+VIDIX_BUILD_SHARED = $_def_shared
+
 VIDIX_VERSION_MAJOR = $VERSION_MAJOR
 VIDIX_VERSION_MINOR = $VERSION_MINOR
 VIDIX_VERSION_MICRO = $VERSION_MICRO
+VIDIX_VERSION = $VERSION_MAJOR.$VERSION_MINOR.$VERSION_MICRO
 EOF
 
 _lc_build_os=`echo $system_name | tr [:lower:] [:upper:]`
@@ -453,6 +496,7 @@ $_def_dl
 #define VIDIX_VERSION_MAJOR $VERSION_MAJOR
 #define VIDIX_VERSION_MINOR $VERSION_MINOR
 #define VIDIX_VERSION_MICRO $VERSION_MICRO
+#define VIDIX_VERSION_NUMBER "$VERSION_MAJOR.$VERSION_MINOR.$VERSION_MICRO"
 EOF
 
 # Last move:
