@@ -984,7 +984,7 @@ vixInit (const char *args __attribute__ ((unused)))
 		info->picture_offset = info->chip.fbsize - FRAMEBUFFER_SIZE;
 //			info->picture_offset = 1024*1024* 4 * 2;
 	}
-	if ( info->video_base < 0 ){
+	if ( info->video_base == NULL ){
 		printf("errno = %s\n",  strerror(errno));
 		return -1; 
 	}
