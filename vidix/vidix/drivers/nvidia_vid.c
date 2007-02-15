@@ -784,7 +784,7 @@ static rivatv_info* info;
 
       
       
-int vixInit(const char *args){
+int vixInit(const char *args __attribute__ ((unused))){
 	int mtrr;
   info = (rivatv_info*)calloc(1,sizeof(rivatv_info));
   info->control_base = map_phys_mem(pci_info.base0, 0x00C00000 + 0x00008000);
