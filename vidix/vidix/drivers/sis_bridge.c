@@ -395,26 +395,6 @@ static void sis_detect_crt1(void)
     }
 }
 
-
-static void sis_detect_lcd(void)
-{
-    unsigned char CR32;
-
-    if (!(sis_vbflags & VB_VIDEOBRIDGE)) {
-	return;
-    }
-
-    inSISIDXREG(SISCR, 0x32, CR32);
-
-    if (CR32 & 0x08)
-	sis_vbflags |= CRT2_LCD;
-
-    /* DDC detection of LCD - not supported yet */
-
-    /* Get other misc info about LCD - not supported */
-}
-
-
 static void sis_detect_tv(void)
 {
     unsigned char SR16, SR38, CR32, CR38 = 0, CR79;
