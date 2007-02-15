@@ -558,6 +558,8 @@ static void mga_vid_write_regs(int restore)
 	printf("[mga] BESGLOBCTL = 0x%08x\n", readl(BESGLOBCTL));
 	printf("[mga] BESSTATUS= 0x%08x\n", readl(BESSTATUS));
     }
+#else
+    restore = 0;
 #endif
 
 #ifdef CRTC2
