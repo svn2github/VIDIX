@@ -540,7 +540,7 @@ static void SavageInitStreamsOld(void)
 	    case 16: format = 5 << 24; break;
 	    case 24: format = 7 << 24; break;
 	}
-#warning enable this again
+//#warning enable this again
 	OUTREG(PSTREAM_FBSIZE_REG, 
 		info->screen_y * info->screen_x * (info->bpp >> 3));
     
@@ -568,7 +568,7 @@ static void SavageInitStreamsOld(void)
     OUTREG( SSTREAM_VSCALE_REG, 0 );
     OUTREG( SSTREAM_LINES_REG, 0 );
     OUTREG( SSTREAM_VINITIAL_REG, 0 );
-#warning is this needed?
+//#warning is this needed?
     OUTREG( SSTREAM_WINDOW_START_REG, OS_XY(0xfffe, 0xfffe) );
     OUTREG( SSTREAM_WINDOW_SIZE_REG, OS_WH(10,2) );
 
