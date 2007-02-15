@@ -12,13 +12,13 @@
 #include <math.h>
 #include <inttypes.h>
 #include <sys/mman.h>
-#include "../../config.h"
-#include "../../bswap.h"
-#include "../../libdha/pci_ids.h"
-#include "../../libdha/pci_names.h"
-#include "../vidix.h"
-#include "../fourcc.h"
-#include "../../libdha/libdha.h"
+#include "config.h"
+#include "bswap.h"
+#include "libdha/pci_ids.h"
+#include "libdha/pci_names.h"
+#include "vidix.h"
+#include "fourcc.h"
+#include "libdha/libdha.h"
 #include "radeon.h"
 
 #ifdef RAGE128

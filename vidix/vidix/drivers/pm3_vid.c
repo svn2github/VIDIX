@@ -26,12 +26,12 @@
 #include <unistd.h>
 #include <sys/mman.h>
 
-#include "../vidix.h"
-#include "../fourcc.h"
-#include "../../libdha/libdha.h"
-#include "../../libdha/pci_ids.h"
-#include "../../libdha/pci_names.h"
-#include "../../config.h"
+#include "vidix.h"
+#include "fourcc.h"
+#include "libdha/libdha.h"
+#include "libdha/pci_ids.h"
+#include "libdha/pci_names.h"
+#include "config.h"
 
 #include "pm3_regs.h"
 

@@ -5,7 +5,7 @@
    Licence: GPL
    WARNING: THIS DRIVER IS IN BETTA STAGE
 */
-#include "../../config.h"
+#include "config.h"
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,13 +23,13 @@
 #define MACH64_ENABLE_BM 1
 #endif
 
-#include "../../config.h"
-#include "../../bswap.h"
-#include "../vidix.h"
-#include "../fourcc.h"
-#include "../../libdha/libdha.h"
-#include "../../libdha/pci_ids.h"
-#include "../../libdha/pci_names.h"
+#include "config.h"
+#include "bswap.h"
+#include "vidix.h"
+#include "fourcc.h"
+#include "libdha/libdha.h"
+#include "libdha/pci_ids.h"
+#include "libdha/pci_names.h"
 
 #include "mach64.h"
 

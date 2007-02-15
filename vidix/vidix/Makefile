@@ -15,7 +15,7 @@ SRCS        = vidixlib.c
 OBJS_SHARED = vidixlib.o
 OBJS_STATIC = vidixlib_static.o
 
-CFLAGS  = $(OPTFLAGS) -fPIC
+CFLAGS  = $(OPTFLAGS) -I.. -fPIC
 
 ifeq ($(TARGET_OS),OpenBSD)
 LDCONFIG_FLAGS += -R

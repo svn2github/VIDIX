@@ -17,13 +17,13 @@
 #include <unistd.h>
 
 
-#include "../vidix.h"
-#include "../fourcc.h"
-#include "../../libdha/libdha.h"
-#include "../../libdha/pci_ids.h"
-#include "../../libdha/pci_names.h"
-#include "../../config.h"
-#include "../../bswap.h"
+#include "vidix.h"
+#include "fourcc.h"
+#include "libdha/libdha.h"
+#include "libdha/pci_ids.h"
+#include "libdha/pci_names.h"
+#include "config.h"
+#include "bswap.h"
 
 
 pciinfo_t pci_info;
