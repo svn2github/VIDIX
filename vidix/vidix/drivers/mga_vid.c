@@ -1296,7 +1296,7 @@ int VIDIX_NAME(vixProbe)(int verbose,int force __attribute__ ((unused)))
 
     if (is_g400 == -1)
     {
-	printf("[mga] No supported cards found\n");
+	printf("[mga] Can't find chip\n");
 	return(ENXIO);
     }
 
