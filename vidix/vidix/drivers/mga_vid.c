@@ -830,9 +830,16 @@ int VIDIX_NAME(vixConfigPlayback)(vidix_playback_t *config)
 	config->offsets[i] = i*config->frame_size;
 
     config->offset.y=0;
+    if(config->fourcc == IMGFMT_I420 || config->fourcc == IMGFMT_IYUV)
+    {
+      config->offset.u=((sw + 31) & ~31) * sh;
+      config->offset.v=config->offset.u+((sw + 31) & ~31) * sh /4;
+    }
+    else {
     config->offset.v=((sw + 31) & ~31) * sh;
     config->offset.u=config->offset.v+((sw + 31) & ~31) * sh /4;
-
+    }
+    
     //FIXME figure out a better way to allocate memory on card
     //allocate 2 megs
     //mga_src_base = mga_mem_base + (MGA_VIDMEM_SIZE-2) * 0x100000;
