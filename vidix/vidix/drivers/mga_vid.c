@@ -1529,6 +1529,7 @@ int VIDIX_NAME(vixGetGrKeys)(vidix_grkey_t *grkey)
 int VIDIX_NAME(vixSetGrKeys)(const vidix_grkey_t *grkey)
 {
     memcpy(&mga_grkey, grkey, sizeof(vidix_grkey_t));
+    mga_vid_write_regs(0);
     return(0);
 }
 
