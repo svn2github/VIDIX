@@ -95,6 +95,11 @@ typedef enum vidix_depth {
   VID_DEPTH_16BPP =		0x0040,
   VID_DEPTH_24BPP =		0x0080,
   VID_DEPTH_32BPP =		0x0100,
+  VID_DEPTH_ALL   =             VID_DEPTH_1BPP  | VID_DEPTH_2BPP  | \
+                                VID_DEPTH_4BPP  | VID_DEPTH_8BPP  | \
+		                VID_DEPTH_12BPP | VID_DEPTH_15BPP | \
+		                VID_DEPTH_16BPP | VID_DEPTH_24BPP | \
+                                VID_DEPTH_32BPP,
 } vidix_depth_t;
 
 typedef enum vidix_cap {
