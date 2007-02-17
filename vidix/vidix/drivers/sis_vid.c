@@ -297,6 +297,7 @@ int vixProbe(int verbose, int force)
           case DEVICE_SIS_650_VGA:
             /* M650 & 651 have 2 overlays */
             /* JCP: I think this works, but not really tested yet */
+            if (enable_app_io() == 0 )
             {
               unsigned char CR5F;
               unsigned char tempreg1, tempreg2;
@@ -318,6 +319,7 @@ int vixProbe(int verbose, int force)
               if (sis_has_two_overlays) 
                 if (sis_verbose > 0)
                   printf ("[SiS] detected M650/651 with 2 overlays\n");
+              disable_app_io();
             }
             sis_vga_engine = SIS_315_VGA;
             break;
@@ -346,6 +348,12 @@ int vixInit(const char *args __attribute__ ((unused)))
   {
     printf("[SiS] driver was not probed but is being initialized\n");
     return (EINTR);
+  }
+
+  if (enable_app_io() != 0)
+  {
+    printf("[SiS] can't enable register I/O\n");
+    return(EINTR);
   }
 
   /* JCP: this is WRONG.  Need to coordinate w/ sisfb to use correct mem */
@@ -396,6 +404,7 @@ void vixDestroy(void)
   /* unmap_phys_mem(sis_reg_base, 0x20000); */
   /* JCP: see above, hence also a hack. */
   unmap_phys_mem(sis_mem_base, 0x1000000);
+  disable_app_io();
 }
 
 int vixGetCapability(vidix_capability_t * to)
