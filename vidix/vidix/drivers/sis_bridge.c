@@ -385,23 +385,27 @@ static void sis_detect_video_bridge(void)
   if (temp == 1)
   {
     inSISIDXREG(SISPART4, 0x01, temp1);
-    temp1 &= 0xff;
-    if (temp1 >= 0xE0)
+    temp1 &= 0xf0;
+    if (temp1 == 0xE0)
     {
+      inSISIDXREG(SISPART4, 0x39, temp2);
+      if (temp2 == 0xff)
+      {
       sis_vbflags |= VB_302LV;
       if (sis_verbose > 1)
         printf("[SiS] Detected SiS302LV video bridge (ID 1; Revision 0x%x)\n",
              temp1);
 
+      }
     } 
-    else if (temp1 >= 0xD0)
+    else if (temp1 == 0xD0)
     {
       sis_vbflags |= VB_301LV;
       if (sis_verbose > 1)
         printf("[SiS] Detected SiS301LV video bridge (ID 1; Revision 0x%x)\n",
              temp1);
     }
-    else if (temp1 >= 0xB0)
+    else if (temp1 == 0xB0)
     {
       sis_vbflags |= VB_301B;
       inSISIDXREG(SISPART4, 0x23, temp2);
@@ -411,7 +415,7 @@ static void sis_detect_video_bridge(void)
         printf("[SiS] Detected SiS301B%s video bridge (Revision 0x%x)\n",
              (temp2 & 0x02) ? "" : " (DH)", temp1);
     }
-    else
+    else if (temp1 <= 0xA0)
     {
       sis_vbflags |= VB_301;
       if (sis_verbose > 1)
@@ -424,8 +428,8 @@ static void sis_detect_video_bridge(void)
   else if (temp == 2)
   {
     inSISIDXREG(SISPART4, 0x01, temp1);
-    temp1 &= 0xff;
-    if (temp1 >= 0xE0)
+    temp1 &= 0xf0;
+    if (temp1 == 0xE0)
     {
       sis_vbflags |= VB_302LV;
       if (sis_verbose > 1)
@@ -433,14 +437,14 @@ static void sis_detect_video_bridge(void)
              temp1);
       
     } 
-    else if (temp1 >= 0xD0)
+    else if (temp1 == 0xD0)
     {
       sis_vbflags |= VB_301LV;
       if (sis_verbose > 1)
         printf("[SiS] Detected SiS301LV video bridge (ID 2; Revision 0x%x)\n",
              temp1);
     }
-    else
+    else if (temp1 <= 0xC0)
     {
       sis_vbflags |= VB_302B;
       inSISIDXREG(SISPART4, 0x23, temp2);
