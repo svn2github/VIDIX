@@ -24,7 +24,7 @@
 	device using ioctl.
 
     Usage:
-	mknod -m 600 /dev/dhahelper c 252 0
+	mknod -m 600 /dev/dhahelper c 252 0 (deprecated by udev)
 	
 	Also you can change the major number, setting the "dhahelper_major"
 	module parameter, the default is 252, specified in dhahelper.h.
