@@ -1005,7 +1005,6 @@ static void set_overlay(SISOverlayPtr pOverlay, int index)
   uint16_t screenX = sis_screen_width;
   uint16_t screenY = sis_screen_height;
   uint8_t data;
-  uint32_t watchdog;
 
   top = pOverlay->dstBox.y1;
   bottom = pOverlay->dstBox.y2;
