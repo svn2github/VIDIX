@@ -129,7 +129,10 @@ MODULE_LICENSE("GPL");
 
 static int dhahelper_major = DEFAULT_MAJOR;
 static int dhahelper_verbosity = 1;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,5)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,17)
+module_param_named(dhahelper_major, dhahelper_major, int, 0644);
+module_param_named(dhahelper_verbosity, dhahelper_verbosity, int, 0644);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,5)
 module_param_named(dhahelper_major, "i", int, 0644);
 module_param_named(dhahelper_verbosity, "i", int, 0644);
 #else
@@ -284,7 +287,11 @@ static inline unsigned long uvirt_to_kva(pgd_t *pgd, unsigned long adr)
 	pte_t *ptep, pte;
   
 	if (!pgd_none(*pgd)) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,17)
+                pmd = pmd_offset((pud_t *)pgd, adr);
+#else
                 pmd = pmd_offset(pgd, adr);
+#endif
                 if (!pmd_none(*pmd)) {
                         ptep = pte_offset(pmd, adr);
                         pte = *ptep;
@@ -368,7 +375,8 @@ static int pag_lock(unsigned long addr)
 {
 	unsigned long page;
 	unsigned long kva;
-
+        unsigned long nb;
+        
 	kva = uvirt_to_kva(pgd_offset(current->mm, addr), addr);
 	if(kva)
 	{
@@ -379,8 +387,9 @@ static int pag_lock(unsigned long addr)
 	}
 	else
 	{
-	    copy_from_user(&page,(char *)addr,1); /* try access it */
-	    kva = uvirt_to_kva(pgd_offset(current->mm, addr), addr);
+	    nb = copy_from_user(&page,(char *)addr,1); /* try access it */
+            if (nb != 0) return EPERM;
+            kva = uvirt_to_kva(pgd_offset(current->mm, addr), addr);
 	    if(kva) goto lock_it;
 	    else return EPERM;
 	}
@@ -607,6 +616,7 @@ static int dhahelper_install_irq(dhahelper_irq_t *arg)
     int retval;
     long ack_addr;
     int irqn;
+    unsigned long nb;
 
     if (copy_from_user(&my_irq, arg, sizeof(dhahelper_irq_t)))
     {
@@ -659,8 +669,10 @@ static int dhahelper_install_irq(dhahelper_irq_t *arg)
     if(retval < 0)
 	goto fail;
 
-    copy_to_user(&arg->num, &irqn, sizeof(irqn));
-
+    nb = copy_to_user(&arg->num, &irqn, sizeof(irqn));
+    if (nb != 0)
+      goto fail;
+    
     dha_irqs[irqn].handled = 1;
 
 out:
