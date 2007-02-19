@@ -105,6 +105,12 @@
 
 #include "dhahelper.h"
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,17)
+#include <linux/kdev_t.h>
+#define DHA_MINOR 0
+#define DHA_CLASSNAME "dhahelper"
+#endif
+
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,0)
 #define pte_offset(p,a) pte_offset_kernel(p,a)
 #define LockPage(p) SetPageLocked(p)
@@ -1280,6 +1286,31 @@ unregister_dev(void)
 }
 #endif /* defined CONFIG_DEVFS_FS */
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,17)
+struct class *dha_class;
+
+static void dha_udev_register_driver (void)
+{
+  dha_class = class_create (THIS_MODULE, DHA_CLASSNAME);
+}
+
+static void dha_udev_register_device (void)
+{
+  class_device_create (dha_class, NULL,
+                       MKDEV (dhahelper_major, DHA_MINOR),
+                       NULL, DHA_CLASSNAME);
+}
+
+static void dha_udev_unregister_device (void)
+{
+  class_device_destroy (dha_class, MKDEV (dhahelper_major, DHA_MINOR));
+}
+
+static void dha_udev_unregister_driver(void)
+{
+  class_destroy (dha_class);
+}
+#endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,4,0)
 int init_module(void)
@@ -1298,6 +1329,13 @@ static int __init init_dhahelper(void)
 	return err;
     }
     memset(dha_irqs, 0, sizeof(dha_irqs));
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,17)
+    /* udev registry */
+    dha_udev_register_driver ();
+    dha_udev_register_device ();
+#endif
+
     return 0;
 }
 
@@ -1312,6 +1350,12 @@ static void __exit exit_dhahelper(void)
 	if(dha_irqs[i].handled)
 	    free_irq(i, dha_irqs[i].dev);
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,17)
+    /* udev unregistry */
+    dha_udev_unregister_device ();
+    dha_udev_unregister_driver ();
+#endif
+    
     unregister_dev();
 }
 
