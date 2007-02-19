@@ -143,7 +143,7 @@ MODULE_PARM(dhahelper_major, "i");
 /* 2 = debug */
 MODULE_PARM(dhahelper_verbosity, "i");
 #endif
-MODULE_PARM_DESC(dhahelper_major, "Major number of dhahelper characterdevice");
+MODULE_PARM_DESC(dhahelper_major, "Major number of dhahelper character device");
 MODULE_PARM_DESC(dhahelper_verbosity, "Level of verbosity (0 = silent, 1 = only errors, 2 = debug)");
 
 static int dhahelper_open(struct inode *inode, struct file *file)
