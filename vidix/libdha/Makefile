@@ -84,13 +84,13 @@ dep depend: pci_names.c
 install:
 	-mkdir -p $(prefix)/lib
 ifeq ($(VIDIX_BUILD_SHARED),yes)
-	install -D -m 755 -s -p $(LIBNAME_SHARED_VERSION) $(prefix)/lib
+	install -D -m 755 -s -p $(LIBNAME_SHARED_VERSION) $(prefix)/lib/$(LIBNAME_SHARED_VERSION)
 	ln -sf $(LIBNAME_SHARED_VERSION) $(prefix)/lib/$(LIBNAME_SHARED)
 	ln -sf $(LIBNAME_SHARED_VERSION) $(prefix)/lib/$(LIBNAME_SHARED_MAJOR)
 	-$(LDCONFIG) $(LDCONFIG_FLAGS)
 endif
 ifeq ($(VIDIX_BUILD_STATIC),yes)
-	cp -f $(LIBNAME_STATIC) $(prefix)/lib
+	cp -f $(LIBNAME_STATIC) $(prefix)/lib/$(LIBNAME_STATIC)
 endif
 
 uninstall:
