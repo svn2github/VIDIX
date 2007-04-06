@@ -1290,11 +1290,13 @@ int VIDIX_NAME(vixProbe)( int verbose,int force )
 	dname = pci_device_name(VENDOR_ATI,lst[i].device);
 	dname = dname ? dname : "Unknown chip";
 	printf(RADEON_MSG" Found chip: %s\n",dname);
+#if 0
         if ((lst[i].command & PCI_COMMAND_IO) == 0)
         {
           printf("[radeon] Device is disabled, ignoring\n");
           continue;
         }
+#endif
 	memset(&besr,0,sizeof(bes_registers_t));
 	if(force > PROBE_NORMAL)
 	{

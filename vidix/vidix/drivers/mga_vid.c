@@ -1272,11 +1272,13 @@ int VIDIX_NAME(vixProbe)(int verbose,int force __attribute__ ((unused)))
 		   i, lst[i].vendor, lst[i].device);
 	if (lst[i].vendor == VENDOR_MATROX)
 	{
+#if 0
             if ((lst[i].command & PCI_COMMAND_IO) == 0)
             {
                 printf("[mga] Device is disabled, ignoring\n");
                 continue;
             }
+#endif
 	    switch(lst[i].device)
 	    {
 	    case DEVICE_MATROX_MGA_G550_AGP:
