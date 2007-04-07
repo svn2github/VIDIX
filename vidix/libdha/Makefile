@@ -49,7 +49,7 @@ $(LIBNAME_STATIC): $(OBJS)
 	$(AR) r $@ $(OBJS)
 
 $(LIBNAME_WIN32): $(OBJS)
-	$(AR) r $@ $(OBJS)
+	$(CC) -shared -o $(LIBNAME_WIN32) $(OBJS) $(LIBS)
 
 LIB_TARGETS=
 ifeq ($(VIDIX_BUILD_SHARED),yes)

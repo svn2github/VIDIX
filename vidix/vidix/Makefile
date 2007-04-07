@@ -32,6 +32,9 @@ endif
 ifeq ($(VIDIX_BUILD_STATIC),yes)
 LIB_TARGETS += $(LIBNAME_STATIC)
 endif
+ifeq ($(TARGET_WIN32),yes)
+LIB_TARGETS += $(LIBNAME_WIN32)
+endif
 
 all:	$(LIB_TARGETS) do_drivers
 
@@ -46,6 +49,8 @@ endif
 $(LIBNAME_STATIC): $(SRCS)
 	$(CC) -c $(CFLAGS) -DVIDIX_BUILD_STATIC -o $(OBJS_STATIC) $<
 	$(AR) r $@ $(OBJS_STATIC)
+$(LIBNAME_WIN32): $(OBJS)
+	$(CC) -shared -o $(LIBNAME_WIN32) $(OBJS_SHARED) $(LIBS)
 
 do_drivers:
 	$(MAKE) -C drivers

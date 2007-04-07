@@ -297,11 +297,13 @@ case "$system_name" in
 test -z "$_datadir" && _datadir="."
 test -z "$_confdir" && _confdir="."
 test -z "$_libdir" && _libdir="."
+_target_win32="yes"
     ;;
   *)
 test -z "$_datadir" && _datadir="$_prefix/share/vidix"
 test -z "$_confdir" && _confdir="$_datadir"
 test -z "$_libdir" && _libdir="$_prefix/lib/vidix"
+_target_win32="no"
     ;;
   esac
 
@@ -446,6 +448,7 @@ CC=$_cc
 $_target_arch
 TARGET_OS=$system_name
 LIBDL=$_ld_dl
+TARGET_WIN32=$_target_win32
 
 VIDIX_BUILD_STATIC = $_def_static
 VIDIX_BUILD_SHARED = $_def_shared
