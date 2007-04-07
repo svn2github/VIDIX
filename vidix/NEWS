@@ -1,5 +1,15 @@
 VIDIX NEWS -- history of user-visible changes.
 
+Version 1.0.0
+
+* multiple backports from MPlayerHQ by "Benjamin Zores" <ben@geexbox.org>
+  * warnings suppressing
+  * fixes and improvements
+  * Win32 related improvements
+  * h/w revision detection for cle266 chipset
+  * support for Geforce FX5500
+  * added vt8378 chipset as unichrome driver
+
 Version 0.9.9.3
 
 * minor fixes and new pci ids
