@@ -391,6 +391,24 @@ else
 fi
 echores "$_mlock"
 
+# Checking for IVTV
+echocheck "ivtv.h"
+cat > $TMPC << EOF
+#include <linux/types.h>
+#include <linux/ivtv.h>
+int main(void) { return 0; }
+EOF
+_ivtv=no
+cc_check && _ivtv=yes
+if test "$_ivtv" = yes ; then
+  _def_ivtv='#define HAVE_IVTV_H 1'
+  _have_ivtv=yes
+else
+  _def_ivtv='#undef HAVE_IVTV_H'
+  _have_ivtv=no
+fi
+echores "$_ivtv"
+
 echocheck "dynamic loader"
 cat > $TMPC << EOF
 #include <dlfcn.h>
@@ -450,6 +468,8 @@ TARGET_OS=$system_name
 LIBDL=$_ld_dl
 TARGET_WIN32=$_target_win32
 
+HAVE_IVTV = $_have_ivtv
+
 VIDIX_BUILD_STATIC = $_def_static
 VIDIX_BUILD_SHARED = $_def_shared
 
@@ -487,6 +507,9 @@ $_def_memalign
 
 /* Define this if your system has the mlock() in "sys/mman.h" header file */
 $_def_mlock
+
+/* Define this if your system has the IVTV "linux/ivtv.h" header file */
+$_def_ivtv
 
 /* Define if your processor stores words with the most significant
    byte first (like Motorola and SPARC, unlike Intel and VAX).  */

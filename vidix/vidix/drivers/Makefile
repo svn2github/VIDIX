@@ -13,7 +13,7 @@ RAGE128_CFLAGS = $(VIDIX_CFLAGS) -DRAGE128
 MGA_CRTC2_CFLAGS = $(VIDIX_CFLAGS) -DCRTC2
 MGA_TV_CFLAGS = $(VIDIX_CFLAGS) -DMGA_TV
 
-all:    cyberblade_vid.so \
+DRV=    cyberblade_vid.so \
 	genfb_vid.so \
 	mach64_vid.so \
 	mga_crtc2_vid.so \
@@ -27,6 +27,14 @@ all:    cyberblade_vid.so \
 	savage_vid.so \
 	sis_vid.so \
 	unichrome_vid.so \
+
+ifeq ($(TARGET_OS),Linux)
+ifeq ($(HAVE_IVTV),yes)
+DRV += ivtv_vid.so
+endif
+endif
+
+all: $(DRV)
 
 .SUFFIXES: .c .o
 
@@ -57,6 +65,8 @@ cyberblade_vid.so: cyberblade_vid.o
 
 genfb_vid.so: genfb_vid.o
 	$(CC) -shared $< $(VIDIX_LIBS_M) -Wl,-soname,$@ -o $@
+
+ivtvfb_vid.so: ivtv_vid.o
 
 mach64_vid.so: mach64_vid.o
 
