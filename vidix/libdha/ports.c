@@ -60,6 +60,7 @@
 #ifdef ARCH_ALPHA
 #include <sys/io.h>
 #endif
+#define __USE_UNIX98
 #include <unistd.h>
 
 #include "config.h"
