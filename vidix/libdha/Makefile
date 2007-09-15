@@ -68,7 +68,7 @@ pci_names.c: oth/pci.db
 	LC_ALL=C $(AWK) -f pci_db2c.awk $<
 
 test: pci_names.c $(LIBNAME) $(SHORTNAME)
-	$(CC) test.c -o test $(SHORTNAME)
+	$(CC) test.c -o test $(SHORTNAME) -L. -ldha
 
 clean:
 	rm -f *.o *.a *.so.* *.so *~
