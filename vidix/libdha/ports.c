@@ -135,6 +135,7 @@ int disable_app_io( void )
 #endif
 }
 
+#if !defined(__alpha__) && !defined(__powerpc__)
 unsigned char  INPORT8(unsigned idx)
 {
 #ifdef CONFIG_LINUXHELPER
@@ -242,4 +243,4 @@ void          OUTPORT32(unsigned idx,unsigned val)
 #endif
 	outl(idx,val);
 }
-
+#endif
