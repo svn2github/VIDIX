@@ -56,6 +56,7 @@
 #include <errno.h>
 #include <string.h>
 #include <stdio.h>
+#define __USE_UNIX98
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
