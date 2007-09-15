@@ -7,8 +7,15 @@
 #ifdef __i386__
 #include <sys/perm.h>
 #else
+#ifdef __powerpc__
+#include <linux/version.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,16)
+#include <sys/io.h>
+#endif
+#else
 #ifndef __sparc__
 #include <sys/io.h>
+#endif
 #endif
 #endif
 

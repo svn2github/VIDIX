@@ -6,8 +6,11 @@
 
 static int pci_config_type( void ) { return 1; }
 #ifdef linux
+#include <linux/version.h>
 #include <fcntl.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,16)
 #include <sys/io.h>
+#endif
 #include <linux/pci.h>
 #include "../../bswap.h"
 #endif
