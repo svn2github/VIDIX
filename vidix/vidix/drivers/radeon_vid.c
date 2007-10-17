@@ -1467,20 +1467,20 @@ fourcc_desc_t supported_fourcc[] =
   { IMGFMT_BGR32, 775 }
 };
 
-__inline__ static int is_supported_fourcc(uint32_t fourcc,unsigned srcw)
+__inline__ static int is_supported_fourcc(uint32_t fourcc)
 {
   unsigned i;
   for(i=0;i<sizeof(supported_fourcc)/sizeof(fourcc_desc_t);i++)
   {
-    if(fourcc==supported_fourcc[i].fourcc &&
-	srcw <=supported_fourcc[i].max_srcw) return 1;
+    if(fourcc==supported_fourcc[i].fourcc)
+	return 1;
   }
   return 0;
 }
 
 int VIDIX_NAME(vixQueryFourcc)(vidix_fourcc_t *to)
 {
-    if(is_supported_fourcc(to->fourcc,to->srcw))
+    if(is_supported_fourcc(to->fourcc))
     {
 	to->depth = VID_DEPTH_1BPP | VID_DEPTH_2BPP |
 		    VID_DEPTH_4BPP | VID_DEPTH_8BPP |
@@ -3167,7 +3167,7 @@ int VIDIX_NAME(vixConfigPlayback)(vidix_playback_t *info)
 {
   unsigned rgb_size,nfr;
   uint32_t radeon_video_size;
-  if(!is_supported_fourcc(info->fourcc,info->src.w)) return ENOSYS;
+  if(!is_supported_fourcc(info->fourcc)) return ENOSYS;
   if(info->num_frames>VID_PLAY_MAXFRAMES) info->num_frames=VID_PLAY_MAXFRAMES;
   if(info->num_frames==1) besr.double_buff=0;
   else			  besr.double_buff=1;
