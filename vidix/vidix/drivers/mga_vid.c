@@ -78,6 +78,10 @@
 #define ENOTSUP EOPNOTSUPP
 #endif
 
+#if    !defined(ENOTSUP) && defined(ENOSYS)
+#define ENOTSUP ENOSYS
+#endif
+
 #ifdef CRTC2
 #define VIDIX_STATIC mga_crtc2_
 #else

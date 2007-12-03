@@ -99,6 +99,9 @@
 #include "sysdep/pci_os2.c"
 #elif defined (_WIN32) || defined(__CYGWIN__)
 #include "sysdep/pci_win32.c"
+#elif defined (__DJGPP__)
+#include "sysdep/pci_djgpp.c"
+#define ENOTSUP ENOSYS
 #else
 #include "sysdep/pci_generic_os.c"
 #endif

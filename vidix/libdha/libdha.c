@@ -43,6 +43,8 @@ void libdha_exit(const char *message, int level)
 #include "sysdep/libdha_win32.c"
 #elif defined (__EMX__)
 #include "sysdep/libdha_os2.c"
+#elif defined (__DJGPP__)
+#include "sysdep/libdha_djgpp.c"
 #else
 
 #if defined(SVR4) || defined(SCO325)
