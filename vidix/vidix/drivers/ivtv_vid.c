@@ -394,7 +394,7 @@ int VIDIX_NAME(vixInit)(const char *args __attribute__ ((unused)))
 void VIDIX_NAME(vixDestroy)(void)
 {
 	if(ivtv_verbose)
-		printf(IVTV_MSG"destory\n");
+		printf(IVTV_MSG"destroy\n");
 	if(-1 != yuvdev)
 		close(yuvdev);	
 	if(-1 != fbdev)
