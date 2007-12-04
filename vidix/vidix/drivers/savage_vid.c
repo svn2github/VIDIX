@@ -1199,7 +1199,6 @@ vixPlaybackSetEq (const vidix_video_eq_t * eq __attribute__ ((unused)))
 int
 vixConfigPlayback (vidix_playback_t * vinfo)
 {
-  int uv_size, swap_uv;
   unsigned int i;
 
   if (!is_supported_fourcc (vinfo->fourcc))
