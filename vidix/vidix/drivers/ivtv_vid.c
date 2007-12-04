@@ -62,7 +62,7 @@
 
 static int fbdev = -1;
 static int yuvdev = -1;
-static void *memBase = 0;
+static void *memBase = NULL;
 static int frameSize = 0;
 static int probed = 0;
 static int ivtv_verbose;
@@ -399,7 +399,10 @@ void VIDIX_NAME(vixDestroy)(void)
 		close(yuvdev);	
 	if(-1 != fbdev)
 		close(fbdev);
-	free(outbuf);
+	if(NULL != outbuf)
+		free(outbuf);
+	if(NULL != memBase)
+		free(memBase);
 }
 
 int VIDIX_NAME(vixGetCapability)(vidix_capability_t *to)
