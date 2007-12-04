@@ -362,7 +362,7 @@ yuv_found:
 			if(ivtv_verbose) {
 				printf(IVTV_MSG"old alpha : %d\n",format_old.fmt.win.global_alpha);
 			}
-			memcpy(&format_old, &format_hide, sizeof(format_old));
+			memcpy(&format_hide, &format_old, sizeof(format_old));
 			format_hide.fmt.win.global_alpha = 0;
 		}
 #endif
