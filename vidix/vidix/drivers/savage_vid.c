@@ -50,7 +50,6 @@
 
 #define VF_STREAMS_ON   0x0001
 #define BASE_PAD 0xf
-#define FRAMEBUFFER_SIZE 1024*2000*4
 /**************************************
    S3 streams processor
 **************************************/
@@ -123,7 +122,6 @@ void SavageStreamsOn(void);
 #define OS_WH(x,y)	(((x-1)<<16)|(y))
 
 #define PCI_COMMAND_MEM 0x2
-#define MAX_FRAMES 3
 /**
  * @brief Information on PCI device.
  */
@@ -240,14 +238,13 @@ struct savage_info {
     unsigned int wx,wy;                /*window x && y*/
     unsigned int screen_x;            /*screen width*/
     unsigned int screen_y;            /*screen height*/
-    unsigned long buffer_size;		 /* size of the image buffer	       */
+    unsigned long frame_size;		 /* frame size	       */
     struct savage_chip chip;	 /* NV architecture structure		       */
     void* video_base;		 /* virtual address of control region	       */
     void* control_base;		 /* virtual address of fb region	       */
     unsigned long picture_base;	 /* direct pointer to video picture	       */
     unsigned long picture_offset;	 /* offset of video picture in frame buffer    */
 //	struct savage_dma dma;           /* DMA structure                              */
-    unsigned int cur_frame;
     unsigned int num_frames;             /* number of buffers                          */
     int bps;			/* bytes per line */
   void (*SavageWaitIdle) ();
@@ -298,6 +295,10 @@ unsigned int GetBlendForFourCC( int id )
 	    return 3;
 	case IMGFMT_BGR16:
 	    return 5;
+	case IMGFMT_BGR24:
+	    return 6;
+	case IMGFMT_BGR32:
+	    return 7;
         default:
 	    return 1;
     }
@@ -343,8 +344,8 @@ static void SavageSetColorOld(void)
 
 
   if( 
-  (info->format == IMGFMT_RGB15) ||
-	(info->format == IMGFMT_RGB16)
+  (info->format == IMGFMT_BGR15) ||
+	(info->format == IMGFMT_BGR16)
     )
     {
   OUTREG( COLOR_ADJUSTMENT_REG, 0 );
@@ -600,14 +601,6 @@ SavageStreamsOn(void)
 
 		enable_app_io ();
 
-    /* Unlock extended registers. */
-
-	/* FIXME: it looks like mmaped io is broken with vgaout16  */
-    VGAOUT16(vgaCRIndex, 0x4838 );
-    VGAOUT16(vgaCRIndex, 0xa039);
-    VGAOUT16(0x3c4, 0x0608);
-
-		
 	
     VGAOUT8( vgaCRIndex, EXT_MISC_CTRL2 );
 
@@ -736,12 +729,6 @@ static void SavageStreamsOff(void)
     unsigned short vgaCRIndex = 0x3d0 + 4;
     unsigned short vgaCRReg = 0x3d0 + 5;
 
-
-    /* Unlock extended registers. */
-
-    VGAOUT16(vgaCRIndex, 0x4838);
-    VGAOUT16(vgaCRIndex, 0xa039);
-    VGAOUT16(0x3c4, 0x0608);
 
     VGAOUT8( vgaCRIndex, EXT_MISC_CTRL2 );
     if( S3_SAVAGE_MOBILE_SERIES(info->chip.arch)  ||
@@ -891,20 +878,11 @@ vixInit (const char *args __attribute__ ((unused)))
 
 //  info->chip.PCIO   = (uint8_t *)  (info->control_base + SAVAGE_NEWMMIO_VGABASE);
 
-  // FIXME: enable mmio?
+  /* switch to vga registers */
   val = VGAIN8 (0x3c3);
   VGAOUT8 (0x3c3, val | 0x01);
   val = VGAIN8 (0x3cc);
   VGAOUT8 (0x3c2, val | 0x01);
-
-  if (info->chip.arch >= S3_SAVAGE4)
-	{
-		VGAOUT8 (0x3d4, 0x40);
-		val = VGAIN8 (0x3d5);
-		VGAOUT8 (0x3d5, val | 1);
-	}
-
-
 
   /* unprotect CRTC[0-7] */
   VGAOUT8(vgaCRIndex, 0x11);
@@ -912,22 +890,10 @@ vixInit (const char *args __attribute__ ((unused)))
 //  printf("$########## tmp = %d\n",tmp);
   VGAOUT8(vgaCRReg, tmp & 0x7f);
 
-
   /* unlock extended regs */
   VGAOUT16(vgaCRIndex, 0x4838);
   VGAOUT16(vgaCRIndex, 0xa039);
   VGAOUT16(0x3c4, 0x0608);
-
-  VGAOUT8(vgaCRIndex, 0x40);
-  tmp = VGAIN8(vgaCRReg);
-  VGAOUT8(vgaCRReg, tmp & ~0x01);
-
-  /* unlock sys regs */
-  VGAOUT8(vgaCRIndex, 0x38);
-  VGAOUT8(vgaCRReg, 0x48);
-
-  /* Unlock system registers. */
-  VGAOUT16(vgaCRIndex, 0x4838);
 
   /* Next go on to detect amount of installed ram */
 
@@ -985,24 +951,6 @@ vixInit (const char *args __attribute__ ((unused)))
   VGAOUT8 (0x3d4, 0x66);
   VGAOUT8 (0x3d5, cr66 & ~0x02); *//* clear reset flag */
  /* udelay (10000); */
-
-	/* This maps framebuffer @6MB, thus 2MB are left for video. */
-	if (info->chip.arch == S3_SAVAGE3D) {
-		info->video_base = map_phys_mem(pci_info.base0, info->chip.fbsize);
-		info->picture_offset = 1024*768* 4 * ((info->chip.fbsize > 4194304)?2:1);
-	}
-	else {
-		info->video_base = map_phys_mem(pci_info.base1, info->chip.fbsize);
-		info->picture_offset = info->chip.fbsize - FRAMEBUFFER_SIZE;
-//			info->picture_offset = 1024*1024* 4 * 2;
-	}
-	if ( info->video_base == NULL ){
-		printf("errno = %s\n",  strerror(errno));
-		return -1; 
-	}
-
-
-	info->picture_base = (uint32_t) info->video_base + info->picture_offset;
 
 	if ( info->chip.arch == S3_SAVAGE3D ){
 		mtrr = mtrr_set_type(pci_info.base0, info->chip.fbsize, MTRR_TYPE_WRCOMB);
@@ -1075,7 +1023,8 @@ is_supported_fourcc (uint32_t fourcc)
     case IMGFMT_Y211:
     case IMGFMT_RGB15:
     case IMGFMT_RGB16:
-//    case IMGFMT_BGR32:
+    case IMGFMT_BGR24:
+    case IMGFMT_BGR32:
       return 1;
     default:
       return 0;
@@ -1199,12 +1148,10 @@ vixPlaybackSetEq (const vidix_video_eq_t * eq __attribute__ ((unused)))
 int
 vixConfigPlayback (vidix_playback_t * vinfo)
 {
-  unsigned int i;
+  unsigned int i, bpp;
 
   if (!is_supported_fourcc (vinfo->fourcc))
     return -1;
-
-
 
   info->src_w = vinfo->src.w;
   info->src_h = vinfo->src.h;
@@ -1222,88 +1169,63 @@ vixConfigPlayback (vidix_playback_t * vinfo)
   info->saturation = 128;
   info->hue = 0;
 
-
-  vinfo->dga_addr=(void*)(info->picture_base);
-
-
-		  vinfo->offset.y = 0;
-		  vinfo->offset.v = 0;
-		  vinfo->offset.u = 0;
-
-		  vinfo->dest.pitch.y = 32;
-		  vinfo->dest.pitch.u = 32;
-		  vinfo->dest.pitch.v = 32;
-	//	  vinfo->dest.pitch.u = 0;
-	//	  vinfo->dest.pitch.v = 0;
-			
-
-   info->pitch = ((info->src_w << 1) + 15) & ~15;
-
-#if 0
-  swap_uv = 0;
-  switch (vinfo->fourcc)
-  {
-	  case IMGFMT_YUY2:
-	  case IMGFMT_UYVY:
-			
-		  info->pitch = ((info->src_w << 1) + (vinfo->dest.pitch.y-1)) & ~(vinfo->dest.pitch.y-1);
-
-			info->pitch = info->src_w << 1;
-      info->pitch = ALIGN_TO (info->src_w << 1, 32);
-      uv_size = 0;
-		  break;
-	  case IMGFMT_YV12:
-		swap_uv = 1;
-
-
-	
-		/*
-			srcPitch = (info->src_w + 3) & ~3;
-			vinfo->offset.u = srcPitch * info->src_h;
-			srcPitch2 = ((info->src_w >> 1) + 3) & ~3;
-			vinfo->offset.v = (srcPitch2 * (info->src_h >> 1)) + vinfo->offset.v;
-
-			vinfo->dest.pitch.y=srcPitch ;
-			vinfo->dest.pitch.v=srcPitch2 ;
-			vinfo->dest.pitch.u=srcPitch2 ;
-			*/
-	
-
-      info->pitch = ALIGN_TO (info->src_w, 32);
-      uv_size = (info->pitch >> 1) * (info->src_h >> 1);
-
   vinfo->offset.y = 0;
-  vinfo->offset.v = vinfo->offset.y + info->pitch * info->src_h;
-  vinfo->offset.u = vinfo->offset.v + uv_size;
-  vinfo->frame_size = vinfo->offset.u + uv_size;
-/*  YOffs = info->offset.y;
-  UOffs = (swap_uv ? vinfo->offset.v : vinfo->offset.u);
-  VOffs = (swap_uv ? vinfo->offset.u : vinfo->offset.v);
-	*/
-//	  vinfo->offset.y = info->src_w;
-//	  vinfo->offset.v = vinfo->offset.y + info->src_w /2 * info->src_h;
-//	  vinfo->offset.u = vinfo->offset.v + (info->src_w >> 1) * (info->src_h >> 1) ;
+  vinfo->offset.v = 0;
+  vinfo->offset.u = 0;
 
-		  break;
+  vinfo->dest.pitch.y = 32;
+  vinfo->dest.pitch.u = 32;
+  vinfo->dest.pitch.v = 32;
+
+  switch(vinfo->fourcc)
+  {
+    case IMGFMT_Y211:
+      bpp = 1;
+      break;
+    case IMGFMT_BGR24:
+      bpp = 3;
+      break;
+    case IMGFMT_BGR32:
+      bpp = 4;
+      break;
+    default:
+      bpp = 2;
+      break;
   }
-#endif
 
-			info->pitch |= ((info->pitch >> 1) << 16);
+  info->pitch = ((info->src_w * bpp) + 15) & ~15;
+  info->pitch |= ((info->pitch / bpp) << 16);
+  printf("$#### destination pitch = %u\n", info->pitch & 0xffff);
 
-		  vinfo->frame_size = info->pitch * info->src_h;
+  vinfo->frame_size = (info->pitch & 0xffff) * info->src_h;
+  info->frame_size = vinfo->frame_size;
 
-			printf("$#### destination pitch = %u\n", info->pitch&0xffff);
+  info->picture_offset = info->screen_x * info->screen_y * (info->bpp >> 3);
+  if (info->picture_offset > (info->chip.fbsize - vinfo->frame_size)) {
+    printf("not enough memory for overlay\n");
+    return -1;
+  }
 
+  if (info->chip.arch == S3_SAVAGE3D)
+    info->video_base = map_phys_mem(pci_info.base0, info->chip.fbsize);
+  else
+    info->video_base = map_phys_mem(pci_info.base1, info->chip.fbsize);
 
+  if (info->video_base == NULL) {
+    printf("errno = %s\n",  strerror(errno));
+    return -1;
+  }
 
+  info->picture_base = (uint32_t) info->video_base + info->picture_offset;
 
-  info->buffer_size = vinfo->frame_size;
-  info->num_frames = vinfo->num_frames= (info->chip.fbsize - info->picture_offset)/vinfo->frame_size;
-  if(vinfo->num_frames > MAX_FRAMES)vinfo->num_frames = MAX_FRAMES;
-//    vinfo->num_frames = 1;
-//    printf("[nvidia_vid] Number of frames %i\n",vinfo->num_frames);
-  for(i=0;i <vinfo->num_frames;i++)vinfo->offsets[i] = vinfo->frame_size*i;
+  vinfo->dga_addr = (void*)(info->picture_base);
 
+  vinfo->num_frames = (info->chip.fbsize - info->picture_offset)/vinfo->frame_size;
+  if(vinfo->num_frames > VID_PLAY_MAXFRAMES) vinfo->num_frames = VID_PLAY_MAXFRAMES;
+
+  for(i = 0; i < vinfo->num_frames; i++)
+    vinfo->offsets[i] = vinfo->frame_size * i;
+ 
   return 0;
 }
 
@@ -1351,25 +1273,13 @@ vixPlaybackOff (void)
  * @note This function is used only for double and triple buffering
  *       and never used for single buffering playback.
  */
-#if 0
 int
 vixPlaybackFrameSelect (unsigned int frame)
 {
-////FIXME ADD
-//    savage_overlay_start(info, frame);
-    //if (info->num_frames >= 1)
-//	    info->cur_frame = frame//(frame+1)%info->num_frames;
-//
-//	savage4_waitidle(info); 
- 	
-   printf("vixPlaybackFrameSelect Leave\n" );
-	 // FIXME: does this work to avoid tearing?
-//   VerticalRetraceWait();
-   
+  OUTREG(SSTREAM_FBADDR0_REG, info->picture_offset + (info->frame_size * frame));
+ 
   return 0;
 }
-
-#endif 
 
 
 

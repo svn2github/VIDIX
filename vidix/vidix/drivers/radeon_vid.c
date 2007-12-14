@@ -247,6 +247,7 @@ static video_registers_t vregs[] =
   DECLARE_VREG(BM_GUI),
   DECLARE_VREG(BM_ABORT)
 #else
+  DECLARE_VREG(DISP_MERGE_CNTL),
   DECLARE_VREG(DMA_GUI_TABLE_ADDR),
   DECLARE_VREG(DMA_GUI_SRC_ADDR),
   DECLARE_VREG(DMA_GUI_DST_ADDR),
@@ -3396,9 +3397,7 @@ static int set_gr_key( void )
 		besr.graphics_key_msk=0;
 		besr.graphics_key_clr=0;
 		besr.ckey_cntl = VIDEO_KEY_FN_TRUE|GRAPHIC_KEY_FN_TRUE|CMP_MIX_AND;
-		besr.merge_cntl = 0xff000000 | /* overlay alpha */
-				  0x00ff0000 | /* graphic alpha */
-				  0x00000001;  /* DISP_ALPHA_MODE_PER_PIXEL */
+		besr.merge_cntl |= 0x00000001;  /* DISP_ALPHA_MODE_PER_PIXEL */
 		break;
 	default:
 		besr.ckey_on=0;
