@@ -81,6 +81,7 @@ static const char* const drv_snames[] = {
   "pm3_",
   "radeo_",
   "rage128_",
+  "s3_",
 #endif
   NULL
 };

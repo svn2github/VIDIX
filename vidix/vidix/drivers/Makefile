@@ -24,6 +24,7 @@ DRV=    cyberblade_vid.so \
 	pm3_vid.so \
 	radeon_vid.so \
 	rage128_vid.so \
+	s3_vid.so \
 	savage_vid.so \
 	sis_vid.so \
 	unichrome_vid.so \
@@ -90,6 +91,9 @@ radeon_vid.so: radeon_vid.o
 	$(CC) -shared $< $(VIDIX_LIBS_M) -Wl,-soname,$@ -o $@
 
 rage128_vid.so: rage128_vid.o
+
+s3_vid.so: s3_vid.o
+	$(CC) -shared $< $(VIDIX_LIBS_M) -Wl,-soname,$@ -o $@
 
 savage_vid.so: savage_vid.o
 	$(CC) -shared $< $(VIDIX_LIBS_M) -Wl,-soname,$@ -o $@
