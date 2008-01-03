@@ -50,8 +50,25 @@
 
 #include "s3_regs.h"
 
-#define VF_STREAMS_ON   0x0001
-static void S3StreamsOn (void);
+static void S3SetColorKeyOld (void);
+static void S3SetColorKeyNew (void);
+static void S3SetColorKey2000 (void); 
+static void (*S3SetColorKey) (void) = NULL;
+
+static void S3SetColorOld (void);
+static void S3SetColorNew (void);
+static void S3SetColor2000 (void); 
+static void (*S3SetColor) (void) = NULL;
+
+static void S3DisplayVideoOld (void);
+static void S3DisplayVideoNew (void);
+static void S3DisplayVideo2000 (void);
+static void (*S3DisplayVideo) (void) = NULL;
+
+static void S3InitStreamsOld (void);
+static void S3InitStreamsNew (void);
+static void S3InitStreams2000 (void);
+static void (*S3InitStreams) (void) = NULL;
 
 pciinfo_t pci_info;
 
@@ -65,18 +82,16 @@ typedef struct s3_chip s3_chip;
 
 struct s3_info
 {
+  vidix_video_eq_t eq;
   unsigned int use_colorkey;
   unsigned int colorkey;
   unsigned int vidixcolorkey;
   unsigned int depth;
   unsigned int bpp;
-  unsigned int videoFlags;
   unsigned int format;
   unsigned int pitch;
   unsigned int blendBase;
-  unsigned int lastKnownPitch;
   unsigned int displayWidth, displayHeight;
-  unsigned int brightness, hue, saturation, contrast;
   unsigned int src_w, src_h;
   unsigned int drw_w, drw_h;
   unsigned int wx, wy;
@@ -199,21 +214,24 @@ static unsigned int GetBlendForFourCC (int id)
 
 static void S3SetColorOld (void)
 {
-  if ((info->format == IMGFMT_BGR15) || (info->format == IMGFMT_BGR16))
-  {
-    OUTREG (COLOR_ADJUSTMENT_REG, 0);
-  }
-  else
-  {
-    /* Change 0..255 into 0..15 */
-    long sat = info->saturation * 16 / 256;
-    double hue = info->hue * 0.017453292;
-    unsigned long hs1 = ((long) (sat * cos (hue))) & 0x1f;
-    unsigned long hs2 = ((long) (sat * sin (hue))) & 0x1f;
+  char sat = (info->eq.saturation + 1000) * 15 / 2000;
+  double hue = info->eq.hue * 3.1415926 / 1000.0;
+  char hsx = ((char) (sat * cos (hue))) & 0x1f;
+  char hsy = ((char) (sat * sin (hue))) & 0x1f;
 
-    OUTREG (COLOR_ADJUSTMENT_REG, 0x80008000 | (info->brightness + 128) |
-            ((info->contrast & 0xf8) << (12 - 7)) | (hs1 << 16) | (hs2 << 24));
-  }
+  OUTREG (COLOR_ADJUSTMENT_REG, 0x80008000 | hsy << 24 | hsx << 16 |
+    ((info->eq.contrast + 1000) * 31 / 2000) << 8 |
+    (info->eq.brightness + 1000) * 255 / 2000);
+}
+
+static void S3SetColorNew (void)
+{
+  /* not yet */
+}
+
+static void S3SetColor2000 (void)
+{
+  /* not yet */
 }
 
 static void S3SetColorKeyOld (void)
@@ -269,17 +287,20 @@ static void S3SetColorKeyOld (void)
   }
 }
 
+static void S3SetColorKeyNew (void)
+{
+  /* not yet */
+}
+
+static void S3SetColorKey2000 (void)
+{
+  /* not yet */
+}
+
 static void S3DisplayVideoOld (void)
 {
   unsigned int ssControl;
   int cr92;
-
-  if (!info->videoFlags & VF_STREAMS_ON)
-  {
-    S3StreamsOn ();
-    S3SetColorOld ();
-    S3SetColorKeyOld ();
-  }
 
   /* Set surface location and stride */
   OUTREG (SSTREAM_FBADDR0_REG, info->picture_offset);
@@ -344,6 +365,16 @@ static void S3DisplayVideoOld (void)
   }
 }
 
+static void S3DisplayVideoNew (void)
+{
+  /* not yet */
+}
+
+static void S3DisplayVideo2000 (void)
+{
+  /* not yet */
+}
+
 static void S3InitStreamsOld (void)
 {
   /*unsigned long jDelta; */
@@ -391,6 +422,16 @@ static void S3InitStreamsOld (void)
   OUTREG (SSTREAM_VINITIAL_REG, 0);
 }
 
+static void S3InitStreamsNew (void)
+{
+  /* not yet */
+}
+
+static void S3InitStreams2000 (void)
+{
+  /* not yet */
+}
+
 static void S3StreamsOn (void)
 {
   unsigned char jStreamsControl;
@@ -402,27 +443,22 @@ static void S3StreamsOn (void)
     jStreamsControl = VGAIN8 (vgaCRReg) | ENABLE_STREAM1;
     VerticalRetraceWait ();
     VGAOUT16 (vgaCRIndex, (jStreamsControl << 8) | EXT_MISC_CTRL2);
-#if 0
-    S3InitStreamsNew ();
-#endif
-    /* These values specify brightness, contrast, saturation and hue. */
-    OUTREG (SEC_STREAM_COLOR_CONVERT1, 0x0000C892);
-    OUTREG (SEC_STREAM_COLOR_CONVERT2, 0x00039F9A);
-    OUTREG (SEC_STREAM_COLOR_CONVERT3, 0x01F1547E);
+
+    S3InitStreams = S3InitStreamsNew;
+    S3SetColor = S3SetColorNew;
+    S3SetColorKey = S3SetColorKeyNew;
+    S3DisplayVideo = S3DisplayVideoNew;
   }
   else if (info->chip.arch == S3_SAVAGE2000)
   {
     jStreamsControl = VGAIN8 (vgaCRReg) | ENABLE_STREAM1;
     VerticalRetraceWait ();
     VGAOUT16 (vgaCRIndex, (jStreamsControl << 8) | EXT_MISC_CTRL2);
-#if 0
-    S3InitStreams2000 ();
-#endif
-    /* These values specify brightness, contrast, saturation and hue. */
-    OUTREG (SEC_STREAM_COLOR_CONVERT0_2000, 0x0000C892);
-    OUTREG (SEC_STREAM_COLOR_CONVERT1_2000, 0x00033400);
-    OUTREG (SEC_STREAM_COLOR_CONVERT2_2000, 0x000001CF);
-    OUTREG (SEC_STREAM_COLOR_CONVERT3_2000, 0x01F1547E);
+
+    S3InitStreams = S3InitStreams2000;
+    S3SetColor = S3SetColor2000;
+    S3SetColorKey = S3SetColorKey2000;
+    S3DisplayVideo = S3DisplayVideo2000;
   }
   else
   {
@@ -430,13 +466,17 @@ static void S3StreamsOn (void)
     VerticalRetraceWait ();
     VGAOUT16 (vgaCRIndex, (jStreamsControl << 8) | EXT_MISC_CTRL2);
 
-    S3InitStreamsOld ();
+    S3InitStreams = S3InitStreamsOld;
+    S3SetColor = S3SetColorOld;
+    S3SetColorKey = S3SetColorKeyOld;
+    S3DisplayVideo = S3DisplayVideoOld;
   }
+
+  S3InitStreams ();
 
   VerticalRetraceWait ();
   /* Turn on secondary stream TV flicker filter, once we support TV. */
   /* SR70 |= 0x10 */
-  info->videoFlags |= VF_STREAMS_ON;
 }
 
 static void S3GetScrProp (struct s3_info *info)
@@ -505,8 +545,6 @@ static void S3StreamsOff (void)
     VGAOUT8 (vgaCRIndex, 0x92);
     VGAOUT8 (vgaCRReg, VGAIN8 (vgaCRReg) & 0x40);
   }
-
-  info->videoFlags &= ~VF_STREAMS_ON;
 }
 
 static int find_chip (unsigned chip_id)
@@ -582,6 +620,9 @@ int VIDIX_NAME(vixInit) (const char *args __attribute__ ((unused)))
 
   info->chip.arch = s3_card_ids[find_chip (pci_info.device)].arch;
 
+  /* Switch to vga registers */
+  OUTPORT8 (0x3c3, INPORT8 (0x3c3) | 0x01);
+  OUTPORT8 (0x3c2, INPORT8 (0x3cc) | 0x01);
   /* Unlock extended registers */
   OUTPORT8 (vgaCRIndex, 0x38);
   OUTPORT8 (vgaCRReg, 0x48);
@@ -607,9 +648,6 @@ int VIDIX_NAME(vixInit) (const char *args __attribute__ ((unused)))
   else
     info->control_base = map_phys_mem (pci_info.base0, S3_NEWMMIO_REGSIZE_SAVAGE);
 
-  /* Switch to vga registers */
-  VGAOUT8 (0x3c3, VGAIN8 (0x3c3) | 0x01);
-  VGAOUT8 (0x3c2, VGAIN8 (0x3cc) | 0x01);
   /* Unlock CRTC[0-7] */
   VGAOUT8 (vgaCRIndex, 0x11);
   VGAOUT8 (vgaCRReg, VGAIN8 (vgaCRReg) & 0x7f);
@@ -673,8 +711,6 @@ int VIDIX_NAME(vixInit) (const char *args __attribute__ ((unused)))
     printf ("[s3_vid] MTRR set up\n");
 
   S3GetScrProp (info);
-  info->videoFlags = 0;
-
   S3StreamsOn ();
 
   return 0;
@@ -708,8 +744,8 @@ static int is_supported_fourcc (uint32_t fourcc)
   case IMGFMT_UYVY:
   case IMGFMT_YUY2:
   case IMGFMT_Y211:
-  case IMGFMT_RGB15:
-  case IMGFMT_RGB16:
+  case IMGFMT_BGR15:
+  case IMGFMT_BGR16:
   case IMGFMT_BGR24:
   case IMGFMT_BGR32:
     return 1;
@@ -751,27 +787,31 @@ int VIDIX_NAME(vixSetGrKeys) (const vidix_grkey_t * grkey)
   {
     info->use_colorkey = 1;
     info->vidixcolorkey = ((grkey->ckey.red << 16) | (grkey->ckey.green << 8) | grkey->ckey.blue);
-
     printf ("[s3_vid] Set colorkey 0x%x\n", info->vidixcolorkey);
   }
-  //FIXME: freezes if streams arent enabled
-  S3SetColorKeyOld ();
-  return (0);
-}
-
-static vidix_video_eq_t equal = {
-  VEQ_CAP_BRIGHTNESS | VEQ_CAP_SATURATION | VEQ_CAP_HUE,
-  300, 100, 0, 0, 0, 0, 0, 0
-};
-
-int VIDIX_NAME(vixPlaybackGetEq) (vidix_video_eq_t * eq)
-{
-  memcpy (eq, &equal, sizeof (vidix_video_eq_t));
+  if (S3SetColorKey)
+    S3SetColorKey ();
   return 0;
 }
 
-int VIDIX_NAME(vixPlaybackSetEq) (const vidix_video_eq_t * eq __attribute__ ((unused)))
+int VIDIX_NAME(vixPlaybackGetEq) (vidix_video_eq_t * eq)
 {
+  memcpy (eq, &(info->eq), sizeof (vidix_video_eq_t));
+  return 0;
+}
+
+int VIDIX_NAME(vixPlaybackSetEq) (const vidix_video_eq_t * eq)
+{
+  if (eq->cap & VEQ_CAP_BRIGHTNESS)
+    info->eq.brightness = eq->brightness;
+  if (eq->cap & VEQ_CAP_CONTRAST)
+    info->eq.contrast = eq->contrast;
+  if (eq->cap & VEQ_CAP_SATURATION)
+    info->eq.saturation = eq->saturation;
+  if (eq->cap & VEQ_CAP_HUE)
+    info->eq.hue = eq->hue;
+  if (S3SetColor)
+    S3SetColor ();
   return 0;
 }
 
@@ -792,11 +832,12 @@ int VIDIX_NAME(vixConfigPlayback) (vidix_playback_t * vinfo)
   info->wy = vinfo->dest.y;
   info->format = vinfo->fourcc;
 
-  info->lastKnownPitch = 0;
-  info->brightness = 0;
-  info->contrast = 128;
-  info->saturation = 128;
-  info->hue = 0;
+  info->eq.cap = VEQ_CAP_BRIGHTNESS | VEQ_CAP_CONTRAST |
+                 VEQ_CAP_SATURATION | VEQ_CAP_HUE;
+  info->eq.brightness = 0;
+  info->eq.contrast = 0;
+  info->eq.saturation = 0;
+  info->eq.hue = 0;
 
   vinfo->offset.y = 0;
   vinfo->offset.v = 0;
@@ -862,7 +903,7 @@ int VIDIX_NAME(vixConfigPlayback) (vidix_playback_t * vinfo)
 
 int VIDIX_NAME(vixPlaybackOn) (void)
 {
-  S3DisplayVideoOld ();
+  S3DisplayVideo ();
   return 0;
 }
 
