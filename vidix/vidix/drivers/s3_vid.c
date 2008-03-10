@@ -60,6 +60,11 @@ static void S3SetColorNew (void);
 static void S3SetColor2000 (void); 
 static void (*S3SetColor) (void) = NULL;
 
+static void S3SelectFrameOld (unsigned int);
+static void S3SelectFrameNew (unsigned int);
+static void S3SelectFrame2000 (unsigned int);
+static void (*S3SelectFrame) (unsigned int) = NULL;
+
 static void S3DisplayVideoOld (void);
 static void S3DisplayVideoNew (void);
 static void S3DisplayVideo2000 (void);
@@ -221,7 +226,9 @@ static void S3SetColorOld (void)
 
   OUTREG (COLOR_ADJUSTMENT_REG, 0x80008000 | hsy << 24 | hsx << 16 |
     ((info->eq.contrast + 1000) * 31 / 2000) << 8 |
-    (info->eq.brightness + 1000) * 255 / 2000);
+    ((info->chip.arch == S3_VIRGE) ? 
+    (info->eq.brightness * 127 / 1000) & 0xff :
+    (info->eq.brightness + 1000) * 255 / 2000));
 }
 
 static void S3SetColorNew (void)
@@ -297,6 +304,21 @@ static void S3SetColorKey2000 (void)
   /* not yet */
 }
 
+static void S3SelectFrameOld (unsigned int frame)
+{
+  OUTREG (SSTREAM_FBADDR0_REG, info->picture_offset + (info->frame_size * frame));
+}
+
+static void S3SelectFrameNew (unsigned int frame)
+{
+
+}
+
+static void S3SelectFrame2000 (unsigned int frame)
+{
+
+}
+
 static void S3DisplayVideoOld (void)
 {
   unsigned int ssControl;
@@ -313,7 +335,7 @@ static void S3DisplayVideoOld (void)
   /* Set surface format and adjust scaling */
   if (info->chip.arch <= S3_VIRGE)
   {
-    ssControl = ((info->src_w - 1) << 1) - ((info->drw_w - 1) & 0xffff);
+    ssControl = (((info->src_w - 1) << 1) - (info->drw_w - 1)) & 0xfff;
     ssControl |= GetBlendForFourCC (info->format) << 24;
     if (info->src_w != info->drw_w)
       ssControl |= 2 << 28; 
@@ -352,7 +374,7 @@ static void S3DisplayVideoOld (void)
 
   if (info->chip.arch == S3_TRIO64V)
     OUTREG (STREAMS_FIFO_REG, (6 << 10) | (14 << 5) | 16);
-  else
+  else if (S3_SAVAGE_SERIES (info->chip.arch))
   {
     // FIXME: this should actually be enabled
     info->pitch = (info->pitch + 7) / 8;
@@ -447,6 +469,7 @@ static void S3StreamsOn (void)
     S3InitStreams = S3InitStreamsNew;
     S3SetColor = S3SetColorNew;
     S3SetColorKey = S3SetColorKeyNew;
+    S3SelectFrame = S3SelectFrameNew;
     S3DisplayVideo = S3DisplayVideoNew;
   }
   else if (info->chip.arch == S3_SAVAGE2000)
@@ -458,6 +481,7 @@ static void S3StreamsOn (void)
     S3InitStreams = S3InitStreams2000;
     S3SetColor = S3SetColor2000;
     S3SetColorKey = S3SetColorKey2000;
+    S3SelectFrame = S3SelectFrame2000;
     S3DisplayVideo = S3DisplayVideo2000;
   }
   else
@@ -469,6 +493,7 @@ static void S3StreamsOn (void)
     S3InitStreams = S3InitStreamsOld;
     S3SetColor = S3SetColorOld;
     S3SetColorKey = S3SetColorKeyOld;
+    S3SelectFrame = S3SelectFrameOld;
     S3DisplayVideo = S3DisplayVideoOld;
   }
 
@@ -741,7 +766,9 @@ static int is_supported_fourcc (uint32_t fourcc)
 // for planar to packed conversion
 //    case IMGFMT_YV12:
 //    case IMGFMT_I420:
-  case IMGFMT_UYVY:
+  case IMGFMT_UYVY:    
+    if (info->chip.arch <= S3_VIRGE)
+      return 0;
   case IMGFMT_YUY2:
   case IMGFMT_Y211:
   case IMGFMT_BGR15:
@@ -915,6 +942,6 @@ int VIDIX_NAME(vixPlaybackOff) (void)
 
 int VIDIX_NAME(vixPlaybackFrameSelect) (unsigned int frame)
 {
-  OUTREG (SSTREAM_FBADDR0_REG, info->picture_offset + (info->frame_size * frame));
+  S3SelectFrame (frame);
   return 0;
 }
