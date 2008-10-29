@@ -64,7 +64,7 @@ endif
 
 all: $(LIB_TARGETS)
 
-pci_names.c: oth/pci.db
+pci_names.c: oth/pci.ids
 	LC_ALL=C $(AWK) -f pci_db2c.awk $<
 
 test: pci_names.c $(LIBNAME) $(SHORTNAME)
