@@ -70,12 +70,12 @@ static __inline__ int disable_os_io(void)
 #include <linux/pci.h>
 #include "../../bswap.h"
 
-int pci_config_type(void)
+static int pci_config_type(void)
 {
     return 1;
 }
 
-int pci_get_vendor(
+static int pci_get_vendor(
           unsigned char bus,
           unsigned char dev,
           int func)
@@ -103,7 +103,7 @@ int pci_get_vendor(
     return retval;
 }
 
-long pci_config_read_long(
+static long pci_config_read_long(
           unsigned char bus,
           unsigned char dev,
           int func, 

@@ -69,6 +69,7 @@
 #ifdef CONFIG_LINUXHELPER
 #include "kernelhelper/dhahelper.h"
 #endif
+
 /* OS depended stuff */
 #if defined (linux)
 #include "sysdep/pci_linux.c"

@@ -13,7 +13,7 @@ BEGIN {
 
     if(ARGC != 2) {
 # check for arguments:
-	print "Usage awk -f pci_db2c.awk pci.db (and make sure pci.db file exists first)";
+	print "Usage awk -f pci_db2c.awk pci.ids (and make sure pci.ids file exists first)";
 	exit(1);
     }
     in_file = ARGV[1];
@@ -53,47 +53,51 @@ BEGIN {
     {
 # count up lines
 	line++;
-	n=split($0, field, "[\t]");
-	name_field = kill_double_quoting(field[3])
-# field[4] = "1" entries are new submissions not approved by the maintainers yet.
-	if(field[1] == "v" && length(field[3])>0 && field[4] == "0")
+	name_field = kill_double_quoting($0)
+	n=split(name_field, field, "[\t]");
+	if(substr(field[1],0,1)=="#") continue;
+	if(length(field[1])>0)
 	{
 		init_device_db()
-		svend_name = get_short_vendor_name(field[3])
+		svend_name = get_short_vendor_name(field[1])
 		printf("#define VENDOR_%s\t", svend_name) >vendor_file;
-		if(length(svend_name) < 9) printf("\t") >vendor_file;
-		printf("0x%s /*%s*/\n",field[2], name_field) >vendor_file;
-		printf("{ 0x%s, \"%s\", dev_lst_%s },\n",field[2], name_field, field[2]) >name_file;
-		printf("/* Vendor: %s: %s */\n", field[2], name_field) > ids_file
+		if(length(svend_name) < 8) printf("\t") >vendor_file;
+		if(length(svend_name) < 16) printf("\t") >vendor_file;
+		if(length(svend_name) < 24) printf("\t") >vendor_file;
+		printf("0x%s /*%s*/\n",substr(field[1],1,4), substr(name_field,7)) >vendor_file;
+		printf("{ 0x%s, \"%s\", dev_lst_%s },\n",substr(field[1],1,4), substr(name_field,7), substr(field[1],1,4)) >name_file;
+		printf("/* Vendor: %s: %s */\n", substr(field[1],1,4), substr(name_field,7)) > ids_file
 		if(first_pass == 1) { first_pass=0; }
 		else	{ print "{ 0xFFFF,  NULL }\n};" >dev_ids_file; }
-		printf("static const struct device_id_s dev_lst_%s[]={\n", field[2])>dev_ids_file
+		printf("static const struct device_id_s dev_lst_%s[]={\n", substr(field[1],1,4))>dev_ids_file
+		if(substr(field[1],1,4)=="ffff") break;
 	}
-	if(field[1] == "d" && length(field[3])>0 && field[4] == "0")
+	if(length(field[2])>0)
 	{
-		sdev_name = get_short_device_name(field[3])
+		sdev_name = get_short_device_name(field[2])
 		full_name = sprintf("#define DEVICE_%s_%s", svend_name, sdev_name);
 		printf("%s\t", full_name) >ids_file
-		if(length(full_name) < 9) printf("\t") >ids_file;
-		if(length(full_name) < 17) printf("\t") >ids_file;
-		if(length(full_name) < 25) printf("\t") >ids_file;
+		if(length(full_name) < 8) printf("\t") >ids_file;
+		if(length(full_name) < 16) printf("\t") >ids_file;
+		if(length(full_name) < 24) printf("\t") >ids_file;
 		if(length(full_name) < 32) printf("\t") >ids_file;
 		if(length(full_name) < 40) printf("\t") >ids_file;
 		if(length(full_name) < 48) printf("\t") >ids_file;
-		printf("0x%s /*%s*/\n", substr(field[2], 5), name_field) >ids_file
-		printf("{ 0x%s, \"%s\" },\n", substr(field[2], 5), name_field) >dev_ids_file
+		printf("0x%s /*%s*/\n", substr(field[2], 1, 4), substr(name_field,8)) >ids_file
+		printf("{ 0x%s, \"%s\" },\n", substr(field[2], 1, 4), substr(name_field,8)) >dev_ids_file
 	}
-	if(field[1] == "s" && length(field[3])>0 && field[4] == "0")
+	if(length(field[3])>0)
 	{
 		subdev_name = get_short_subdevice_name(field[3])
 		full_name = sprintf("#define SUBDEVICE_%s_%s", svend_name, subdev_name)
 		printf("\t%s\t", full_name) >ids_file
-		if(length(full_name) < 9) printf("\t") >ids_file;
-		if(length(full_name) < 17) printf("\t") >ids_file;
-		if(length(full_name) < 25) printf("\t") >ids_file;
+		if(length(full_name) < 8) printf("\t") >ids_file;
+		if(length(full_name) < 16) printf("\t") >ids_file;
+		if(length(full_name) < 24) printf("\t") >ids_file;
 		if(length(full_name) < 32) printf("\t") >ids_file;
 		if(length(full_name) < 40) printf("\t") >ids_file;
-		printf("0x%s /*%s*/\n", substr(field[2], 9), name_field) >ids_file
+		if(length(full_name) < 48) printf("\t") >ids_file;
+		printf("0x%s%s /*%s*/\n", substr(field[3], 1, 4), substr(field[3], 6, 4), substr(name_field,14)) >ids_file
 	}
     }
     print "Total lines parsed:", line;
@@ -204,7 +208,8 @@ function init_device_db()
 
 function get_short_vendor_name(from)
 {
-  n=split(from, name, "[ ]");
+  names=substr(from, 7);
+  n=split(names,name,"[ ]");
   new_name = toupper(name[1]);
   if(length(new_name)<3) new_name = sprintf("%s_%s", new_name, toupper(name[2]));
   n=split(new_name, name, "[^0-9A-Za-z]");
@@ -225,7 +230,8 @@ function get_short_vendor_name(from)
 
 function get_short_device_name(from_name)
 {
-  n=split(from_name, name, "[ ]");
+  names=substr(from_name, 7);
+  n=split(names,name,"[ ]");
   new_name = toupper(name[1]);
   if(length(name[2])) new_name = sprintf("%s_%s", new_name, toupper(name[2]));
   if(length(name[3])) new_name = sprintf("%s_%s", new_name, toupper(name[3]));
@@ -247,7 +253,8 @@ function get_short_device_name(from_name)
 
 function get_short_subdevice_name(from_name)
 {
-  n=split(from_name, name, "[ ]");
+  names=substr(from_name, 7);
+  n=split(substr(names,6),name,"[ ]");
   new_name = toupper(name[1]);
   if(length(name[2])) new_name = sprintf("%s_%s", new_name, toupper(name[2]));
   if(length(name[3])) new_name = sprintf("%s_%s", new_name, toupper(name[3]));
