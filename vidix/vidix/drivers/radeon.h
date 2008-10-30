@@ -1359,7 +1359,7 @@
 
 /* masks */
 
-#define	CONFIG_MEMSIZE_MASK		0x1f000000
+#define	CONFIG_MEMSIZE_MASK		0xff000000
 #define	MEM_CFG_TYPE			0x40000000
 #define	DST_OFFSET_MASK			0x003fffff
 #define	DST_PITCH_MASK			0x3fc00000
@@ -2220,5 +2220,51 @@
 #define	fld_GPIO_6_OUT_def			0x00000000
 
 /* End of field	default	values.	*/
+
+/* R300 */
+
+#define R300_DST_PIPE_CONFIG		                0x170c
+#       define R300_PIPE_AUTO_CONFIG                    (1 << 31)
+#define R300_RB2D_DSTCACHE_MODE		                0x3428
+#define R300_RB2D_DSTCACHE_MODE		                0x3428
+#       define R300_DC_AUTOFLUSH_ENABLE                 (1 << 8)
+#       define R300_DC_DC_DISABLE_IGNORE_PE             (1 << 17)
+#define R300_RB2D_DSTCACHE_CTLSTAT		        0x342c /* use DSTCACHE_CTLSTAT instead */
+#define R300_DSTCACHE_CTLSTAT		                0x1714
+#       define R300_DC_FLUSH_2D                         (1 << 0)
+#       define R300_DC_FREE_2D                          (1 << 2)
+#       define R300_RB2D_DC_FLUSH_ALL                   (R300_DC_FLUSH_2D | R300_DC_FREE_2D)
+#       define R300_RB2D_DC_BUSY                        (1 << 31)
+#define R300_RB3D_DSTCACHE_CTLSTAT		        0x4e4c
+#       define R300_DC_FLUSH_3D                         (2 << 0)
+#       define R300_DC_FREE_3D                          (2 << 2)
+#       define R300_RB3D_DC_FLUSH_ALL                   (R300_DC_FLUSH_3D | R300_DC_FREE_3D)
+#       define R300_DC_FINISH_3D                        (1 << 4)
+#define R300_RB3D_ZCACHE_CTLSTAT			0x4f18
+#       define R300_ZC_FLUSH                            (1 << 0)
+#       define R300_ZC_FREE                             (1 << 1)
+#       define R300_ZC_FLUSH_ALL                        0x3
+
+/* R600 */
+
+#define R600_BUS_CNTL				0x5420
+#define R600_CONFIG_CNTL			0x5424
+#define R600_CONFIG_MEMSIZE			0x5428
+#define R600_CONFIG_F0_BASE			0x542C
+#define R600_CONFIG_APER_SIZE			0x5430
+#define R600_ROM_CNTL				0x1600
+#       define R600_SCK_OVERWRITE                  (1 << 1)
+#       define R600_SCK_PRESCALE_CRYSTAL_CLK_SHIFT 28
+#       define R600_SCK_PRESCALE_CRYSTAL_CLK_MASK  (0xf << 28)
+
+#define R600_BIOS_0_SCRATCH		0x1724
+#define R600_BIOS_1_SCRATCH		0x1728
+#define R600_BIOS_2_SCRATCH		0x172c
+#define R600_BIOS_3_SCRATCH		0x1730
+#define R600_BIOS_4_SCRATCH		0x1734
+#define R600_BIOS_5_SCRATCH		0x1738
+#define R600_BIOS_6_SCRATCH		0x173c
+#define R600_BIOS_7_SCRATCH		0x1740
+
 
 #endif	/* RADEON_H */
