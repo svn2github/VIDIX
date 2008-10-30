@@ -1,6 +1,6 @@
 include ../../config.mak
 
-LIBDIR = $(prefix)/lib/vidix
+DRV_LIBDIR = $(LIBDIR)/vidix
 OLDLIBDIR = $(prefix)/lib/mplayerxp/vidix
 
 VIDIX_LIBS = -L../../libdha -ldha
@@ -113,13 +113,13 @@ dep depend:
 	$(CC) -MM $(CFLAGS) $(SRCS) 1>.depend
 
 install:
-	mkdir -p $(LIBDIR)
-	install -m 755 -p *.so $(LIBDIR)
+	mkdir -p $(DRV_LIBDIR)
+	install -m 755 -p *.so $(DRV_LIBDIR)
 	if test -d $(OLDLIBDIR) ; then rm -f $(OLDLIBDIR)/*.so ; rmdir -p --ignore-fail-on-non-empty $(OLDLIBDIR) ; fi
 
 uninstall:
-	rm -f $(LIBDIR)/*.so
-	rmdir -p --ignore-fail-on-non-empty $(LIBDIR)
+	rm -f $(DRV_LIBDIR)/*.so
+	rmdir -p --ignore-fail-on-non-empty $(DRV_LIBDIR)
 
 ifneq ($(wildcard .depend),)
 include .depend

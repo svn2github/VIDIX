@@ -8,7 +8,6 @@ LIBNAME_SHARED_VERSION = $(NAME).so.$(VIDIX_VERSION)
 LIBNAME_STATIC         = $(NAME).a
 LIBNAME_WIN32          = $(NAME).dll
 
-LIBDIR = $(prefix)/lib
 INCDIR = $(prefix)/include/vidix
 
 SRCS        = vidixlib.c
@@ -71,12 +70,12 @@ install:
 	mkdir -p $(LIBDIR)
 ifeq ($(VIDIX_BUILD_SHARED),yes)
 	install -m 755 -s -p $(LIBNAME_SHARED_VERSION) $(LIBDIR)
-	ln -sf $(LIBNAME_SHARED_VERSION) $(prefix)/lib/$(LIBNAME_SHARED)
-	ln -sf $(LIBNAME_SHARED_VERSION) $(prefix)/lib/$(LIBNAME_SHARED_MAJOR)
+	ln -sf $(LIBNAME_SHARED_VERSION) $(LIBDIR)/$(LIBNAME_SHARED)
+	ln -sf $(LIBNAME_SHARED_VERSION) $(LIBDIR)/$(LIBNAME_SHARED_MAJOR)
 	-$(LDCONFIG) $(LDCONFIG_FLAGS)
 endif
 ifeq ($(VIDIX_BUILD_STATIC),yes)
-	cp -f $(LIBNAME_STATIC) $(prefix)/lib
+	cp -f $(LIBNAME_STATIC) $(LIBDIR)
 endif
 
 	mkdir -p $(INCDIR)

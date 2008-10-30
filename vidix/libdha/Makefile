@@ -82,24 +82,24 @@ dep depend: pci_names.c
 	$(CC) -MM $(CFLAGS) $(SRCS) 1>.depend
 
 install:
-	-mkdir -p $(prefix)/lib
+	-mkdir -p $(LIBDIR)
 ifeq ($(VIDIX_BUILD_SHARED),yes)
-	install -D -m 755 -s -p $(LIBNAME_SHARED_VERSION) $(prefix)/lib/$(LIBNAME_SHARED_VERSION)
-	ln -sf $(LIBNAME_SHARED_VERSION) $(prefix)/lib/$(LIBNAME_SHARED)
-	ln -sf $(LIBNAME_SHARED_VERSION) $(prefix)/lib/$(LIBNAME_SHARED_MAJOR)
+	install -D -m 755 -s -p $(LIBNAME_SHARED_VERSION) $(LIBDIR)/$(LIBNAME_SHARED_VERSION)
+	ln -sf $(LIBNAME_SHARED_VERSION) $(LIBDIR)/$(LIBNAME_SHARED)
+	ln -sf $(LIBNAME_SHARED_VERSION) $(LIBDIR)/$(LIBNAME_SHARED_MAJOR)
 	-$(LDCONFIG) $(LDCONFIG_FLAGS)
 endif
 ifeq ($(VIDIX_BUILD_STATIC),yes)
-	cp -f $(LIBNAME_STATIC) $(prefix)/lib/$(LIBNAME_STATIC)
+	cp -f $(LIBNAME_STATIC) $(LIBDIR)/$(LIBNAME_STATIC)
 endif
 
 uninstall:
 ifeq ($(VIDIX_BUILD_SHARED),yes)
-	rm -f $(prefix)/lib/$(LIBNAME_SHARED)*
+	rm -f $(LIBDIR)/$(LIBNAME_SHARED)*
 	-$(LDCONFIG) $(LDCONFIG_FLAGS)
 endif
 ifeq ($(VIDIX_BUILD_STATIC),yes)
-	rm -f $(prefix)/lib/$(LIBNAME_STATIC)
+	rm -f $(LIBDIR)/$(LIBNAME_STATIC)
 endif
 
 ifneq ($(wildcard .depend),)
