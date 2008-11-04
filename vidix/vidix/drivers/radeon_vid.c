@@ -1505,10 +1505,15 @@ int VIDIX_NAME(vixInit)( const char *args )
   }
 #endif
   if((radeon_mem_base = map_phys_mem(pci_info.base0,radeon_ram_size))==(void *)-1) return ENOMEM;
-  radeon_vid_make_default();
   printf(RADEON_MSG" Video memory = %uMb\n",radeon_ram_size/0x100000);
   err = mtrr_set_type(pci_info.base0,radeon_ram_size,MTRR_TYPE_WRCOMB);
   if(!err) printf(RADEON_MSG" Set write-combining type of video memory\n");
+  if((besr.chip_flags&R_FAMILY)>=R_5X0) {
+    printf(RADEON_MSG" R500+ chips have perfectly redesigned architecture\n"
+	   RADEON_MSG" and currently are not supported by this driver\n");
+    return ENOSYS;
+  }
+  radeon_vid_make_default();
 #ifndef RAGE128
   {
     memset(&rinfo,0,sizeof(rinfo_t));
@@ -1535,7 +1540,7 @@ int VIDIX_NAME(vixInit)( const char *args )
     if(__verbose) printf(RADEON_MSG" Can't initialize busmastering: %s\n",strerror(errno));
 #endif
   save_regs();
-  return 0;  
+  return 0;
 }
 
 void VIDIX_NAME(vixDestroy)( void )
