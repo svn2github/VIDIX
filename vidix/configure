@@ -6,6 +6,10 @@ VERSION_MINOR=0
 VERSION_MICRO=0
 
 # The simplest configure for the vidix
+log(){
+    echo "$@" >>"$TMPLOG"
+}
+
 check_cmd(){
     log "$@"
     "$@" >>"$TMPLOG" 2>&1
