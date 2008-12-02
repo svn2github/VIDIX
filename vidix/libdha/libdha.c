@@ -90,7 +90,11 @@ void *map_phys_mem(unsigned long base, unsigned long size)
     }
   }
   devmem_locks++;
-  return mmap(0,size,PROT_READ|PROT_WRITE,MAP_SHARED|MAP_32BIT,devmem_fd,base) ;
+  return mmap(0,size,PROT_READ|PROT_WRITE,MAP_SHARED
+#ifdef MAP_32BIT
+  |MAP_32BIT
+#endif
+  ,devmem_fd,base) ;
 }
 
 void unmap_phys_mem(void *ptr, unsigned long size)
