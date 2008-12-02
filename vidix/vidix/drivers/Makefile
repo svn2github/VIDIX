@@ -6,7 +6,7 @@ OLDLIBDIR = $(prefix)/lib/mplayerxp/vidix
 VIDIX_LIBS = -L../../libdha -ldha
 VIDIX_LIBS_M = $(VIDIX_LIBS) -lm
 VIDIX_LIBS_X = $(VIDIX_LIBS_M) $(X_LIB)
-VIDIX_CFLAGS = -fPIC -I. -I.. -I../.. $(OPTFLAGS)
+VIDIX_CFLAGS = -W -Wall -fPIC -I. -I.. -I../.. $(OPTFLAGS)
 
 MACH64_CFLAGS = $(VIDIX_CFLAGS) -DRAGE128
 RAGE128_CFLAGS = $(VIDIX_CFLAGS) -DRAGE128
@@ -24,6 +24,7 @@ DRV=    cyberblade_vid.so \
 	pm3_vid.so \
 	radeon_vid.so \
 	rage128_vid.so \
+	radeonhd_vid.so \
 	s3_vid.so \
 	savage_vid.so \
 	sis_vid.so \
@@ -88,6 +89,9 @@ pm2_vid.so: pm2_vid.o
 pm3_vid.so: pm3_vid.o
 
 radeon_vid.so: radeon_vid.o
+	$(CC) -shared $< $(VIDIX_LIBS_M) -Wl,-soname,$@ -o $@
+
+radeonhd_vid.so: radeonhd_vid.o
 	$(CC) -shared $< $(VIDIX_LIBS_M) -Wl,-soname,$@ -o $@
 
 rage128_vid.so: rage128_vid.o
