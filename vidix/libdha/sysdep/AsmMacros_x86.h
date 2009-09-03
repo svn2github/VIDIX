@@ -1,7 +1,7 @@
 /*
    This file is based on:
    $XFree86: xc/programs/Xserver/hw/xfree86/drivers/chips/util/AsmMacros.h,v 1.1 2001/11/16 21:13:34 tsi Exp $
-   Modified for readability by Nick Kurshev
+   Modified for readability by Nickols_K
 */
 
 #ifndef __ASM_MACROS_X86_H

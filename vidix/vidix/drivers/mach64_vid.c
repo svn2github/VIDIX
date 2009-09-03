@@ -1,6 +1,6 @@
 /*
    mach64_vid - VIDIX based video driver for Mach64 and 3DRage chips
-   Copyrights 2002 Nick Kurshev. This file is based on sources from
+   Copyrights 2002 Nickols_K. This file is based on sources from
    GATOS (gatos.sf.net) and X11 (www.xfree86.org)
    Licence: GPL
    WARNING: THIS DRIVER IS IN BETTA STAGE
@@ -266,7 +266,7 @@ static void mach64_wait_vsync( void )
 static vidix_capability_t mach64_cap =
 {
     "BES driver for Mach64/3DRage cards",
-    "Nick Kurshev and Michael Niedermayer",
+    "Nickols_K and Michael Niedermayer",
     TYPE_OUTPUT,
     { 0, 0, 0, 0 },
     2048,

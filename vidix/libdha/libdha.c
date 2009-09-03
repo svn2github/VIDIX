@@ -6,7 +6,7 @@
     1999	- Øyvind Aabling.
     		  Modified for GATOS/win/gfxdump.
 		  
-    2002	- library implementation by Nick Kurshev
+    2002	- library implementation by Nickols_K
 		- dhahelper and some changes by Alex Beregszaszi
     
     supported O/S's:	SVR4, UnixWare, SCO, Solaris,

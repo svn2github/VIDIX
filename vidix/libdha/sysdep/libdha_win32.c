@@ -1,7 +1,7 @@
 /*
   MAPDEV.h - include file for VxD MAPDEV
   Copyright (c) 1996 Vireo Software, Inc.
-  Modified for libdha by Nick Kurshev.
+  Modified for libdha by Nickols_K
 */
 
 #include <windows.h>

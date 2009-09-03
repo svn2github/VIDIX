@@ -1,6 +1,6 @@
 # This file converts given pci.db to "C" source and header files
 # For latest version of pci ids see: http://pciids.sf.net
-# Copyright 2002 Nick Kurshev
+# Copyright 2002 Nickols_K
 #
 # Usage: awk -f pci_db2c.awk pci.db
 #

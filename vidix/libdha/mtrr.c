@@ -1,7 +1,7 @@
 /*
     mtrr.c - Stuff for optimizing memory access
     Copyrights:
-    2002	- Linux version by Nick Kurshev
+    2002	- Linux version by Nickols_K
     Licence: GPL
 */
 

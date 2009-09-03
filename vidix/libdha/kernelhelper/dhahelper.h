@@ -2,7 +2,7 @@
     Direct Hardware Access kernel helper
     
     (C) 2002 Alex Beregszaszi <alex@fsn.hu>
-    (C) 2002-2003 Nick Kurshev <nickols_k@mail.ru>
+    (C) 2002-2003 Nickols_K <nickols_k@mail.ru>
 */
 
 #ifndef DHAHELPER_H

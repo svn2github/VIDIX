@@ -5,7 +5,7 @@
 		  XFree86 3.3.3 implementation
     1999	- Øyvind Aabling.
     		  Modified for GATOS/win/gfxdump.
-    2002	- library implementation by Nick Kurshev
+    2002	- library implementation by Nickols_K
     
     supported O/S's:	SVR4, UnixWare, SCO, Solaris,
 			FreeBSD, NetBSD, 386BSD, BSDI BSD/386,

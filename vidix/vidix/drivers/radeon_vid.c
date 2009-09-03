@@ -1,6 +1,6 @@
 /*
    radeon_vid - VIDIX based video driver for Radeon and Rage128 chips
-   Copyrights 2002 Nick Kurshev. This file is based on sources from
+   Copyrights 2002 Nickols_K. This file is based on sources from
    GATOS (gatos.sf.net) and X11 (www.xfree86.org)
    Licence: GPL
 */
@@ -1193,7 +1193,7 @@ vidix_capability_t def_cap =
 #else
     "BES driver for radeon cards",
 #endif
-    "Nick Kurshev",
+    "Nickols_K",
     TYPE_OUTPUT | TYPE_FX,
     { 0, 0, 0, 0 },
     2048,

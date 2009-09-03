@@ -1,6 +1,6 @@
 /*
    rhd_vid - VIDIX based video driver for RadeonHD chips.
-   Copyrights 2008 Nick Kurshev.
+   Copyrights 2008 Nickols_K.
    Licence: GPL
 */
 
@@ -617,7 +617,7 @@ static int probed=0;
 vidix_capability_t def_cap = 
 {
     "BES driver for r600 cards",
-    "Nick Kurshev",
+    "Nickols_K",
     TYPE_OUTPUT | TYPE_FX,
     { 0, 0, 0, 0 },
     8192,

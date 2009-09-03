@@ -1,7 +1,7 @@
 /*
  * fourcc.h
  * This file is part of VIDIX
- * Copyright 2002 Nick Kurshev
+ * Copyright 2002 Nickols_K
  * Licence: GPL
  * This interface is based on v4l2, fbvid.h, mga_vid.h projects
  * and personally my ideas.

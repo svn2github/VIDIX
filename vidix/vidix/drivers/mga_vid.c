@@ -6,7 +6,7 @@
  * YUY2 support (see config.format) added by A'rpi/ESP-team
  * double buffering added by A'rpi/ESP-team
  *
- * Brightness/contrast support by Nick Kurshev/Dariush Pietrzak (eyck) and me
+ * Brightness/contrast support by Nickols_K/Dariush Pietrzak (eyck) and me
  *
  * Fixed Brightness/Contrast
  * Rewrite or read/write kabi@users.sf.net
@@ -135,7 +135,7 @@ static int mga_next_frame = 0;
 static vidix_capability_t mga_cap =
 {
     "Matrox MGA G200/G4x0/G5x0 YUV Video",
-    "Aaron Holtzman, Arpad Gereoffy, Alex Beregszaszi, Nick Kurshev",
+    "Aaron Holtzman, Arpad Gereoffy, Alex Beregszaszi, Nickols_K",
     TYPE_OUTPUT,
     { 0, 0, 0, 0 },
     2048,

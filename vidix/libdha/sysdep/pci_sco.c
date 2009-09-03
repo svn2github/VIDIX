@@ -1,7 +1,7 @@
 /*
    This file is based on:
    $XFree86: xc/programs/Xserver/hw/xfree86/etc/scanpci.c,v 3.34.2.17 1998/11/10 11:55:40 dawes Exp $
-   Modified for readability by Nick Kurshev
+   Modified for readability by Nickols_K
 */
 #include <sys/console.h>
 #include <sys/param.h>

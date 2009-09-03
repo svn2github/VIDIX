@@ -3,7 +3,7 @@
  * This	software has been released under the terms of the GNU Public
  * license. See	http://www.gnu.org/copyleft/gpl.html for details.
  *
- * This	collection of definition was written by	Nick Kurshev
+ * This	collection of definition was written by	Nickols_K
  * It's	based on radeonfb, X11,	GATOS sources
  * and partly compatible with Rage128 set (in OV0, CAP0, CAP1 parts)
 */

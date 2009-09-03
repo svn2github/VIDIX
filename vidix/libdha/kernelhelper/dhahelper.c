@@ -2,7 +2,7 @@
     Direct Hardware Access kernel helper
     
     (C) 2002 Alex Beregszaszi <alex@fsn.hu>
-    (C) 2002-2003 Nick Kurshev <nickols_k@mail.ru>
+    (C) 2002-2003 Nickols_K <nickols_k@mail.ru>
     (C) 2002-2004 Måns Rullgård <mru@users.sourceforge.net>
     (C) 2007 Benjamin Zores <ben@geexbox.org>
 
@@ -122,7 +122,7 @@
 #define irqreturn(n) return
 #endif
 
-MODULE_AUTHOR("Alex Beregszaszi <alex@fsn.hu>, Nick Kurshev <nickols_k@mail.ru>, Måns Rullgård <mru@users.sf.net>, Benjamin Zores <ben@geexbox.org>");
+MODULE_AUTHOR("Alex Beregszaszi <alex@fsn.hu>, Nickols_K <nickols_k@mail.ru>, Måns Rullgård <mru@users.sf.net>, Benjamin Zores <ben@geexbox.org>");
 MODULE_DESCRIPTION("Provides userspace access to hardware");
 #ifdef MODULE_LICENSE
 MODULE_LICENSE("GPL");

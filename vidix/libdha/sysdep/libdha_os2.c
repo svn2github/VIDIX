@@ -1,5 +1,5 @@
 /* $XFree86: xc/programs/Xserver/hw/xfree86/os-support/os2/os2_video.c,v 3.14 2000/10/28 01:42:28 mvojkovi Exp $ */
-/* Modified for libdha by Nick Kurshev. */
+/* Modified for libdha by Nickols_K. */
 /*
  * (c) Copyright 1994,1999 by Holger Veit
  *			<Holger.Veit@gmd.de>
