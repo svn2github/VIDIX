@@ -122,6 +122,9 @@ Miscellaneous options:
   --cc=COMPILER          use this C compiler to build VIDIX [gcc]
   --target=PLATFORM      target platform (i386-linux, arm-linux, etc)
 
+Environment variables:
+  DESTDIR   specifies base of installation
+
 EOF
     exit 0
   fi
@@ -474,6 +477,7 @@ prefix = $_prefix
 DATADIR = $_datadir
 LIBDIR = $_libdir
 CONFDIR = $_confdir
+DESTDIR = $DESTDIR
 OPTFLAGS = $CFLAGS
 AWK = $_awk
 CC=$_cc

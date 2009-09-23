@@ -67,33 +67,33 @@ dep depend:
 	$(MAKE) -C drivers depend
 
 install:
-	mkdir -p $(LIBDIR)
+	mkdir -p $(DESTDIR)$(LIBDIR)
 ifeq ($(VIDIX_BUILD_SHARED),yes)
-	install -m 755 -s -p $(LIBNAME_SHARED_VERSION) $(LIBDIR)
-	ln -sf $(LIBNAME_SHARED_VERSION) $(LIBDIR)/$(LIBNAME_SHARED)
-	ln -sf $(LIBNAME_SHARED_VERSION) $(LIBDIR)/$(LIBNAME_SHARED_MAJOR)
+	install -m 755 -s -p $(LIBNAME_SHARED_VERSION) $(DESTDIR)$(LIBDIR)
+	ln -sf $(LIBNAME_SHARED_VERSION) $(DESTDIR)$(LIBDIR)/$(LIBNAME_SHARED)
+	ln -sf $(LIBNAME_SHARED_VERSION) $(DESTDIR)$(LIBDIR)/$(LIBNAME_SHARED_MAJOR)
 	-$(LDCONFIG) $(LDCONFIG_FLAGS)
 endif
 ifeq ($(VIDIX_BUILD_STATIC),yes)
-	cp -f $(LIBNAME_STATIC) $(LIBDIR)
+	cp -f $(LIBNAME_STATIC) $(DESTDIR)$(LIBDIR)
 endif
 
-	mkdir -p $(INCDIR)
-	install -m 644 fourcc.h $(INCDIR)
-	install -m 644 vidix.h $(INCDIR)
-	install -m 644 vidixlib.h $(INCDIR)
+	mkdir -p $(DESTDIR)$(INCDIR)
+	install -m 644 fourcc.h $(DESTDIR)$(INCDIR)
+	install -m 644 vidix.h $(DESTDIR)$(INCDIR)
+	install -m 644 vidixlib.h $(DESTDIR)$(INCDIR)
 
 	$(MAKE) -C drivers install
 
 uninstall:
 ifeq ($(VIDIX_BUILD_SHARED),yes)
-	rm -f $(LIBDIR)/$(LIBNAME_SHARED)*
+	rm -f $(DESTDIR)$(LIBDIR)/$(LIBNAME_SHARED)*
 	-$(LDCONFIG) $(LDCONFIG_FLAGS)
 endif
 ifeq ($(VIDIX_BUILD_STATIC),yes)
-	rm -f $(LIBDIR)/$(LIBNAME_STATIC)
+	rm -f $(DESTDIR)$(LIBDIR)/$(LIBNAME_STATIC)
 endif
-	rm -f $(INCDIR)/fourcc.h $(INCDIR)/vidix.h $(INCDIR)/vidixlib.h
+	rm -f $(DESTDIR)$(INCDIR)/fourcc.h $(DESTDIR)$(INCDIR)/vidix.h $(DESTDIR)$(INCDIR)/vidixlib.h
 	$(MAKE) -C drivers uninstall
 
 ifneq ($(wildcard .depend),)
