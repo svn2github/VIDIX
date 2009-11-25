@@ -39,7 +39,7 @@ endif
 	$(CC) -c $(CFLAGS) -o $@ $<
 
 $(LIBNAME_SHARED_VERSION): $(OBJS)
-	$(CC) -shared -Wl,-soname -Wl,$@ -o $@ $(OBJS) $(LIBS)
+	$(CC) $(LDFLAGS) -shared -Wl,-soname -Wl,$@ -o $@ $(OBJS) $(LIBS)
 ifneq  ($(TARGET_OS),CYGWIN)
 	ln -sf $@ $(LIBNAME_SHARED)
 	ln -sf $@ $(LIBNAME_SHARED_MAJOR)
@@ -49,7 +49,7 @@ $(LIBNAME_STATIC): $(OBJS)
 	$(AR) r $@ $(OBJS)
 
 $(LIBNAME_WIN32): $(OBJS)
-	$(CC) -shared -o $(LIBNAME_WIN32) $(OBJS) $(LIBS)
+	$(CC) $(LDFLAGS) -shared -o $(LIBNAME_WIN32) $(OBJS) $(LIBS)
 
 LIB_TARGETS=
 ifeq ($(VIDIX_BUILD_SHARED),yes)
@@ -82,24 +82,24 @@ dep depend: pci_names.c
 	$(CC) -MM $(CFLAGS) $(SRCS) 1>.depend
 
 install:
-	-mkdir -p $(DESTDIR)$(LIBDIR)
+	-mkdir -p $(LIBDIR)
 ifeq ($(VIDIX_BUILD_SHARED),yes)
-	install -D -m 755 -s -p $(LIBNAME_SHARED_VERSION) $(DESTDIR)$(LIBDIR)/$(LIBNAME_SHARED_VERSION)
-	ln -sf $(LIBNAME_SHARED_VERSION) $(DESTDIR)$(LIBDIR)/$(LIBNAME_SHARED)
-	ln -sf $(LIBNAME_SHARED_VERSION) $(DESTDIR)$(LIBDIR)/$(LIBNAME_SHARED_MAJOR)
+	install -D -m 755 -s -p $(LIBNAME_SHARED_VERSION) $(LIBDIR)/$(LIBNAME_SHARED_VERSION)
+	ln -sf $(LIBNAME_SHARED_VERSION) $(LIBDIR)/$(LIBNAME_SHARED)
+	ln -sf $(LIBNAME_SHARED_VERSION) $(LIBDIR)/$(LIBNAME_SHARED_MAJOR)
 	-$(LDCONFIG) $(LDCONFIG_FLAGS)
 endif
 ifeq ($(VIDIX_BUILD_STATIC),yes)
-	cp -f $(LIBNAME_STATIC) $(DESTDIR)$(LIBDIR)/$(LIBNAME_STATIC)
+	cp -f $(LIBNAME_STATIC) $(LIBDIR)/$(LIBNAME_STATIC)
 endif
 
 uninstall:
 ifeq ($(VIDIX_BUILD_SHARED),yes)
-	rm -f $(DESTDIR)$(LIBDIR)/$(LIBNAME_SHARED)*
+	rm -f $(LIBDIR)/$(LIBNAME_SHARED)*
 	-$(LDCONFIG) $(LDCONFIG_FLAGS)
 endif
 ifeq ($(VIDIX_BUILD_STATIC),yes)
-	rm -f $(DESTDIR)$(LIBDIR)/$(LIBNAME_STATIC)
+	rm -f $(LIBDIR)/$(LIBNAME_STATIC)
 endif
 
 ifneq ($(wildcard .depend),)

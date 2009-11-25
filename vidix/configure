@@ -133,6 +133,7 @@ done
 mktmps
 
 guess_target config.mak config.h
+test_optimizations config.mak config.h
 
 test -n "$_ld_extra"	&& add_extralibs $_ld_extra
 test -n "$_exld_flags"	&& add_ldflags $_exld_flags
@@ -216,6 +217,8 @@ DATADIR = $_datadir
 CONFDIR = $_confdir
 LIBDIR = $_libdir
 DESTDIR = $DESTDIR
+OPTFLAGS = $CFLAGS
+LDFLAGS = $LDFLAGS
 AR = ar
 CC = $_cc
 AWK = $_awk
@@ -250,8 +253,6 @@ $_def_debug
 #define DATADIR "$_datadir"
 #define CONFDIR "$_confdir"
 #define LIBDIR "$_libdir"
-
-#endif
 EOF
 
 # Last move:
