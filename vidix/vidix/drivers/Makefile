@@ -117,13 +117,13 @@ dep depend:
 	$(CC) -MM $(CFLAGS) $(SRCS) 1>.depend
 
 install:
-	mkdir -p $(DRV_LIBDIR)
-	install -m 755 -p *.so $(DRV_LIBDIR)
+	mkdir -p $(DESTDIR)$(DRV_LIBDIR)
+	install -m 755 -p *.so $(DESTDIR)$(DRV_LIBDIR)
 	if test -d $(OLDLIBDIR) ; then rm -f $(OLDLIBDIR)/*.so ; rmdir -p --ignore-fail-on-non-empty $(OLDLIBDIR) ; fi
 
 uninstall:
-	rm -f $(DRV_LIBDIR)/*.so
-	rmdir -p --ignore-fail-on-non-empty $(DRV_LIBDIR)
+	rm -f $(DESTDIR)$(DRV_LIBDIR)/*.so
+	rmdir -p --ignore-fail-on-non-empty $(DESTDIR)$(DRV_LIBDIR)
 
 ifneq ($(wildcard .depend),)
 include .depend
