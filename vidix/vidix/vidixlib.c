@@ -30,7 +30,7 @@
 #define dlopen(h,s) LoadLibrary(h)
 #define dlclose(h) FreeLibrary(h)
 static char* dlerror(){
-  char errormsg[10];
+  static char errormsg[10];
   sprintf(errormsg,"%i\n",GetLastError());
   return errormsg;
 }
