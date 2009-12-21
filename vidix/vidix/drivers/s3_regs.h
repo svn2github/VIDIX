@@ -1,6 +1,8 @@
 #ifndef _SAVAGE_REGS_H
 #define _SAVAGE_REGS_H
 
+#define S3_VIRGE_SERIES(chip) ((chip>=S3_VIRGE) && (chip<=S3_TRIO3D2X))
+#define S3_VIRGE_NEW_SERIES(chip) ((chip>=S3_VIRGE_MX) && (chip<=S3_TRIO3D2X))
 #define S3_SAVAGE3D_SERIES(chip) ((chip>=S3_SAVAGE3D) && (chip<=S3_SAVAGE_MX))
 #define S3_SAVAGE4_SERIES(chip) ((chip==S3_SAVAGE4) || (chip==S3_PROSAVAGE))
 #define	S3_SAVAGE_MOBILE_SERIES(chip) ((chip==S3_SAVAGE_MX) || (chip==S3_SUPERSAVAGE))
@@ -14,6 +16,12 @@ enum S3CHIPTAGS {
     S3_UNKNOWN = 0,
     S3_TRIO64V,
     S3_VIRGE,
+    S3_VIRGE_VX,
+    S3_VIRGE_DXGX,
+    S3_VIRGE_MX,
+    S3_VIRGE_GX2,
+    S3_TRIO3D,
+    S3_TRIO3D2X,
     S3_SAVAGE3D,
     S3_SAVAGE_MX,
     S3_SAVAGE4,

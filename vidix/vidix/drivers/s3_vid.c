@@ -75,6 +75,8 @@ static void S3InitStreamsNew (void);
 static void S3InitStreams2000 (void);
 static void (*S3InitStreams) (void) = NULL;
 
+static void s3_destroy (void);
+
 pciinfo_t pci_info;
 
 struct s3_chip
@@ -156,13 +158,15 @@ static struct s3_cards s3_card_ids[] = {
   {DEVICE_S3_INC_TRIO_64V_FAMILY11, S3_TRIO64V},
   /* Virge */
   {DEVICE_S3_INC_86C325_VIRGE, S3_VIRGE},
-  {DEVICE_S3_INC_86C988_VIRGE_VX, S3_VIRGE},
-  {DEVICE_S3_INC_VIRGE_DX_OR_GX, S3_VIRGE},
-  {DEVICE_S3_INC_VIRGE_GX2, S3_VIRGE},
-  {DEVICE_S3_INC_VIRGE_M3, S3_VIRGE},
-  {DEVICE_S3_INC_VIRGE_MX, S3_VIRGE},
-  {DEVICE_S3_INC_VIRGE_MX2, S3_VIRGE},
-  {DEVICE_S3_INC_VIRGE_MX_MV, S3_VIRGE},
+  {DEVICE_S3_INC_86C988_VIRGE_VX, S3_VIRGE_VX},
+  {DEVICE_S3_INC_VIRGE_DX_OR_GX, S3_VIRGE_DXGX},
+  {DEVICE_S3_INC_VIRGE_GX2, S3_VIRGE_GX2},
+  {DEVICE_S3_INC_VIRGE_M3, S3_VIRGE_MX},
+  {DEVICE_S3_INC_VIRGE_MX, S3_VIRGE_MX},
+  {DEVICE_S3_INC_VIRGE_MX2, S3_VIRGE_MX},
+  {DEVICE_S3_INC_VIRGE_MX_MV, S3_VIRGE_MX},
+  {DEVICE_S3_INC_TRIO_64_3D, S3_TRIO3D},
+  {DEVICE_S3_INC_86C368_TRIO_3D_2X, S3_TRIO3D2X},
   /* Savage3D */
   {DEVICE_S3_INC_86C794_SAVAGE_3D, S3_SAVAGE3D},
   {DEVICE_S3_INC_86C390_SAVAGE_3D_MV, S3_SAVAGE3D},
@@ -226,7 +230,7 @@ static void S3SetColorOld (void)
 
   OUTREG (COLOR_ADJUSTMENT_REG, 0x80008000 | hsy << 24 | hsx << 16 |
     ((info->eq.contrast + 1000) * 31 / 2000) << 8 |
-    ((info->chip.arch == S3_VIRGE) ? 
+    ((S3_VIRGE_SERIES (info->chip.arch)) ?
     (info->eq.brightness * 127 / 1000) & 0xff :
     (info->eq.brightness + 1000) * 255 / 2000));
 }
@@ -244,6 +248,7 @@ static void S3SetColor2000 (void)
 static void S3SetColorKeyOld (void)
 {
   int red, green, blue;
+  int key_control;
 
   /* Here, we reset the colorkey and all the controls */
 
@@ -259,38 +264,57 @@ static void S3SetColorKeyOld (void)
   }
   else
   {
+    if (info->chip.arch < S3_VIRGE_MX)
+      key_control = 0x10000000;
+
     switch (info->depth)
     {
       // FIXME: isnt fixed yet
     case 8:
-      OUTREG (COL_CHROMA_KEY_CONTROL_REG, 0x37000000 | (info->vidixcolorkey & 0xFF));
-      OUTREG (CHROMA_KEY_UPPER_BOUND_REG, 0x00000000 | (info->vidixcolorkey & 0xFF));
+      if (info->chip.arch >= S3_SAVAGE3D)
+      {
+        key_control = 0x37000000;
+        OUTREG (CHROMA_KEY_UPPER_BOUND_REG, info->vidixcolorkey & 0xFF);
+      }
+      OUTREG (COL_CHROMA_KEY_CONTROL_REG, key_control | (info->vidixcolorkey & 0xFF));
       break;
     case 15:
       /* 15 bpp 555 */
       red &= 0x1f;
       green &= 0x1f;
       blue &= 0x1f;
-      OUTREG (COL_CHROMA_KEY_CONTROL_REG, 0x05000000 | (red << 19) | (green << 11) | (blue << 3));
-      OUTREG (CHROMA_KEY_UPPER_BOUND_REG, 0x00000000 | (red << 19) | (green << 11) | (blue << 3));
+      if (info->chip.arch >= S3_SAVAGE3D)
+      {
+        key_control = 0x05000000;
+        OUTREG (CHROMA_KEY_UPPER_BOUND_REG, (red << 19) | (green << 11) | (blue << 3));
+      }
+      OUTREG (COL_CHROMA_KEY_CONTROL_REG, key_control | (red << 19) | (green << 11) | (blue << 3));
       break;
     case 16:
       /* 16 bpp 565 */
       red &= 0x1f;
       green &= 0x3f;
       blue &= 0x1f;
-      OUTREG (COL_CHROMA_KEY_CONTROL_REG, 0x16000000 | (red << 19) | (green << 10) | (blue << 3));
-      OUTREG (CHROMA_KEY_UPPER_BOUND_REG, 0x00020002 | (red << 19) | (green << 10) | (blue << 3));
+      if (info->chip.arch >= S3_SAVAGE3D)
+      {
+        key_control = 0x16000000;
+        OUTREG (CHROMA_KEY_UPPER_BOUND_REG, 0x00020002 | (red << 19) | (green << 10) | (blue << 3));
+      }
+      OUTREG (COL_CHROMA_KEY_CONTROL_REG, key_control | (red << 19) | (green << 10) | (blue << 3));
       break;
     case 24:
       /* 24 bpp 888 */
-      OUTREG (COL_CHROMA_KEY_CONTROL_REG, 0x17000000 | (red << 16) | (green << 8) | (blue));
-      OUTREG (CHROMA_KEY_UPPER_BOUND_REG, 0x00000000 | (red << 16) | (green << 8) | (blue));
+      if (info->chip.arch >= S3_SAVAGE3D)
+      {
+        key_control = 0x17000000;
+        OUTREG (CHROMA_KEY_UPPER_BOUND_REG, (red << 16) | (green << 8) | (blue));
+      }
+      OUTREG (COL_CHROMA_KEY_CONTROL_REG, key_control | (red << 16) | (green << 8) | (blue));
       break;
     }
 
     /* We use destination colorkey */
-    OUTREG (BLEND_CONTROL_REG, 0x05000000);
+    OUTREG (BLEND_CONTROL_REG, S3_VIRGE_NEW_SERIES (info->chip.arch) ? 0x20 : 0x05000000);
   }
 }
 
@@ -333,7 +357,7 @@ static void S3DisplayVideoOld (void)
   OUTREG (SSTREAM_WINDOW_SIZE_REG, OS_WH (info->drw_w, info->drw_h));
 
   /* Set surface format and adjust scaling */
-  if (info->chip.arch <= S3_VIRGE)
+  if (info->chip.arch < S3_SAVAGE3D)
   {
     ssControl = (((info->src_w - 1) << 1) - (info->drw_w - 1)) & 0xfff;
     ssControl |= GetBlendForFourCC (info->format) << 24;
@@ -373,18 +397,21 @@ static void S3DisplayVideoOld (void)
   }
 
   if (info->chip.arch == S3_TRIO64V)
-    OUTREG (STREAMS_FIFO_REG, (6 << 10) | (14 << 5) | 16);
-  else if (S3_SAVAGE_SERIES (info->chip.arch))
+    OUTREG (STREAMS_FIFO_REG, (6 << 10) | (14 << 5) | 0x10);
+  else if (info->chip.arch < S3_VIRGE_MX)
+    OUTREG (FIFO_CONTROL_REG, (4 << 12) | (8 << 6) | 0x10);
+  else if (info->chip.arch < S3_SAVAGE3D)
+    VGAOUT16 (vgaCRIndex, 0x1087);
+  else
   {
-    // FIXME: this should actually be enabled
-    info->pitch = (info->pitch + 7) / 8;
     VGAOUT8 (vgaCRIndex, 0x92);
     cr92 = VGAIN8 (vgaCRReg);
     VGAOUT8 (vgaCRReg, (cr92 & 0x40) | (info->pitch >> 8) | 0x80);
     VGAOUT8 (vgaCRIndex, 0x93);
     VGAOUT8 (vgaCRReg, info->pitch);
-    OUTREG (STREAMS_FIFO_REG, 2 | 25 << 5 | 32 << 11);
+    OUTREG (STREAMS_FIFO_REG, (32 << 11) | (25 << 5) | 2);
   }
+
 }
 
 static void S3DisplayVideoNew (void)
@@ -552,7 +579,9 @@ static void S3StreamsOff (void)
   unsigned char jStreamsControl;
 
   if (info->chip.arch == S3_TRIO64V)
-    OUTREG (STREAMS_FIFO_REG, (20 << 10));
+    OUTREG (STREAMS_FIFO_REG, 20 << 10);
+  else if (info->chip.arch < S3_VIRGE_MX)
+    OUTREG (FIFO_CONTROL_REG,  12 << 12);
 
   VGAOUT8 (vgaCRIndex, EXT_MISC_CTRL2);
   if (S3_SAVAGE_MOBILE_SERIES (info->chip.arch) ||
@@ -633,9 +662,14 @@ int VIDIX_NAME(vixInit) (const char *args __attribute__ ((unused)))
 {
   unsigned char cr36;
   int mtrr, videoRam;
-  static unsigned char RamTrioVirge[] = { 4, 0, 3, 8, 2, 6, 1, 0 };
+  static unsigned char RamTrio64V[]  = { 4, 0, 3, 8, 2, 6, 1, 0 };
+  static unsigned char RamVirge[]    = { 4, 0, 0, 0, 2, 0, 1, 0 };
+  static unsigned char RamVirgeVX[]  = { 2, 4, 6, 8 };
+  static unsigned char RamVirgeGX2[] = { 0, 4, 0, 2 };
+  static unsigned char RamTrio3D[]   = { 4, 0, 4, 0, 2, 0, 0, 0 };
+  static unsigned char RamTrio3D2X[] = { 8, 4, 4, 0, 0, 0, 2, 0 }; 
   static unsigned char RamSavage3D[] = { 8, 4, 4, 2 };
-  static unsigned char RamSavage4[] = { 2, 4, 8, 12, 16, 32, 64, 32 };
+  static unsigned char RamSavage4[]  = { 2, 4, 8, 12, 16, 32, 64, 32 };
   static unsigned char RamSavageMX[] = { 2, 8, 4, 16, 8, 16, 4, 16 };
   static unsigned char RamSavageNB[] = { 0, 2, 4, 8, 16, 32, 16, 2 };
 
@@ -654,24 +688,22 @@ int VIDIX_NAME(vixInit) (const char *args __attribute__ ((unused)))
   OUTPORT8 (vgaCRIndex, 0x39);
   OUTPORT8 (vgaCRReg, 0xa0);
 
-  if (info->chip.arch <= S3_VIRGE)
+  if (info->chip.arch < S3_SAVAGE3D)
   {
-    /* TODO: Improve detecting code */
-
-    /* Enable LFB */
-    OUTPORT8 (vgaCRIndex, LIN_ADDR_CTRL);
-    OUTPORT8 (vgaCRReg,  INPORT8 (vgaCRReg) | ENABLE_LFB);
-    /* Enable NewMMIO */
+    /* Enable NewMMIO first */
     OUTPORT8 (vgaCRIndex, EXT_MEM_CTRL1);
     OUTPORT8 (vgaCRReg,  INPORT8 (vgaCRReg) | ENABLE_NEWMMIO);
-  }
 
-  if (info->chip.arch < S3_SAVAGE3D)
     info->control_base = map_phys_mem (pci_info.base0 + S3_NEWMMIO_REGBASE, S3_NEWMMIO_REGSIZE);
+  }
   else if (info->chip.arch == S3_SAVAGE3D)
     info->control_base = map_phys_mem (pci_info.base0 + S3_NEWMMIO_REGBASE, S3_NEWMMIO_REGSIZE_SAVAGE);
   else
     info->control_base = map_phys_mem (pci_info.base0, S3_NEWMMIO_REGSIZE_SAVAGE);
+
+  /* Enable LFB */
+  VGAOUT8 (vgaCRIndex, LIN_ADDR_CTRL);
+  VGAOUT8 (vgaCRReg,  INPORT8 (vgaCRReg) | ENABLE_LFB);
 
   /* Unlock CRTC[0-7] */
   VGAOUT8 (vgaCRIndex, 0x11);
@@ -685,8 +717,28 @@ int VIDIX_NAME(vixInit) (const char *args __attribute__ ((unused)))
   switch (info->chip.arch)
   {
   case S3_TRIO64V:
+    videoRam = RamTrio64V[(cr36 & 0xE0) >> 5] * 1024;
+    break;
+
   case S3_VIRGE:
-    videoRam = RamTrioVirge[(cr36 & 0xE0) >> 5] * 1024;
+  case S3_VIRGE_DXGX:
+    videoRam = RamVirge[(cr36 & 0xE0) >> 5] * 1024;
+    break;
+
+  case S3_VIRGE_VX:
+    videoRam = RamVirgeVX[(cr36 & 0x60) >> 5] * 1024;
+
+  case S3_VIRGE_GX2:
+  case S3_VIRGE_MX:
+    videoRam = RamVirgeGX2[(cr36 & 0xC0) >> 6] * 1024;
+    break;
+
+  case S3_TRIO3D:
+    videoRam = RamTrio3D[(cr36 & 0xE0) >> 5] * 1024;
+    break;
+
+  case S3_TRIO3D2X:
+    videoRam = RamTrio3D2X[(cr36 & 0xE0) >> 5] * 1024;
     break;
 
   case S3_SAVAGE3D:
@@ -722,6 +774,13 @@ int VIDIX_NAME(vixInit) (const char *args __attribute__ ((unused)))
     break;
   }
 
+  if (!videoRam)
+  {
+    printf ("[s3_vid] Unsupported configuration, aborting\n");
+//    s3_destroy ();
+    return -1;
+  }
+
   printf ("[s3_vid] VideoRam = %d\n", videoRam);
   info->chip.fbsize = videoRam * 1024;
 
@@ -744,10 +803,10 @@ int VIDIX_NAME(vixInit) (const char *args __attribute__ ((unused)))
 void VIDIX_NAME(vixDestroy) (void)
 {
   unmap_phys_mem (info->video_base, info->chip.fbsize);
-  if (S3_SAVAGE_SERIES (info->chip.arch))
-    unmap_phys_mem (info->control_base, S3_NEWMMIO_REGSIZE_SAVAGE);
-  else
+  if (info->chip.arch < S3_SAVAGE3D)
     unmap_phys_mem (info->control_base, S3_NEWMMIO_REGSIZE);
+  else
+    unmap_phys_mem (info->control_base, S3_NEWMMIO_REGSIZE_SAVAGE);
 
   free (info);
 }
@@ -767,7 +826,7 @@ static int is_supported_fourcc (uint32_t fourcc)
 //    case IMGFMT_YV12:
 //    case IMGFMT_I420:
   case IMGFMT_UYVY:    
-    if (info->chip.arch <= S3_VIRGE)
+    if (info->chip.arch < S3_SAVAGE3D)
       return 0;
   case IMGFMT_YUY2:
   case IMGFMT_Y211:
