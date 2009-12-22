@@ -75,8 +75,6 @@ static void S3InitStreamsNew (void);
 static void S3InitStreams2000 (void);
 static void (*S3InitStreams) (void) = NULL;
 
-static void s3_destroy (void);
-
 pciinfo_t pci_info;
 
 struct s3_chip
@@ -777,7 +775,7 @@ int VIDIX_NAME(vixInit) (const char *args __attribute__ ((unused)))
   if (!videoRam)
   {
     printf ("[s3_vid] Unsupported configuration, aborting\n");
-//    s3_destroy ();
+    VIDIX_NAME(vixDestroy)();
     return -1;
   }
 
