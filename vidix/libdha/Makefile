@@ -5,8 +5,8 @@ NAME = libdha
 LIBNAME_SHARED         = $(NAME).so
 LIBNAME_SHARED_MAJOR   = $(NAME).so.$(VIDIX_VERSION_MAJOR)
 LIBNAME_SHARED_VERSION = $(NAME).so.$(VIDIX_VERSION)
-LIBNAME_STATIC         = $(NAME).a
 LIBNAME_WIN32          = $(NAME).dll
+LIBNAME                = $(NAME).a
 
 SRCS = libdha.c \
        mtrr.c \
@@ -18,11 +18,10 @@ SRCS = libdha.c \
        cpu_flush.c \
 
 OBJS = $(SRCS:.c=.o)
+SHOBJS = $(SRCS:.c=.po)
 
-CFLAGS = -fPIC -I. -I.. $(OPTFLAGS)
-ifneq ($(TARGET_OS),CYGWIN)
-CFLAGS += -fPIC
-endif
+CFLAGS = -I. -I.. $(OPTFLAGS)
+SHCFLAGS = -fPIC $(CFLAGS)
 
 ifeq ($(TARGET_OS),OpenBSD)
 LDCONFIG_FLAGS += -R
@@ -31,38 +30,40 @@ LIBS += -li386
 endif
 endif
 
-.SUFFIXES: .c .o
-
-# .PHONY: all clean
-
-.c.o: pci_names.c
-	$(CC) -c $(CFLAGS) -o $@ $<
-
-$(LIBNAME_SHARED_VERSION): $(OBJS)
-	$(CC) $(LDFLAGS) -shared -Wl,-soname -Wl,$@ -o $@ $(OBJS) $(LIBS)
-ifneq  ($(TARGET_OS),CYGWIN)
-	ln -sf $@ $(LIBNAME_SHARED)
-	ln -sf $@ $(LIBNAME_SHARED_MAJOR)
-endif
-
-$(LIBNAME_STATIC): $(OBJS)
-	$(AR) r $@ $(OBJS)
-
-$(LIBNAME_WIN32): $(OBJS)
-	$(CC) $(LDFLAGS) -shared -o $(LIBNAME_WIN32) $(OBJS) $(LIBS)
+.SUFFIXES: .c .o .po
 
 LIB_TARGETS=
 ifeq ($(VIDIX_BUILD_SHARED),yes)
 LIB_TARGETS += $(LIBNAME_SHARED_VERSION)
 endif
 ifeq ($(VIDIX_BUILD_STATIC),yes)
-LIB_TARGETS += $(LIBNAME_STATIC)
+LIB_TARGETS += $(LIBNAME)
 endif
 ifeq ($(TARGET_WIN32),yes)
 LIB_TARGETS += $(LIBNAME_WIN32)
 endif
 
 all: $(LIB_TARGETS)
+
+.c.o: pci_names.c
+	$(CC) -c $(CFLAGS) -o $@ $<
+
+.c.po: pci_names.c
+	$(CC) -c $(SHCFLAGS) -o $@ $<
+
+$(LIBNAME_SHARED_VERSION): $(SHOBJS)
+	$(CC) $(LDFLAGS) -shared -Wl,-soname -Wl,$@ -o $@ $(SHOBJS) $(LIBS)
+ifneq  ($(TARGET_OS),CYGWIN)
+	ln -sf $@ $(LIBNAME_SHARED)
+	ln -sf $@ $(LIBNAME_SHARED_MAJOR)
+endif
+
+$(LIBNAME): $(OBJS)
+	$(AR) r $@ $(OBJS)
+
+$(LIBNAME_WIN32): $(SHOBJS)
+	$(CC) $(LDFLAGS) -shared -o $(LIBNAME_WIN32) $(SHOBJS) $(LIBS)
+
 
 pci_names.c: oth/pci.ids
 	LC_ALL=C $(AWK) -f pci_db2c.awk $<
@@ -71,7 +72,7 @@ test: pci_names.c $(LIBNAME) $(SHORTNAME)
 	$(CC) test.c -o test $(SHORTNAME) -L. -ldha
 
 clean:
-	rm -f *.o *.a *.so.* *.so *~
+	rm -f *.o *.a *.po *.so.* *.so *~
 	rm -f pci_*.c pci_*.h pci.db
 	rm -f test
 
@@ -90,7 +91,7 @@ ifeq ($(VIDIX_BUILD_SHARED),yes)
 	-$(LDCONFIG) $(LDCONFIG_FLAGS)
 endif
 ifeq ($(VIDIX_BUILD_STATIC),yes)
-	cp -f $(LIBNAME_STATIC) $(DESTDIR)$(LIBDIR)/$(LIBNAME_STATIC)
+	cp -f $(LIBNAME) $(DESTDIR)$(LIBDIR)/$(LIBNAME)
 endif
 
 uninstall:

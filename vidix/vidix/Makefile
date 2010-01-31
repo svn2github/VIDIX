@@ -5,57 +5,83 @@ NAME = libvidix
 LIBNAME_SHARED         = $(NAME).so
 LIBNAME_SHARED_MAJOR   = $(NAME).so.$(VIDIX_VERSION_MAJOR)
 LIBNAME_SHARED_VERSION = $(NAME).so.$(VIDIX_VERSION)
-LIBNAME_STATIC         = $(NAME).a
 LIBNAME_WIN32          = $(NAME).dll
+LIBNAME                = $(NAME).a
 
 INCDIR = $(prefix)/include/vidix
 
 SRCS        = vidixlib.c
-OBJS_SHARED = vidixlib.o
-OBJS_STATIC = vidixlib_static.o
 
-CFLAGS  = $(OPTFLAGS) -I.. -fPIC
+OBJS=$(SRCS:.c=.o)
+SHOBJS=$(SRCS:.c=.po)
+
+CFLAGS  = $(OPTFLAGS) -I..
+SHCFLAGS= $(CFLAGS) -fPIC
+
+SUBDIRS = drivers
+DO_MAKE = @ for i in $(SUBDIRS); do $(MAKE) -C $$i $@ || exit; done
+DO_ALL  = @ for i in $(SUBDIRS); do $(MAKE) -C $$i all || exit; done
 
 ifeq ($(TARGET_OS),OpenBSD)
 LDCONFIG_FLAGS += -R
 endif
 
-.SUFFIXES: .c .o
+.SUFFIXES: .c .o .po
 
-# .PHONY: all clean
+ifeq ($(VIDIX_BUILD_STATIC),yes)
+.PHONY: $(SUBDIRS)
+endif
 
 LIB_TARGETS=
 ifeq ($(VIDIX_BUILD_SHARED),yes)
 LIB_TARGETS += $(LIBNAME_SHARED_VERSION)
 endif
 ifeq ($(VIDIX_BUILD_STATIC),yes)
-LIB_TARGETS += $(LIBNAME_STATIC)
+LIB_TARGETS += $(LIBNAME)
 endif
 ifeq ($(TARGET_WIN32),yes)
 LIB_TARGETS += $(LIBNAME_WIN32)
 endif
 
+ifeq ($(VIDIX_BUILD_STATIC),yes)
+all:	$(LIB_TARGETS)
+endif
+ifeq ($(VIDIX_BUILD_SHARED),yes)
 all:	$(LIB_TARGETS) do_drivers
+endif
 
-$(LIBNAME_SHARED_VERSION): $(SRCS)
-	$(CC) -c $(CFLAGS) -o $(OBJS_SHARED) $<
-	$(CC) $(LDFLAGS) -shared -Wl,-soname -Wl,$@ -o $@ $(OBJS_SHARED) -lc $(LIBDL)
+ifeq ($(VIDIX_BUILD_STATIC),yes)
+$(SUBDIRS):
+	$(DO_ALL)
+endif
+
+.c.o:
+	$(CC) -c $(CFLAGS) -o $@ $<
+.c.po:
+	$(CC) -c $(SHCFLAGS) -o $@ $<
+
+ifeq ($(VIDIX_BUILD_SHARED),yes)
+$(LIBNAME_SHARED_VERSION): $(SHOBJS)
+	$(CC) $(LDFLAGS) -shared -Wl,-soname -Wl,$@ -o $@ $(SHOBJS) -lc $(LIBDL)
+$(LIBNAME_WIN32): $(OBJS)
+	$(CC) -shared -o $(LIBNAME_WIN32) $(SHOBJS) $(LIBS)
 ifneq  ($(TARGET_OS),CYGWIN)
 	ln -sf $@ $(LIBNAME_SHARED)
 	ln -sf $@ $(LIBNAME_SHARED_MAJOR)
 endif
+endif
 
-$(LIBNAME_STATIC): $(SRCS)
-	$(CC) -c $(CFLAGS) -DVIDIX_BUILD_STATIC -o $(OBJS_STATIC) $<
-	$(AR) r $@ $(OBJS_STATIC)
-$(LIBNAME_WIN32): $(OBJS)
-	$(CC) -shared -o $(LIBNAME_WIN32) $(OBJS_SHARED) $(LIBS)
+ifeq ($(VIDIX_BUILD_STATIC),yes)
+$(LIBNAME):  $(SUBDIRS) $(OBJS)
+	$(AR) r $@ $(OBJS) \
+	$(wildcard drivers/*.o)
+endif
 
 do_drivers:
 	$(MAKE) -C drivers
 
 clean:
-	rm -f *.a *.o *.so *.so.* *~
+	rm -f *.a *.o *.po *.so *.so.* *~
 	$(MAKE) -C drivers clean
 
 distclean: clean
@@ -75,7 +101,7 @@ ifeq ($(VIDIX_BUILD_SHARED),yes)
 	-$(LDCONFIG) $(LDCONFIG_FLAGS)
 endif
 ifeq ($(VIDIX_BUILD_STATIC),yes)
-	cp -f $(LIBNAME_STATIC) $(DESTDIR)$(LIBDIR)
+	cp -f $(LIBNAME) $(DESTDIR)$(LIBDIR)
 endif
 
 	mkdir -p $(DESTDIR)$(INCDIR)
@@ -91,7 +117,7 @@ ifeq ($(VIDIX_BUILD_SHARED),yes)
 	-$(LDCONFIG) $(LDCONFIG_FLAGS)
 endif
 ifeq ($(VIDIX_BUILD_STATIC),yes)
-	rm -f $(DESTDIR)$(LIBDIR)/$(LIBNAME_STATIC)
+	rm -f $(DESTDIR)$(LIBDIR)/$(LIBNAME)
 endif
 	rm -f $(DESTDIR)$(INCDIR)/fourcc.h $(DESTDIR)$(INCDIR)/vidix.h $(DESTDIR)$(INCDIR)/vidixlib.h
 	$(MAKE) -C drivers uninstall

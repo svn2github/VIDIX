@@ -28,15 +28,43 @@ DRV=    cyberblade_vid.so \
 	s3_vid.so \
 	savage_vid.so \
 	sis_vid.so \
-	unichrome_vid.so \
-
+	unichrome_vid.so
 ifeq ($(TARGET_OS),Linux)
 ifeq ($(HAVE_IVTV),yes)
 DRV += ivtv_vid.so
 endif
 endif
 
+SRCS=   cyberblade_vid.c \
+	genfb_vid.c \
+	mach64_vid.c \
+	mga_crtc2_vid.c \
+	mga_tv_vid.c \
+	mga_vid.c \
+	nvidia_vid.c \
+	pm2_vid.c \
+	pm3_vid.c \
+	radeon_vid.c \
+	rage128_vid.c \
+	radeonhd_vid.c \
+	s3_vid.c \
+	savage_vid.c \
+	sis_vid.c \
+	unichrome_vid.c
+ifeq ($(TARGET_OS),Linux)
+ifeq ($(HAVE_IVTV),yes)
+SRCS += ivtv_vid.c
+endif
+endif
+
+OBJS = $(SRCS:.c=.o)
+
+ifeq ($(VIDIX_BUILD_STATIC),yes)
+all: $(OBJS)
+endif
+ifeq ($(VIDIX_BUILD_SHARED),yes)
 all: $(DRV)
+endif
 
 .SUFFIXES: .c .o
 
@@ -46,66 +74,17 @@ all: $(DRV)
 %.o: %.c
 	$(CC) -c $(VIDIX_CFLAGS) -o $@ $<
 
-mach64_vid.o: mach64_vid.c
-	$(CC) -c $(MACH64_CFLAGS) -o $@ $<
+# Dynamic librairies
+%.so: %.o
+	$(CC) $(LDFLAGS) -shared $^ $(VIDIX_LIBS_M) -Wl,-soname,$@ -o $@
 
 mga_crtc2_vid.o: mga_vid.c
 	$(CC) -c $(MGA_CRTC2_CFLAGS) -o $@ $<
-
 mga_tv_vid.o: mga_vid.c
 	$(CC) -c $(MGA_TV_CFLAGS) -o $@ $<
-
 rage128_vid.o: radeon_vid.c
 	$(CC) -c $(RAGE128_CFLAGS) -o $@ $<
 
-# Dynamic librairies
-%.so: %.o
-	$(CC) $(LDFLAGS) -shared $^ $(VIDIX_LIBS) -Wl,-soname,$@ -o $@
-
-cyberblade_vid.so: cyberblade_vid.o
-	$(CC) $(LDFLAGS) -shared $< $(VIDIX_LIBS_M) -Wl,-soname,$@ -o $@
-
-genfb_vid.so: genfb_vid.o
-	$(CC) $(LDFLAGS) -shared $< $(VIDIX_LIBS_M) -Wl,-soname,$@ -o $@
-
-ivtvfb_vid.so: ivtv_vid.o
-
-mach64_vid.so: mach64_vid.o
-
-mga_crtc2_vid.so: mga_crtc2_vid.o
-	$(CC) $(LDFLAGS) -shared $< $(VIDIX_LIBS_M) -Wl,-soname,$@ -o $@
-
-mga_tv_vid.so: mga_tv_vid.o
-	$(CC) $(LDFLAGS) -shared $< $(VIDIX_LIBS_M) -Wl,-soname,$@ -o $@
-
-mga_vid.so: mga_vid.o
-	$(CC) $(LDFLAGS) -shared $< $(VIDIX_LIBS_M) -Wl,-soname,$@ -o $@
-
-nvidia_vid.so: nvidia_vid.o
-	$(CC) $(LDFLAGS) -shared $< $(VIDIX_LIBS_M) -Wl,-soname,$@ -o $@
-
-pm2_vid.so: pm2_vid.o
-
-pm3_vid.so: pm3_vid.o
-
-radeon_vid.so: radeon_vid.o
-	$(CC) $(LDFLAGS) -shared $< $(VIDIX_LIBS_M) -Wl,-soname,$@ -o $@
-
-radeonhd_vid.so: radeonhd_vid.o
-	$(CC) $(LDFLAGS) -shared $< $(VIDIX_LIBS_M) -Wl,-soname,$@ -o $@
-
-rage128_vid.so: rage128_vid.o
-
-s3_vid.so: s3_vid.o
-	$(CC) $(LDFLAGS) -shared $< $(VIDIX_LIBS_M) -Wl,-soname,$@ -o $@
-
-savage_vid.so: savage_vid.o
-	$(CC) $(LDFLAGS) -shared $< $(VIDIX_LIBS_M) -Wl,-soname,$@ -o $@
-
-sis_vid.so: sis_vid.o sis_bridge.o
-
-unichrome_vid.so: unichrome_vid.o
-	$(CC) $(LDFLAGS) -shared $< $(VIDIX_LIBS) -Wl,-soname,$@ -o $@
 
 clean:
 	rm -f *.o *.so *~

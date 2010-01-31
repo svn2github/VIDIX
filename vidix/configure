@@ -66,6 +66,7 @@ ENVIRONMENT_LIST=(
     "MAKE|Make command (example: 'make -j')|make",
     "AS|Assembler command|as",
     "CC|C compiler command (example: 'gcc -m64')|cc",
+    "AWK|AWK programming language (after names of its inventors: Aho Weinberger Kernighan)",
     "CFLAGS|C compiler flags (example: '-funit-at-a-time')",
     "LDFLAGS|linker flags (example: '-L/opt/lib64')",
     "LIBS|additional libraries (example: 'LIBS=-lacml_mv')",
@@ -171,23 +172,20 @@ guess_target config.mak config.h
 test_optimizations config.mak config.h
 
 # checking for a working awk, I'm using mawk first, because it's fastest - atmos
-awk=
-awk_verc_fail=yes
-echores "Checking for "awk"..."
-for awk in  gawk nawk awk mawk; do
-  if ( $awk 'BEGIN{testme();}function testme(){print"";}' ) >> "$TMPLOG" 2>&1; then
-    awk_verc_fail=no
+echocheck "awk"
+if ! test -z $AWK ; then
+ awk=$AWK
+else
+ awk=
+for i in "gawk" "nawk" "awk" "mawk" ; do
+  if ( $i 'BEGIN{testme();}function testme(){print"";}' ) >> "$TMPLOG" 2>&1; then
+    awk=$i
     break
   fi
 done
-test "$awk_verc_fail" = yes && awk=no
-echores "$awk"
-if test "$awk_verc_fail" = yes; then
-echo "VIDIX needs Awk, but there was no working implementation found!"
-echo "Try the GNU implementation, which can be downloaded from:"
-die  "ftp://ftp.gnu.org/gnu/gawk/"
 fi
-
+echores $awk
+test -z $awk && die "VIDIX needs Awk. Try download it from: ftp://ftp.gnu.org/gnu/gawk/"
 
 require2 mmap "sys/types.h sys/mman.h" mmap
 mman_h=$mmap
