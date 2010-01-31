@@ -1,10 +1,19 @@
-#!/bin/sh
+#!/bin/bash
+# query full-featured shell here
 #
 # functions	This file contains functions to be used by all
 #		shell scripts of the mplayerxp
 
 # Prefer these macros to full length text !
 # These macros only return an error code - NO display is done
+# Check how echo works in this /bin/sh
+init_functions(){
+case `echo -n` in
+  -n)	echo_n=	     echo_c='\c';;	# SysV echo
+  *)	echo_n='-n ' echo_c=	;;	# BSD echo
+esac
+}
+
 log(){
     echo "$@" >>"$TMPLOG"
 }
@@ -144,6 +153,23 @@ disabled_any(){
     done
 }
 
+filter(){
+    pat=$1
+    shift
+    for v; do
+        eval "case $v in $pat) echo $v ;; esac"
+    done
+}
+
+is_in(){
+    value=$1
+    shift
+    for var in $*; do
+        [ $var = $value ] && return 0
+    done
+    return 1
+}
+
 check_deps(){
     for cfg; do
         cfg="${cfg#!}"
@@ -217,6 +243,7 @@ save_flags(){
     flags_saved && return
     SAVE_CFLAGS="$CFLAGS"
     SAVE_LDFLAGS="$LDFLAGS"
+    SAVE_ASFLAGS="$ASFLAGS"
     SAVE_extralibs="$extralibs"
 }
 
@@ -224,15 +251,22 @@ restore_flags(){
     flags_saved || return
     CFLAGS="$SAVE_CFLAGS"
     LDFLAGS="$SAVE_LDFLAGS"
+    ASFLAGS="$SAVE_ASFLAGS"
     extralibs="$SAVE_extralibs"
     unset SAVE_CFLAGS
     unset SAVE_LDFLAGS
+    unset SAVE_ASFLAGS
     unset SAVE_extralibs
 }
 
 temp_cflags(){
     save_flags
     CFLAGS="$CFLAGS $*"
+}
+
+temp_asflags(){
+    save_flags
+    ASFLAGS="$ASFLAGS $*"
 }
 
 temp_ldflags(){
@@ -256,6 +290,10 @@ add_cflags(){
     append CFLAGS "$@"
 }
 
+add_asflags(){
+    append ASFLAGS "$@"
+}
+
 add_ldflags(){
     append LDFLAGS "$@"
 }
@@ -273,48 +311,71 @@ check_cc(){
     log check_cc "$@"
     cat >$TMPC
     log_file $TMPC
-    check_cmd $_cc $CFLAGS "$@" -c -o $TMPO $TMPC
+    check_cmd $cc $CFLAGS "$@" -c -o $TMPO $TMPC
 }
 
 check_cpp(){
     log check_cpp "$@"
     cat >$TMPC
     log_file $TMPC
-    check_cmd $_cc $CFLAGS "$@" -E -o $TMPO $TMPC
+    check_cmd $cc $CFLAGS "$@" -E -o $TMPO $TMPC
 }
 
-check_asm(){
+test_asm(){
     log check_asm "$@"
     name="$1"
     asm="$2"
     shift 2
-    check_cc "$@" <<EOF && enable $name || disable $name
+    check_cc "$@" <<EOF && return 0 || return 1
 int foo(void){
     asm volatile($asm);
 }
 EOF
 }
 
+check_asm(){
+    name="$1"
+    test_asm "$@" && enable $name || disable $name
+}
+
 check_ld(){
     log check_ld "$@"
     check_cc || return
-    check_cmd $_cc $LDFLAGS "$@" -o $TMPE $TMPO $extralibs
+    check_cmd $cc $LDFLAGS "$@" -o $TMPE $TMPO $extralibs
 }
 
-check_cflags(){
+test_cflags(){
     log check_cflags "$@"
-    check_cc "$@" <<EOF && add_cflags "$@"
+    check_cc "$@" <<EOF && return 0 || return 1
 int x;
 EOF
 }
 
-check_ldflags(){
+check_cflags(){
+    test_cflags "$@" && add_cflags "$@"
+}
+
+is_in_cflags(){
+    value=$1
+    shift
+    for var in $CFLAGS; do
+        tmp=$(trim `echo $var | cut -d '=' -f 1`)
+        [ $tmp = $value ] && return 0
+    done
+    return 1
+}
+
+test_ldflags(){
     log check_ldflags "$@"
-    check_ld "$@" <<EOF && add_ldflags "$@"
+    check_ld "$@" <<EOF && return 0 || return 1
 int main(void){
     return 0;
 }
 EOF
+}
+
+check_ldflags(){
+    test_ldflags "$@" && add_ldflags "$@"
 }
 
 check_header(){
@@ -819,7 +880,7 @@ cc_check() {
   echo >> "$TMPLOG"
   cat "$TMPC" >> "$TMPLOG"
   echo >> "$TMPLOG"
-  ( check_cmd $_cc $CFLAGS $_inc_extra $_ld_static $_ld_extra "$TMPC" -o "$TMPO" "$@" ) >> "$TMPLOG" 2>&1
+  ( check_cmd $cc $CFLAGS $inc_extra $ld_static $ld_extra "$TMPC" -o "$TMPO" "$@" ) >> "$TMPLOG" 2>&1
   TMP="$?"
   echo >> "$TMPLOG"
   echo "ldd $TMPO" >> "$TMPLOG"
@@ -829,6 +890,13 @@ cc_check() {
 }
 
 # Display error message, flushes tempfile, exit
+warning() {
+  log "Warning: $@"
+  echo
+  echo "Warning: $@" >&2
+  echo >&2
+}
+
 die() {
   log "Error: $@"
   echo
@@ -840,6 +908,10 @@ die() {
 }
 
 mktmps() {
+local I
+for I in "$TMPDIR" "$TEMPDIR" "/tmp" ; do
+  test "$I" && break
+done
 TMPLOG="configure.log"
 rm -f "$TMPLOG"
 TMPC="$I/mplayerxp-conf-$RANDOM-$$.c"
@@ -856,7 +928,7 @@ rmtmps() {
 
 # OS test booleans functions
 issystem() {
-  test "`echo $_host_os | tr A-Z a-z`" = "`echo $1 | tr A-Z a-z`"
+  test "`echo $host_os | tr A-Z a-z`" = "`echo $1 | tr A-Z a-z`"
 }
 linux()   { issystem "Linux-GNU"; return "$?" ; }
 sunos()   { issystem "SunOS"   ; return "$?" ; }
@@ -879,7 +951,7 @@ beos()    { issystem "BEOS"    ; return "$?" ; }
 
 # arch test boolean functions
 x86_32() {
-  case "$_host_arch" in
+  case "$host_arch" in
     i*86|x86|x86pc|k5|k6|k6-2|k6-3|pentium*|athlon*)
 	return 0
 	;;
@@ -890,7 +962,7 @@ x86_32() {
 }
 
 x86_64() {
-  case "$_host_arch" in
+  case "$host_arch" in
     x86_64|amd64)
 	return 0
 	;;
@@ -907,28 +979,28 @@ x86() {
 }
 
 ppc() {
-  case "$_host_arch" in
+  case "$host_arch" in
     ppc) return 0;;
     *) return 1;;
   esac
 }
 
 mips() {
-  case "$_host_arch" in
+  case "$host_arch" in
     mips) return 0;;
     *) return 1;;
   esac
 }
 
 alpha() {
-  case "$_host_arch" in
+  case "$host_arch" in
     alpha) return 0 ;;
     *) return 1 ;;
   esac
 }
 
 arm() {
-  case "$_host_arch" in
+  case "$host_arch" in
     arm) return 0 ;;
     *) return 1 ;;
   esac
@@ -947,30 +1019,25 @@ not() {
 
 # Use this before starting a check
 echocheck() {
-  if test "$_echocheked" != "yes"; then
-  _echocheked=yes
-  echo "============ Checking for $@ ============" >> "$TMPLOG"
-  echo ${_echo_n} "Checking for $@ ... ${_echo_c}"
+  if test "$echocheked" != "yes"; then
+  echocheked=yes
+  log "============ Checking for $@ ============"
+  echo $echo_n "Checking for $@ ... "$echo_c
   fi
 }
 
 # Use this to echo the results of a check
 echores() {
-  if test "$_echocheked" = "yes"; then
-  _echocheked=no
-  echo "Result is: $@" >> "$TMPLOG"
-  echo "##########################################" >> "$TMPLOG"
-  echo "" >> "$TMPLOG"
+  if test "$echocheked" = "yes"; then
+  echocheked=no
+  log "Result is: $@"
+  log "##########################################"
+  log ""
   echo "$@"
   fi
 }
 #############################################################################
 
-# Check how echo works in this /bin/sh
-case `echo -n` in
-  -n)	_echo_n=	_echo_c='\c'	;;	# SysV echo
-  *)	_echo_n='-n '	_echo_c=	;;	# BSD echo
-esac
 
 # Guessing target system
 guess_target() {
@@ -979,82 +1046,82 @@ local config_mak=$1
 local config_h=$2
 config_guess="./config.guess"
 config_sub="./config.sub"
-if test -z "$_build" ; then
-_build=`$config_guess`
-test -z "$_build" && echores "cannot guess build type; you must specify one"
+if test -z "$build" ; then
+build=`$config_guess`
+test -z "$build" && echores "cannot guess build type; you must specify one"
 fi
 # Canonize it
-$config_sub sun4 >/dev/null 2>&1 || echores "cannot run $_config_sub"
-_build=`$config_sub $_build`
-echores "$_build"
-_build_cpu=`echo $_build | sed 's/^\([^-]*\)-\([^-]*\)-\(.*\)$/\1/'`
-_build_vendor=`echo $_build | sed 's/^\([^-]*\)-\([^-]*\)-\(.*\)$/\2/'`
-_build_os=`echo $_build | sed 's/^\([^-]*\)-\([^-]*\)-\(.*\)$/\3/'`
+$config_sub sun4 >/dev/null 2>&1 || echores "cannot run $config_sub"
+build=`$config_sub $build`
+echores "$build"
+build_cpu=`echo $build | sed 's/^\([^-]*\)-\([^-]*\)-\(.*\)$/\1/'`
+build_vendor=`echo $build | sed 's/^\([^-]*\)-\([^-]*\)-\(.*\)$/\2/'`
+build_os=`echo $build | sed 's/^\([^-]*\)-\([^-]*\)-\(.*\)$/\3/'`
 echocheck "host system type"
-if test -z "$_host" ; then
-_host=$_build
+if test -z "$host" ; then
+host=$build
 fi
-_host=`$config_sub $_host`
-_host_cpu=`echo $_host | sed 's/^\([^-]*\)-\([^-]*\)-\(.*\)$/\1/'`
-_host_vendor=`echo $_host | sed 's/^\([^-]*\)-\([^-]*\)-\(.*\)$/\2/'`
-_host_os=`echo $_host | sed 's/^\([^-]*\)-\([^-]*\)-\(.*\)$/\3/'`
-echores "$_host"
+host=`$config_sub $host`
+host_cpu=`echo $host | sed 's/^\([^-]*\)-\([^-]*\)-\(.*\)$/\1/'`
+host_vendor=`echo $host | sed 's/^\([^-]*\)-\([^-]*\)-\(.*\)$/\2/'`
+host_os=`echo $host | sed 's/^\([^-]*\)-\([^-]*\)-\(.*\)$/\3/'`
+echores "$host"
 
 # Printout architecture
-case "$_host_cpu" in
+case "$host_cpu" in
   i*86)
-  _host_arch="x86"
-  _icpu=`echo $_host_cpu | sed -n 's/^i\([0-9]*\)$/\1/p'`
+  host_arch="x86"
+  icpu=`echo $host_cpu | sed -n 's/^i\([0-9]*\)$/\1/p'`
     ;;
   *)
-  _host_arch=$_host_cpu
-  _icpu=$_host_cpu
+  host_arch=$host_cpu
+  icpu=$host_cpu
     ;;
 esac
-_def_words_endian='#define WORDS_BIGENDIAN 1'
-x86   && _def_words_endian="#undef WORDS_BIGENDIAN"
-arm   && _def_words_endian="#undef WORDS_BIGENDIAN"
-alpha && _def_words_endian="#undef WORDS_BIGENDIAN"
+def_words_endian='#define WORDS_BIGENDIAN 1'
+x86   && def_words_endian="#undef WORDS_BIGENDIAN"
+arm   && def_words_endian="#undef WORDS_BIGENDIAN"
+alpha && def_words_endian="#undef WORDS_BIGENDIAN"
 
-_lc_host_arch=`echo $_host_arch | tr [:lower:] [:upper:]`
-_lc_host_os=`echo $_host_os | tr [:lower:] [:upper:]`
-_lc_host_sys=$_lc_host_os
+lc_host_arch=`echo $host_arch | tr [:lower:] [:upper:]`
+lc_host_os=`echo $host_os | tr [:lower:] [:upper:]`
+lc_host_sys=$lc_host_os
 if win32 ; then
-_lc_host_os=WIN32
-_slibsuf=".dll"
+lc_host_os=WIN32
+slibsuf=".dll"
 else
-_slibsuf=".so"
+slibsuf=".so"
 fi
 #tune architecture
-x86_64 && _lc_host_arch="X86_64"
-x86_64 && _icpu="k8"
-x86_32 && _lc_host_arch="X86"
-x86_32 && _icpu="athlon" # it enables -m3dnowa support which can't be enabled through command line
-_lc_host_os=`echo $_lc_host_os | sed 's/[^A-Za-z0-9_]/_/g'`
+x86_64 && lc_host_arch="X86_64"
+x86_64 && icpu="k8"
+x86_32 && lc_host_arch="X86"
+x86_32 && icpu="athlon" # it enables -m3dnowa support which can't be enabled through command line
+lc_host_os=`echo $lc_host_os | sed 's/[^A-Za-z0-9_]/_/g'`
 
 cat > $config_mak << EOF
 # -------- Generated by guess_target() -----------
-TARGET_OS = $_lc_host_os
-TARGET_SYS = $_lc_host_sys
-TARGET_ARCH_$_lc_host_arch = yes
-TARGET_CPU = $_icpu
-SLIBSUF = $_slibsuf
+TARGET_OS = $lc_host_os
+TARGET_SYS = $lc_host_sys
+TARGET_ARCH_$lc_host_arch = yes
+TARGET_CPU = $icpu
+SLIBSUF = $slibsuf
 EOF
 
 cat > $config_h << EOF
 /* -------- Generated by guess_target() ----------- */
-#ifndef VIDIX_CONFIG_ARCH
-#define VIDIX_CONFIG_ARCH 1
-#define ARCH_$_lc_host_arch 1
-#define __CPU__ $_icpu
+#ifndef MPXP_CONFIG_ARCH
+#define MPXP_CONFIG_ARCH 1
+#define ARCH_$lc_host_arch 1
+#define __CPU__ $icpu
 /* Define if your processor stores words with the most significant
    byte first (like Motorola and SPARC, unlike Intel and VAX).  */
-$_def_words_endian
-#define TARGET_$_lc_host_os 1
-#define SLIBSUFFIX "$_slibsuf"
+$def_words_endian
+#define TARGET_$lc_host_os 1
+#define SLIBSUFFIX "$slibsuf"
 EOF
 
-case "$_lc_host_arch" in
+case "$lc_host_arch" in
   X86)
     echo "#define ARCH_X86_32 1" >> $config_h
     ;;
@@ -1069,68 +1136,76 @@ local config_mak=$1
 local config_h=$2
 
 
-_locarch="-O3"
+locarch=""
 if x86_64 ; then
-_locarch="-march=$_icpu -m64 $_locarch"
+locarch="-march=$icpu -m64"
 add_ldflags -m64
+add_asflags --64
 elif x86_32 ; then
-_locarch="-march=$_icpu -m32 $_locarch"
+locarch="-march=$icpu -m32"
 add_ldflags -m32
+add_asflags --32
 fi
 
-if test "$_profile" || test "$_debug" ; then
-  CFLAGS="-O2 -fno-builtin $_dbg_flags $_debug $_profile"
-elif test -z "$CFLAGS" ; then
-  CFLAGS="$_locarch -ffast-math"
-  mips   || CFLAGS="$CFLAGS -pipe"
-  x86_32 && CFLAGS="$CFLAGS -fomit-frame-pointer"
+# agree with user-defined architecture/tuning here
+if enabled gcc44_workaround ; then
+is_in_cflags "-march" || check_cflags "-march=native"
+is_in_cflags "-mtune" || check_cflags "-mtune=native"
+else
+is_in_cflags "-march" || check_cflags $locarch
+is_in_cflags "-mtune" || check_cflags "-mtune=generic"
+fi
+if enabled profile || test $debug -gt 2 || enabled gcov; then
+    add_cflags "-O2 -fno-builtin"
+if enabled profile ; then
+    add_cflags  "-pg"
+    add_ldflags "-pg"
+fi
+if test $debug -gt 0 ; then
+    add_cflags "-g$debug"
+    add_ldflags "-g$debug"
+fi
+if enabled gcov ; then
+add_cflags "-fprofile-arcs -ftest-coverage"
+add_extralibs "-lgcov"
+fi
+else
+  is_in_cflags "-O3" || add_cflags "-O3"
+  mips   || check_cflags "-pipe"
+  x86_32 && check_cflags "-fomit-frame-pointer"
 # -fomit-frame-pointer is not needed for x86_64
 fi
-check_cflags -mtune=generic
+# -ffast-math produces incorrect output in 64-bit mode on x86_64 cpus. Tested with many gcc-4.x series
+is_in_cflags "-fno-fast-math" || check_cflags "-fno-fast-math"
+is_in_cflags "-mfancy-math-387" || check_cflags "-mfancy-math-387"
+is_in_cflags "-fno-math-errno" || check_cflags "-fno-math-errno"
+is_in_cflags "-fno-signed-zeros" || check_cflags "-fno-signed-zeros"
+# it seems that -mtune=generic doesn't prevent generation of SSE4 opcodes for i686 arch
+check_cflags "-fno-tree-vectorize"
+check_cflags "-fno-tree-vect-loop-version"
+check_cflags "-fno-vect-cost-model"
 
-disable _mmx_test
-x86_32 && enable _mmx_test
-_def_mmx=
-_def_mmx2=
-_def_3dnow=
-_def_3dnow2=
-_def_sse=
-_def_sse2=
-_def_sse3=
-_def_ssse3=
-_def_sse3=
-_def_avx=
-if enabled _mmx_test ; then
-check_cflags -mmmx	&& _def_mmx='#define CAN_COMPILE_MMX 1'
-check_cflags -m3dnow	&& _def_3dnow='#define CAN_COMPILE_3DNOW 1'
-check_cflags -msse	&& _def_sse='#define CAN_COMPILE_SSE 1'
-check_cflags -msse2	&& _def_sse2='#define CAN_COMPILE_SSE2 1'
-check_cflags -msse3	&& _def_sse3='#define CAN_COMPILE_SSE3 1'
-check_cflags -mssse3	&& _def_ssse3='#define CAN_COMPILE_SSSE3 1'
-check_cflags -msse4	&& _def_sse4='#define CAN_COMPILE_SSE4 1'
-check_cflags -mavx	&& _def_avx='#define CAN_COMPILE_AVX 1'
-_fpu_clob='#define FPU_CLOBBERED "st","st(1)","st(2)","st(3)","st(4)","st(5)","st(6)","st(7)"'
-_mmx_clob='#define MMX_CLOBBERED "mm0","mm1","mm2","mm3","mm4","mm5","mm6","mm7"'
-_sse_clob='#define SSE_CLOBBERED "xmm0","xmm1","xmm2","xmm3","xmm4","xmm5","xmm6","xmm7"'
+disable mmx_test
+x86 && enable mmx_test
+enabled gcc44_workaround && disable mmx_test
+if enabled mmx_test ; then
+check_cflags -mmmx
+check_cflags -m3dnow
+check_cflags -msse
+check_cflags -msse2
+check_cflags -msse3
+check_cflags -mssse3
+check_cflags -msse4
+check_cflags -mpclmul
+check_cflags -maes
+check_cflags -mavx
 fi
-if test -n "$_def_3dnow" || test -n "$_def_sse" ; then
-_def_mmx2='#define CAN_COMPILE_MMX2 1'
-fi
-
+# TODO: remove this block
 cat >> $config_h << EOF
 /* Extension defines */
-$_def_mmx
-$_def_mmx2
-$_def_3dnow
-$_def_sse
-$_def_sse2
-$_def_sse3
-$_def_ssse3
-$_def_sse4
-$_def_avx
-$_fpu_clob
-$_mmx_clob
-$_sse_clob
+#define FPU_CLOBBERED "st","st(1)","st(2)","st(3)","st(4)","st(5)","st(6)","st(7)"
+#define MMX_CLOBBERED "mm0","mm1","mm2","mm3","mm4","mm5","mm6","mm7"
+#define SSE_CLOBBERED "xmm0","xmm1","xmm2","xmm3","xmm4","xmm5","xmm6","xmm7"
 EOF
 
 if (alpha) ; then
@@ -1144,24 +1219,254 @@ int main(void) {
     return 0;
 }
 EOF
-  _def_mvi='#undef HAVE_MVI'
-  $_cc -o "$TMPO" "$TMPC"
-  _lc_ver_mask=`$TMPO`
-  case "$_lc_ver_mask" in
+  def_mvi='#undef HAVE_MVI'
+  $cc -o "$TMPO" "$TMPC"
+  lc_ver_mask=`$TMPO`
+  case "$lc_ver_mask" in
     0-0) proc="ev4" ;;
     1-0) proc="ev5" ;;
     1-1) proc="ev56" ;;
-    1-101) proc="pca56"; _def_mvi='#define HAVE_MVI 1' ;;
-    2-303) proc="ev6"; _def_mvi='#define HAVE_MVI 1' ;;
-    2-307) proc="ev67"; _def_mvi='#define HAVE_MVI 1' ;;
-    2-1307) proc="ev68"; _def_mvi='#define HAVE_MVI 1' ;;
+    1-101) proc="pca56"; def_mvi='#define HAVE_MVI 1' ;;
+    2-303) proc="ev6"; def_mvi='#define HAVE_MVI 1' ;;
+    2-307) proc="ev67"; def_mvi='#define HAVE_MVI 1' ;;
+    2-1307) proc="ev68"; def_mvi='#define HAVE_MVI 1' ;;
   esac
   echores "$proc"
 cat >> $config_h << EOF
-$_def_mvi
+$def_mvi
 EOF
 fi
 cat >> $config_h << EOF
 #endif /* MPXP_CONFIG_ARCH */
 EOF
+}
+
+trim()
+{
+    local trimmed=$1
+    trimmed=${trimmed%% }
+    trimmed=${trimmed## }
+    echo $trimmed
+}
+
+print_help(){
+echo "Usage: $0 [OPTION]... [VAR=VALUE]...
+
+To assign environment variables (e.g., CC, CFLAGS...), specify them as
+VAR=VALUE.  See below for descriptions of some of the useful variables.
+
+Defaults for the options are specified in brackets."
+local list="$1[*]"
+list=${!list}
+local index=1
+OLD_IFS=$IFS
+IFS=
+while true
+do
+    local line=$(trim `echo $list | cut -d ',' -f $index`)
+    test -z $line && break
+    local opt=$(trim `echo $line | cut -d '|' -f 1`)
+    local descr=$(trim `echo $line | cut -s -d '|' -f 2`)
+    local opref=$(trim `echo $line | cut -s -d '|' -f 3`)
+    echo "$descr:"
+    opt="$opt[*]"
+    opt=${!opt}
+    local i=1
+    while true
+    do
+	local oval=$(trim `echo $opt | cut -d ',' -f $i`)
+	test -z $oval && break
+	local oopt=$(trim `echo $oval | cut -d '|' -f 1`)
+	local odesc=$(trim `echo $oval | cut -s -d '|' -f 2`)
+	local odef=$(trim `echo $oval | cut -s -d '|' -f 3`)
+	printf "  "
+	test -z $opref || printf "%s" $opref
+#	((for(j=0;j<(25-lpref);j++))) printf " "
+	printf "%-25s %s " ${oopt//_/-} $odesc
+	test -z $odef && echo "" || echo "[$odef]"
+	(( i++ ))
+    done
+    (( index++ ))
+done
+IFS=$OLD_IFS
+}
+
+make_defaults(){
+local list="$1[*]"
+list=${!list}
+local index=1
+OLD_IFS=$IFS
+IFS=
+while true
+do
+    local line=$(trim `echo $list | cut -d ',' -f $index`)
+    test -z $line && break
+    local opt=$(trim `echo $line | cut -d '|' -f 1`)
+    opt="$opt[*]"
+    opt=${!opt}
+    local i=1
+    while true
+    do
+	local oval=$(trim `echo $opt | cut -d ',' -f $i`)
+	test -z $oval && break
+	local oopt=$(trim `echo $oval | cut -d '|' -f 1`)
+	local odef=$(trim `echo $oval | cut -s -d '|' -f 3`)
+	eval "assigned_val=\$$oopt"
+	if test -z $assigned_val ; then
+	    test -z $odef || eval "$oopt=\"$odef\""
+	fi
+	(( i++ ))
+    done
+    (( index++ ))
+done
+IFS=$OLD_IFS
+}
+
+in_list(){
+local list="$1[*]"
+list=${!list}
+local index=1
+OLD_IFS=$IFS
+IFS=
+while true
+do
+    local line=$(trim `echo $list | cut -d ',' -f $index`)
+    test -z $line && break
+    local opt=$(trim `echo $line | cut -d '|' -f 1`)
+    opt="$opt[*]"
+    opt=${!opt}
+    local i=1
+    while true
+    do
+	local oval=$(trim `echo $opt | cut -d ',' -f $i`)
+	test -z $oval && break
+	local oopt=$(trim `echo $oval | cut -d '|' -f 1`)
+	if test $2 = $oopt ; then
+	    IFS=$OLD_IFS
+	    return 0
+	fi
+	(( i++ ))
+    done
+    (( index++ ))
+done
+IFS=$OLD_IFS
+return 1
+}
+
+find_in_list(){
+local list="$1[*]"
+list=${!list}
+local index=1
+OLD_IFS=$IFS
+IFS=
+while true
+do
+    local line=$(trim `echo $list | cut -d ',' -f $index`)
+    test -z $line && break
+    local opt=$(trim `echo $line | cut -d '|' -f 1`)
+    opt="$opt[*]"
+    opt=${!opt}
+    local i=1
+    while true
+    do
+	local oval=$(trim `echo $opt | cut -d ',' -f $i`)
+	test -z $oval && break
+	local oopt=$(trim `echo $oval | cut -d '|' -f 1`)
+	if test $2 = $oopt ; then
+	    IFS=$OLD_IFS
+	    echo "$oval"
+	    return 0
+	fi
+	(( i++ ))
+    done
+    (( index++ ))
+done
+IFS=$OLD_IFS
+return 1
+}
+
+show_homepage() {
+local name=$1
+local list="$2[*]"
+list=${!list}
+local descr
+local site
+echo "    $name"
+if [ -z $3 ]; then
+return
+else
+for i in $list ; do
+    descr=`find_in_list "$3" $i`
+    result=$?
+    site=$(trim `echo $descr | cut -d '|' -f 3`)
+    echo $echo_n "      $i " | tee -a $TMPLOG
+    if test -z $site ; then
+        echo $echo_c "" | tee -a $TMPLOG
+    else
+        echo $echo_c "(site: $site)" | tee -a $TMPLOG
+    fi
+done
+fi
+}
+
+make_environment(){
+local list="$1[*]"
+list=${!list}
+local i=1
+OLD_IFS=$IFS
+IFS=
+while true
+do
+	local oval=$(trim `echo $list | cut -s -d ',' -f $i`)
+	test -z $oval && break
+	local oopt=$(trim `echo $oval | cut -d '|' -f 3`)
+	local odef=$(trim `echo $oval | cut -s -d '|' -f 1`)
+	eval "odef=\$$odef"
+	test -z $oopt || test -z $odef || eval "$oopt=\"$odef\""
+	(( i++ ))
+done
+IFS=$OLD_IFS
+}
+
+set_list(){
+local list="$1[*]"
+list=${!list}
+local i=1
+OLD_IFS=$IFS
+IFS=
+while true
+do
+	local oval=$(trim `echo $list | cut -s -d ',' -f $i`)
+	test -z $oval && break
+	local oopt=$(trim `echo $oval | cut -d '|' -f 1`)
+	eval "$oopt=$2"
+	(( i++ ))
+done
+IFS=$OLD_IFS
+}
+
+enable_list(){
+set_list $1 yes
+}
+
+disable_list(){
+set_list $1 no
+}
+
+check_pkg(){
+    name=$1
+    package=$2
+    answer="no"
+    echocheck $name
+    $pkg_config --exists $package
+    test "$?" -ne 0 && disable $name
+    if enabled $name ; then
+	version=`echo $($pkg_config $package --modversion)`
+	log "found version: $version of $package"
+	check_cflags $($pkg_config $package --cflags) || disable $name
+	check_ldflags $($pkg_config $package --libs) || disable $name
+	answer=`echo "yes ($version)"`
+    fi
+    log "pkg-config --exists $package = $answer"
+    echores $answer
 }

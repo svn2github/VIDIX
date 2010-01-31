@@ -1,175 +1,193 @@
-#!/bin/sh
+#!/bin/bash
 
 . ./functions
+init_functions
 
 # DHA/vidix version number
 VERSION_MAJOR=1
 VERSION_MINOR=0
 VERSION_MICRO=0
 
-for parm in "$@" ; do
-  if test "$parm" = "--help" || test "$parm" = "-help" || test "$parm" = "-h" ; then
-    cat << EOF
+ENABLED_LIST=(
+    "shared|build shared libraries",
+)
 
-Usage: $0 [OPTIONS]...
+DISABLED_LIST=(
+    "gcov|compile gnu coverage information into PROGRAM",
+    "profile|compile profiling information into PROGRAM",
+    "static|build static libraries"
+)
 
-Configuration:
-  -h, --help               display this help and exit
+AUTOCONF_LIST=(
+    "ENABLED_LIST",
+    "DISABLED_LIST"
+)
 
-Installation directories:
-  --prefix=DIR           use this prefix for installing vidix [/usr/local]
-  --datadir=DIR          use this prefix for installing machine independent
-                         data files [PREFIX/share/vidix]
-  --confdir=DIR          use this prefix for installing configuration files
-                         [same as datadir]
-  --libdir=DIR           use this prefix for installing shared objects
-                         [same as datadir]
+PATH_LIST=(
+    "prefix|architecture-independent files|/usr/local",
+    "exec_prefix|architecture-dependent files|\$prefix",
+    "bindir|user executables|\$exec_prefix/bin",
+    "libdir|object code libraries|\$exec_prefix/lib",
+    "datadir|read-only architecture-independent data|\$prefix/share/vidix",
+    "confdir|read-only configuration files|\$prefix/share/vidix"
+)
 
-System types:
-  --build=BUILD          configure for building on BUILD [guessed]
-  --host=HOST            cross-compile to build program to run on HOST [BUILD]
+SYSTYPES_LIST=(
+    "build|configure for building on BUILD [guessed]",
+    "host|cross-compile to build program to run on HOST [BUILD]",
+    "cc|use this C compiler to build PROGRAM|gcc",
+    "as|use this ASSEMBLER to build PROGRAM|as",
+    "ld|use this LINKER to build PROGRAM|gcc",
+    "ldconfig|use this LDCONFIG to install PROGRAM|ldconfig",
+    "install|use this INSTALL to install PROGRAM|install",
+    "pkg_config|use this PKG-CONFIG to configure PROGRAM|pkg-config",
+    "debug|compile debugging information into PROGRAM|0",
+    "language|force this language as default for PROGRAM (Available: $LANGUAGES)|$linguas"
+)
 
-Use these options if autodetection fails:
-  --with-extraincdir=DIR   extra headers in DIR
-  --with-extralibdir=DIR   extra library files in DIR
-  --with-extraldflags=LIST extra LDFLAGS
+SYSCONF_LIST=(
+    "SYSTYPES_LIST",
+    "PROGNAME_LIST",
+    "PATH_LIST"
+)
 
-Use these options if autodetection fails:
-  --enable-static        build as static library
-  --disable-static       don't build as static library
-  --enable-shared        build as shared library
-  --disable-shared       don't build as shared library
+EXTRA_LIST=(
+    "asflags|add these FLAGS to [\$ASFLAGS=$ASFLAGS]",
+    "cflags|add these FLAGS to [\$CFLAGS=$CFLAGS]",
+    "ldflags|add these FLAGS to [\$LDFLAGS=$LDFLAGS]",
+    "extralibs|add these LIBS to [\$LIBS=$LIBS]"
+)
 
-Miscellaneous options:
-  --cc=COMPILER          use this C compiler to build VIDIX [gcc]
+ADD_LIST=(
+    "EXTRA_LIST",
+)
 
-Environment variables:
-  MAKE      Make command (example: "make -j")
-  AS        Assembler command
-  CC        C compiler command (example: "gcc -m64 -mveclibabi=acml")
-  CFLAGS    C compiler flags (example:
-             "-O3 -msse -msse2 -msse3 -mfpmath=387,sse -mfancy-math-387
-              -ffast-math -funroll-all-loops -ftree-loop-optimize
-              -ftree-vect-loop-version -ftree-vectorize -fomit-frame-pointer
-              -finline-functions-called-once -funit-at-a-time -pipe")
-  LDFLAGS   linker flags, e.g. -L<lib dir> if you have libraries in a
-            nonstandard directory <lib dir>
-  LIBS      specifies additional libs (like: export LIBS=-lacml_mv)
-  DESTDIR   specifies base of installation
+ENVIRONMENT_LIST=(
+    "MAKE|Make command (example: 'make -j')|make",
+    "AS|Assembler command|as",
+    "CC|C compiler command (example: 'gcc -m64')|cc",
+    "CFLAGS|C compiler flags (example: '-funit-at-a-time')",
+    "LDFLAGS|linker flags (example: '-L/opt/lib64')",
+    "LIBS|additional libraries (example: 'LIBS=-lacml_mv')",
+    "DESTDIR|specifies base of installation"
+)
 
-EOF
-    exit 0
-  fi
-done # for parm in ...
+HELP_LIST=(
+    "PATH_LIST|Fine tuning of the installation directories|--",
+    "SYSTYPES_LIST|System types|--",
+    "EXTRA_LIST|Extralist|--",
+    "ENABLED_LIST|Optional list of enabled fautures|--disable-",
+    "DISABLED_LIST|Optional list of disabled fautures|--enable-",
+    "ENVIRONMENT_LIST|Environment variables|  "
+)
 
-# LGB: temporary files
-for I in "$TMPDIR" "$TEMPDIR" "/tmp" ; do
-  test "$I" && break
-done
+DEFAULT_LIST=(
+    "PATH_LIST|Fine tuning of the installation directories|--",
+    "SYSTYPES_LIST|System types|--",
+    "EXTRA_LIST|Extralist|--"
+)
 
-TMPLOG="configure.log"
-rm -f "$TMPLOG"
-TMPC="$I/vidix-conf-$RANDOM-$$.c"
-TMPCPP="$I/vidix-conf-$RANDOM-$$.cpp"
-TMPO="$I/vidix-conf-$RANDOM-$$.o"
-TMPS="$I/vidix-conf-$RANDOM-$$.S"
+enable_list "ENABLED_LIST"
+disable_list "DISABLED_LIST"
+make_environment "ENVIRONMENT_LIST"
 
-_cc=gcc
-test "$CC" && _cc="$CC"
-_prefix="/usr/local"
-_profile=
-_debug=
-_fastcall=auto
-# return result to parent script
 for ac_option do
+  optval="${ac_option#*=}"
   case "$ac_option" in
-  --prefix=*)
-    _prefix=`echo $ac_option | cut -d '=' -f 2`
+  --help)
+    print_help "HELP_LIST"
+    exit 0
     ;;
-  --datadir=*)
-    _datadir=`echo $ac_option | cut -d '=' -f 2`
+  --enable-*=*|--disable-*=*)
+    eval $(echo "${ac_option%%=*}" | sed 's/--/action=/;s/-/ thing=/')
+    in_list "AUTOCONF_LIST" ${thing} || bad_options="$ac_option $bad_options"
+    if test "$action" = "disable"; then
+      test "${optval}" = "no" && action=enable
+    else
+      test "${optval}" = "no" && action=disable
+    fi
+    echo "$action ${thing}"
+    $action ${thing}
     ;;
-  --confdir=*)
-    _confdir=`echo $ac_option | cut -d '=' -f 2`
+
+    --enable-?*|--disable-?*)
+    eval $(echo "$ac_option" | sed 's/--/action=/;s/-/ thing=/;s/-/_/g')
+    in_list "AUTOCONF_LIST" ${thing} || bad_options="$ac_option $bad_options"
+    $action ${thing}
     ;;
-  --libdir=*)
-    _libdir=`echo $ac_option | cut -d '=' -f 2`
-    ;;
-  --with-extraincdir=*)
-    _inc_extra=-I`echo $ac_option | cut -d '=' -f 2 | sed 's,:, -I,g'`
-    ;;
-  --with-extralibdir=*)
-    _ld_extra=-L`echo $ac_option | cut -d '=' -f 2 | sed 's,:, -L,g'`
-    ;;
-  --with-extraldflags=*)
-    _exld_flags="$_exld_flags -L`echo $ac_option | cut -d '=' -f 2 | sed 's,:, -L,g'`"
-    ;;
-  --build=*)
-    _build=`echo $ac_option | cut -d '=' -f 2`
-    ;;
-  --host=*)
-    _host=`echo $ac_option | cut -d '=' -f 2`
-    ;;
-  --cc=*)
-    _cc=`echo $ac_option | cut -d '=' -f 2`
-    ;;
-  --enable-static)
-    _static=yes
-    ;;
-  --disable-static)
-    _static=no
-    ;;
-  --enable-shared)
-    _shared=yes
-    ;;
-  --disable-shared)
-    _shared=no
-    ;;
-  *)
+    *)
+    optname="${ac_option%%=*}"
+    optname="${optname#--}"
+    optname=${optname//-/_}
+    if in_list "SYSCONF_LIST" $optname ; then
+        eval $optname=$optval
+    elif in_list "ADD_LIST" $optname ; then
+	action="add_$optname"
+	$action ${optval}
+    else
+        bad_options="$ac_option $bad_options"
+    fi
     ;;
   esac
 done
+make_defaults "DEFAULT_LIST"
 
 mktmps
+
+disable gcc44_workaround
+# Checking CC version...
+# gcc-3.0 merges optimizations coming from egcs, pgcc, agcc, ...
+  echocheck "$cc version"
+  # also check for name (the version checking is only for _gcc_ up for now)
+  # FIXME implement this in ver. check.
+  cc_name=`$cc -v 2>&1 | tail -n 1 | cut -d ' ' -f 1`
+  cc_version=`$cc -dumpversion`
+  cc_v=$cc_version
+  case $cc_version in
+    4.[4-9]|4.[4-9].[0-9])
+      enable gcc44_workaround
+      ;;
+    3.[3-9]|3.[2-9].[3-9]|4.[0-3]|4.[0-3].[0-9])
+      ;;
+    *)
+      die "*** Bad gcc-$cc_version: Please upgrade C compiler at least to gcc-3.2.3+! ***"
+      ;;
+  esac
+  echores "$cc_version"
+# now that we know what compiler should be used for compilation, try to find
+# out which assembler is used by the $cc compiler
+if cygwin ; then
+prefix="."
+fi
+
+if cygwin ; then
+# Keep everything in .exe folder
+test -z "$datadir" && datadir="."
+test -z "$confdir" && confdir="."
+test -z "$libdir" && libdir="."
+fi
 
 guess_target config.mak config.h
 test_optimizations config.mak config.h
 
-test -n "$_ld_extra"	&& add_extralibs $_ld_extra
-test -n "$_exld_flags"	&& add_ldflags $_exld_flags
-test -n "$_inc_extra"	&& add_cflags $_inc_extra
-
-if cygwin ; then
-# Keep everything in .exe folder
-test -z "$_datadir" && _datadir="."
-test -z "$_confdir" && _confdir="."
-test -z "$_libdir" && _libdir="."
-else
-test -z "$_datadir" && _datadir="$_prefix/share/"
-test -z "$_confdir" && _confdir="$_datadir"
-test -z "$_libdir" && _libdir="$_prefix/lib"
-fi
-
 # checking for a working awk, I'm using mawk first, because it's fastest - atmos
-_awk=
-_awk_verc_fail=yes
+awk=
+awk_verc_fail=yes
 echores "Checking for "awk"..."
-for _awk in  gawk nawk awk mawk; do
-  if ( $_awk 'BEGIN{testme();}function testme(){print"";}' ) >> "$TMPLOG" 2>&1; then
-    _awk_verc_fail=no
+for awk in  gawk nawk awk mawk; do
+  if ( $awk 'BEGIN{testme();}function testme(){print"";}' ) >> "$TMPLOG" 2>&1; then
+    awk_verc_fail=no
     break
   fi
 done
-test "$_awk_verc_fail" = yes && _awk=no
-echores "$_awk"
-if test "$_awk_verc_fail" = yes; then
+test "$awk_verc_fail" = yes && awk=no
+echores "$awk"
+if test "$awk_verc_fail" = yes; then
 echo "VIDIX needs Awk, but there was no working implementation found!"
 echo "Try the GNU implementation, which can be downloaded from:"
 die  "ftp://ftp.gnu.org/gnu/gawk/"
 fi
 
-require2 libdl dlfcn.h dlsym -ldl ||  die "dynamic loader was not found"
-print_config HAVE_ config.h config.mak libdl
 
 require2 mmap "sys/types.h sys/mman.h" mmap
 mman_h=$mmap
@@ -186,46 +204,34 @@ print_config HAVE_ config.h config.mak memalign
 check_sheader ivtv_h "linux/ivtv.h"
 print_config HAVE_ config.h config.mak ivtv_h
 
+build_static=$static
+print_config VIDIX_ config.h config.mak build_static
 
-_def_static=no
-echocheck "static library build"
-if test "$_static" = no; then
-  _def_static=no
-elif test "$_static" = yes; then
-  _def_static=yes
-fi
-echores "$_def_static"
+build_shared=$shared
+print_config VIDIX_ config.h config.mak build_shared
 
-_def_shared=yes
-echocheck "shared library build"
-if test "$_shared" = no; then
-  _def_shared=no
-elif test "$_shared" = yes; then
-  _def_shared=yes
+if enabled shared ; then
+require2 libdl dlfcn.h dlsym -ldl || die "dynamic loader was not found"
+print_config HAVE_ config.h config.mak libdl
 fi
-if test "$_def_static" = no -a "$_def_shared" = no; then
-  _def_shared=yes
-fi
-echores "$_def_shared"
 
+test "$debug" != "0" && def_debug='#define VIDIX_DEBUG 1' || def_debug='#undef VIDIX_DEBUG'
 #############################################################################
 echo "Creating config.mak"
 cat >> config.mak << EOF
 # -------- Generated by configure -----------
-prefix = $_prefix
-DATADIR = $_datadir
-CONFDIR = $_confdir
-LIBDIR = $_libdir
+prefix = $prefix
+DATADIR = $datadir
+CONFDIR = $confdir
+LIBDIR = $libdir
 DESTDIR = $DESTDIR
 OPTFLAGS = $CFLAGS
 LDFLAGS = $LDFLAGS
 AR = ar
-CC = $_cc
-AWK = $_awk
-LDCONFIG=$_ld_config
-INSTALL=$_install
-VIDIX_BUILD_STATIC = $_def_static
-VIDIX_BUILD_SHARED = $_def_shared
+CC = $cc
+AWK = $awk
+LDCONFIG=$ld_config
+INSTALL=$install
 
 VIDIX_VERSION_MAJOR = $VERSION_MAJOR
 VIDIX_VERSION_MINOR = $VERSION_MINOR
@@ -246,14 +252,14 @@ cat >> config.h << EOF
 #define VIDIX_VERSION_NUMBER "$VERSION_MAJOR.$VERSION_MINOR.$VERSION_MICRO"
 
 /* Toggles debugging informations */
-$_def_debug
+$def_debug
 
 /* Common data directory (for fonts, etc) */
-#define USR_PREFIX "$_prefix"
-#define DATADIR "$_datadir"
-#define CONFDIR "$_confdir"
-#define LIBDIR "$_libdir"
+#define USR_PREFIX "$prefix"
+#define DATADIR "$datadir"
+#define CONFDIR "$confdir"
+#define LIBDIR "$libdir"
 EOF
 
 # Last move:
-rm -f "$TMPO" "$TMPC" "$TMPS" "$TMPCPP"
+rmtmps
