@@ -629,7 +629,7 @@ static void mga_vid_write_regs(int restore)
     unsigned char r, g, b, y, cb, cr;
     int i;
     for (i = 0; i < 16; i++) {
-           
+
         r = (i & 0x8) ? 0xff : 0x00;
         g = (i & 0x4) ? ((i & 0x2) ? 0xff : 0xaa) : ((i & 0x2) ? 0x55 : 0x00);
         b = (i & 0x1) ? 0xff : 0x00;

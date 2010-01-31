@@ -6,34 +6,8 @@ OLDLIBDIR = $(prefix)/lib/mplayerxp/vidix
 VIDIX_LIBS = -L../../libdha -ldha
 VIDIX_LIBS_M = $(VIDIX_LIBS) -lm
 VIDIX_LIBS_X = $(VIDIX_LIBS_M) $(X_LIB)
-VIDIX_CFLAGS = -W -Wall -fPIC -I. -I.. -I../.. $(OPTFLAGS)
-
-MACH64_CFLAGS = $(VIDIX_CFLAGS) -DRAGE128
-RAGE128_CFLAGS = $(VIDIX_CFLAGS) -DRAGE128
-MGA_CRTC2_CFLAGS = $(VIDIX_CFLAGS) -DCRTC2
-MGA_TV_CFLAGS = $(VIDIX_CFLAGS) -DMGA_TV
-
-DRV=    cyberblade_vid.so \
-	genfb_vid.so \
-	mach64_vid.so \
-	mga_crtc2_vid.so \
-	mga_tv_vid.so \
-	mga_vid.so \
-	nvidia_vid.so \
-	pm2_vid.so \
-	pm3_vid.so \
-	radeon_vid.so \
-	rage128_vid.so \
-	radeonhd_vid.so \
-	s3_vid.so \
-	savage_vid.so \
-	sis_vid.so \
-	unichrome_vid.so
-ifeq ($(TARGET_OS),Linux)
-ifeq ($(HAVE_IVTV),yes)
-DRV += ivtv_vid.so
-endif
-endif
+CFLAGS = -W -Wall -fPIC -I. -I.. -I../.. $(OPTFLAGS)
+SHCFLAGS = -fPIC $(CFLAGS)
 
 SRCS=   cyberblade_vid.c \
 	genfb_vid.c \
@@ -58,6 +32,8 @@ endif
 endif
 
 OBJS = $(SRCS:.c=.o)
+SHOBJS = $(SRCS:.c=.po)
+DRV  = $(SHOBJS:.po=.so)
 
 ifeq ($(VIDIX_BUILD_STATIC),yes)
 all: $(OBJS)
@@ -66,31 +42,26 @@ ifeq ($(VIDIX_BUILD_SHARED),yes)
 all: $(DRV)
 endif
 
-.SUFFIXES: .c .o
+.SUFFIXES: .c .o .po
 
 # .PHONY: all clean
 
 # Object files
 %.o: %.c
-	$(CC) -c $(VIDIX_CFLAGS) -o $@ $<
+	$(CC) -c $(CFLAGS) -o $@ $<
+
+%.po: %.c
+	$(CC) -c $(SHCFLAGS) -o $@ $<
 
 # Dynamic librairies
-%.so: %.o
-	$(CC) $(LDFLAGS) -shared $^ $(VIDIX_LIBS_M) -Wl,-soname,$@ -o $@
-
-mga_crtc2_vid.o: mga_vid.c
-	$(CC) -c $(MGA_CRTC2_CFLAGS) -o $@ $<
-mga_tv_vid.o: mga_vid.c
-	$(CC) -c $(MGA_TV_CFLAGS) -o $@ $<
-rage128_vid.o: radeon_vid.c
-	$(CC) -c $(RAGE128_CFLAGS) -o $@ $<
-
+%.so: %.po
+	$(CC) $(LDFLAGS) -shared $< $(VIDIX_LIBS_M) -Wl,-soname,$@ -o $@
 
 clean:
-	rm -f *.o *.so *~
+	rm -f *.o *.po *.so *~
 
-distclean:
-	rm -f *.o *.so *~ .depend
+distclean: clean
+	rm -f .depend
 
 dep depend:
 	$(CC) -MM $(CFLAGS) $(SRCS) 1>.depend
