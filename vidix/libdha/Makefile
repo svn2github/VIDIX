@@ -20,8 +20,8 @@ SRCS = libdha.c \
 OBJS = $(SRCS:.c=.o)
 SHOBJS = $(SRCS:.c=.po)
 
-CFLAGS = -I. -I.. $(OPTFLAGS)
-SHCFLAGS = -fPIC $(CFLAGS)
+CFLAGS = -DVIDIX_COMPILE_STATIC -I. -I.. $(OPTFLAGS)
+SHCFLAGS = -fPIC -I. -I.. $(OPTFLAGS)
 
 ifeq ($(TARGET_OS),OpenBSD)
 LDCONFIG_FLAGS += -R
@@ -33,10 +33,10 @@ endif
 .SUFFIXES: .c .o .po
 
 LIB_TARGETS=
-ifeq ($(VIDIX_BUILD_SHARED),yes)
+ifeq ($(VIDIX_SHARED),yes)
 LIB_TARGETS += $(LIBNAME_SHARED_VERSION)
 endif
-ifeq ($(VIDIX_BUILD_STATIC),yes)
+ifeq ($(VIDIX_STATIC),yes)
 LIB_TARGETS += $(LIBNAME)
 endif
 ifeq ($(TARGET_WIN32),yes)
@@ -84,22 +84,22 @@ dep depend: pci_names.c
 
 install:
 	-mkdir -p $(DESTDIR)$(LIBDIR)
-ifeq ($(VIDIX_BUILD_SHARED),yes)
+ifeq ($(VIDIX_SHARED),yes)
 	install -D -m 755 -s -p $(LIBNAME_SHARED_VERSION) $(DESTDIR)$(LIBDIR)/$(LIBNAME_SHARED_VERSION)
 	ln -sf $(LIBNAME_SHARED_VERSION) $(DESTDIR)$(LIBDIR)/$(LIBNAME_SHARED)
 	ln -sf $(LIBNAME_SHARED_VERSION) $(DESTDIR)$(LIBDIR)/$(LIBNAME_SHARED_MAJOR)
 	-$(LDCONFIG) $(LDCONFIG_FLAGS)
 endif
-ifeq ($(VIDIX_BUILD_STATIC),yes)
+ifeq ($(VIDIX_STATIC),yes)
 	cp -f $(LIBNAME) $(DESTDIR)$(LIBDIR)/$(LIBNAME)
 endif
 
 uninstall:
-ifeq ($(VIDIX_BUILD_SHARED),yes)
+ifeq ($(VIDIX_SHARED),yes)
 	rm -f $(DESTDIR)$(LIBDIR)/$(LIBNAME_SHARED)*
 	-$(LDCONFIG) $(LDCONFIG_FLAGS)
 endif
-ifeq ($(VIDIX_BUILD_STATIC),yes)
+ifeq ($(VIDIX_STATIC),yes)
 	rm -f $(DESTDIR)$(LIBDIR)/$(LIBNAME_STATIC)
 endif
 

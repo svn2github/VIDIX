@@ -6,8 +6,9 @@ OLDLIBDIR = $(prefix)/lib/mplayerxp/vidix
 VIDIX_LIBS = -L../../libdha -ldha
 VIDIX_LIBS_M = $(VIDIX_LIBS) -lm
 VIDIX_LIBS_X = $(VIDIX_LIBS_M) $(X_LIB)
-CFLAGS = -W -Wall -fPIC -I. -I.. -I../.. $(OPTFLAGS)
-SHCFLAGS = -fPIC $(CFLAGS)
+OPTFLAGS += -W -Wall -I. -I.. -I../..
+CFLAGS = $(OPTFLAGS) -DVIDIX_COMPILE_STATIC
+SHCFLAGS = $(OPTFLAGS) -fPIC
 
 SRCS=   cyberblade_vid.c \
 	genfb_vid.c \
@@ -35,10 +36,10 @@ OBJS = $(SRCS:.c=.o)
 SHOBJS = $(SRCS:.c=.po)
 DRV  = $(SHOBJS:.po=.so)
 
-ifeq ($(VIDIX_BUILD_STATIC),yes)
+ifeq ($(VIDIX_STATIC),yes)
 all: $(OBJS)
 endif
-ifeq ($(VIDIX_BUILD_SHARED),yes)
+ifeq ($(VIDIX_SHARED),yes)
 all: $(DRV)
 endif
 

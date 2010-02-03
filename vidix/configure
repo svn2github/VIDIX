@@ -15,7 +15,7 @@ ENABLED_LIST=(
 DISABLED_LIST=(
     "gcov|compile gnu coverage information into PROGRAM",
     "profile|compile profiling information into PROGRAM",
-    "static|build static libraries"
+    "static|build static libraries",
 )
 
 AUTOCONF_LIST=(
@@ -202,11 +202,8 @@ print_config HAVE_ config.h config.mak memalign
 check_sheader ivtv_h "linux/ivtv.h"
 print_config HAVE_ config.h config.mak ivtv_h
 
-build_static=$static
-print_config VIDIX_ config.h config.mak build_static
-
-build_shared=$shared
-print_config VIDIX_ config.h config.mak build_shared
+print_config VIDIX_ config.h config.mak static
+print_config VIDIX_ config.h config.mak shared
 
 if enabled shared ; then
 require2 libdl dlfcn.h dlsym -ldl || die "dynamic loader was not found"
