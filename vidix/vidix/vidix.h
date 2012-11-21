@@ -49,6 +49,17 @@ typedef enum vidix_dev_type {
   TYPE_CODEC   =        0x00000002,	/* Device supports hw (de)coding */
   TYPE_FX      =	0x00000004,	/* Is a video effects device */
 } vidix_dev_type_t;
+#ifdef __cplusplus
+extern "C++" {
+inline vidix_dev_type_t operator~(vidix_dev_type_t a) { return static_cast<vidix_dev_type_t>(~static_cast<unsigned>(a)); }
+inline vidix_dev_type_t operator|(vidix_dev_type_t a, vidix_dev_type_t b) { return static_cast<vidix_dev_type_t>(static_cast<unsigned>(a)|static_cast<unsigned>(b)); }
+inline vidix_dev_type_t operator&(vidix_dev_type_t a, vidix_dev_type_t b) { return static_cast<vidix_dev_type_t>(static_cast<unsigned>(a)&static_cast<unsigned>(b)); }
+inline vidix_dev_type_t operator^(vidix_dev_type_t a, vidix_dev_type_t b) { return static_cast<vidix_dev_type_t>(static_cast<unsigned>(a)^static_cast<unsigned>(b)); }
+inline vidix_dev_type_t operator|=(vidix_dev_type_t a, vidix_dev_type_t b) { return (a=static_cast<vidix_dev_type_t>(static_cast<unsigned>(a)|static_cast<unsigned>(b))); }
+inline vidix_dev_type_t operator&=(vidix_dev_type_t a, vidix_dev_type_t b) { return (a=static_cast<vidix_dev_type_t>(static_cast<unsigned>(a)&static_cast<unsigned>(b))); }
+inline vidix_dev_type_t operator^=(vidix_dev_type_t a, vidix_dev_type_t b) { return (a=static_cast<vidix_dev_type_t>(static_cast<unsigned>(a)^static_cast<unsigned>(b))); }
+}
+#endif
 
 typedef enum vidix_dev_flag {
   FLAG_NONE       =	0x00000000, /* No flags defined */
@@ -62,7 +73,18 @@ typedef enum vidix_dev_flag {
   FLAG_SUBPIC	  =	0x00001000, /* Card supports DVD subpictures */
   FLAG_EQUALIZER  =	0x00002000, /* Card supports equalizer */
 } vidix_dev_flag_t;
-  
+#ifdef __cplusplus
+extern "C++" {
+inline vidix_dev_flag_t operator~(vidix_dev_flag_t a) { return static_cast<vidix_dev_flag_t>(~static_cast<unsigned>(a)); }
+inline vidix_dev_flag_t operator|(vidix_dev_flag_t a, vidix_dev_flag_t b) { return static_cast<vidix_dev_flag_t>(static_cast<unsigned>(a)|static_cast<unsigned>(b)); }
+inline vidix_dev_flag_t operator&(vidix_dev_flag_t a, vidix_dev_flag_t b) { return static_cast<vidix_dev_flag_t>(static_cast<unsigned>(a)&static_cast<unsigned>(b)); }
+inline vidix_dev_flag_t operator^(vidix_dev_flag_t a, vidix_dev_flag_t b) { return static_cast<vidix_dev_flag_t>(static_cast<unsigned>(a)^static_cast<unsigned>(b)); }
+inline vidix_dev_flag_t operator|=(vidix_dev_flag_t a, vidix_dev_flag_t b) { return (a=static_cast<vidix_dev_flag_t>(static_cast<unsigned>(a)|static_cast<unsigned>(b))); }
+inline vidix_dev_flag_t operator&=(vidix_dev_flag_t a, vidix_dev_flag_t b) { return (a=static_cast<vidix_dev_flag_t>(static_cast<unsigned>(a)&static_cast<unsigned>(b))); }
+inline vidix_dev_flag_t operator^=(vidix_dev_flag_t a, vidix_dev_flag_t b) { return (a=static_cast<vidix_dev_flag_t>(static_cast<unsigned>(a)^static_cast<unsigned>(b))); }
+}
+#endif
+
 typedef struct vidix_capability_s
 {
   char name[64]; /* Driver name */
@@ -101,6 +123,17 @@ typedef enum vidix_depth {
 		                VID_DEPTH_16BPP | VID_DEPTH_24BPP | \
                                 VID_DEPTH_32BPP,
 } vidix_depth_t;
+#ifdef __cplusplus
+extern "C++" {
+inline vidix_depth_t operator~(vidix_depth_t a) { return static_cast<vidix_depth_t>(~static_cast<unsigned>(a)); }
+inline vidix_depth_t operator|(vidix_depth_t a, vidix_depth_t b) { return static_cast<vidix_depth_t>(static_cast<unsigned>(a)|static_cast<unsigned>(b)); }
+inline vidix_depth_t operator&(vidix_depth_t a, vidix_depth_t b) { return static_cast<vidix_depth_t>(static_cast<unsigned>(a)&static_cast<unsigned>(b)); }
+inline vidix_depth_t operator^(vidix_depth_t a, vidix_depth_t b) { return static_cast<vidix_depth_t>(static_cast<unsigned>(a)^static_cast<unsigned>(b)); }
+inline vidix_depth_t operator|=(vidix_depth_t a, vidix_depth_t b) { return (a=static_cast<vidix_depth_t>(static_cast<unsigned>(a)|static_cast<unsigned>(b))); }
+inline vidix_depth_t operator&=(vidix_depth_t a, vidix_depth_t b) { return (a=static_cast<vidix_depth_t>(static_cast<unsigned>(a)&static_cast<unsigned>(b))); }
+inline vidix_depth_t operator^=(vidix_depth_t a, vidix_depth_t b) { return (a=static_cast<vidix_depth_t>(static_cast<unsigned>(a)^static_cast<unsigned>(b))); }
+}
+#endif
 
 typedef enum vidix_cap {
   VID_CAP_NONE               =	0x0000,
@@ -127,6 +160,17 @@ typedef enum vidix_cap {
   /* alphakey is checked against overlay */
   VID_CAP_ALPHAKEY_ISOVERLAY =  0x0400,
 } vidix_cap_t;
+#ifdef __cplusplus
+extern "C++" {
+inline vidix_cap_t operator~(vidix_cap_t a) { return static_cast<vidix_cap_t>(~static_cast<unsigned>(a)); }
+inline vidix_cap_t operator|(vidix_cap_t a, vidix_cap_t b) { return static_cast<vidix_cap_t>(static_cast<unsigned>(a)|static_cast<unsigned>(b)); }
+inline vidix_cap_t operator&(vidix_cap_t a, vidix_cap_t b) { return static_cast<vidix_cap_t>(static_cast<unsigned>(a)&static_cast<unsigned>(b)); }
+inline vidix_cap_t operator^(vidix_cap_t a, vidix_cap_t b) { return static_cast<vidix_cap_t>(static_cast<unsigned>(a)^static_cast<unsigned>(b)); }
+inline vidix_cap_t operator|=(vidix_cap_t a, vidix_cap_t b) { return (a=static_cast<vidix_cap_t>(static_cast<unsigned>(a)|static_cast<unsigned>(b))); }
+inline vidix_cap_t operator&=(vidix_cap_t a, vidix_cap_t b) { return (a=static_cast<vidix_cap_t>(static_cast<unsigned>(a)&static_cast<unsigned>(b))); }
+inline vidix_cap_t operator^=(vidix_cap_t a, vidix_cap_t b) { return (a=static_cast<vidix_cap_t>(static_cast<unsigned>(a)^static_cast<unsigned>(b))); }
+}
+#endif
 
 typedef struct vidix_fourcc_s
 {
@@ -158,6 +202,17 @@ typedef enum vidix_color_key_op {
   CKEY_NEQ   =	3,
   CKEY_ALPHA =	4,
 } vidix_color_key_op_t;
+#ifdef __cplusplus
+extern "C++" {
+inline vidix_color_key_op_t operator~(vidix_color_key_op_t a) { return static_cast<vidix_color_key_op_t>(~static_cast<unsigned>(a)); }
+inline vidix_color_key_op_t operator|(vidix_color_key_op_t a, vidix_color_key_op_t b) { return static_cast<vidix_color_key_op_t>(static_cast<unsigned>(a)|static_cast<unsigned>(b)); }
+inline vidix_color_key_op_t operator&(vidix_color_key_op_t a, vidix_color_key_op_t b) { return static_cast<vidix_color_key_op_t>(static_cast<unsigned>(a)&static_cast<unsigned>(b)); }
+inline vidix_color_key_op_t operator^(vidix_color_key_op_t a, vidix_color_key_op_t b) { return static_cast<vidix_color_key_op_t>(static_cast<unsigned>(a)^static_cast<unsigned>(b)); }
+inline vidix_color_key_op_t operator|=(vidix_color_key_op_t a, vidix_color_key_op_t b) { return (a=static_cast<vidix_color_key_op_t>(static_cast<unsigned>(a)|static_cast<unsigned>(b))); }
+inline vidix_color_key_op_t operator&=(vidix_color_key_op_t a, vidix_color_key_op_t b) { return (a=static_cast<vidix_color_key_op_t>(static_cast<unsigned>(a)&static_cast<unsigned>(b))); }
+inline vidix_color_key_op_t operator^=(vidix_color_key_op_t a, vidix_color_key_op_t b) { return (a=static_cast<vidix_color_key_op_t>(static_cast<unsigned>(a)^static_cast<unsigned>(b))); }
+}
+#endif
 
 typedef struct vidix_color_key_s
 {
@@ -174,6 +229,17 @@ typedef enum vidix_video_key_op {
   VKEY_EQ    =	2,
   VKEY_NEQ   =	3,
 } vidix_video_key_op_t;
+#ifdef __cplusplus
+extern "C++" {
+inline vidix_video_key_op_t operator~(vidix_video_key_op_t a) { return static_cast<vidix_video_key_op_t>(~static_cast<unsigned>(a)); }
+inline vidix_video_key_op_t operator|(vidix_video_key_op_t a, vidix_video_key_op_t b) { return static_cast<vidix_video_key_op_t>(static_cast<unsigned>(a)|static_cast<unsigned>(b)); }
+inline vidix_video_key_op_t operator&(vidix_video_key_op_t a, vidix_video_key_op_t b) { return static_cast<vidix_video_key_op_t>(static_cast<unsigned>(a)&static_cast<unsigned>(b)); }
+inline vidix_video_key_op_t operator^(vidix_video_key_op_t a, vidix_video_key_op_t b) { return static_cast<vidix_video_key_op_t>(static_cast<unsigned>(a)^static_cast<unsigned>(b)); }
+inline vidix_video_key_op_t operator|=(vidix_video_key_op_t a, vidix_video_key_op_t b) { return (a=static_cast<vidix_video_key_op_t>(static_cast<unsigned>(a)|static_cast<unsigned>(b))); }
+inline vidix_video_key_op_t operator&=(vidix_video_key_op_t a, vidix_video_key_op_t b) { return (a=static_cast<vidix_video_key_op_t>(static_cast<unsigned>(a)&static_cast<unsigned>(b))); }
+inline vidix_video_key_op_t operator^=(vidix_video_key_op_t a, vidix_video_key_op_t b) { return (a=static_cast<vidix_video_key_op_t>(static_cast<unsigned>(a)^static_cast<unsigned>(b))); }
+}
+#endif
 
 typedef struct vidix_video_key_s {
   vidix_video_key_op_t op;	/* defines logical operation */
@@ -187,6 +253,17 @@ typedef enum vidix_interleave {
   /* VUVUVUVUVU */
   INTERLEAVING_VU         =		0x00001001,
 } vidix_interleave_t;
+#ifdef __cplusplus
+extern "C++" {
+inline vidix_interleave_t operator~(vidix_interleave_t a) { return static_cast<vidix_interleave_t>(~static_cast<unsigned>(a)); }
+inline vidix_interleave_t operator|(vidix_interleave_t a, vidix_interleave_t b) { return static_cast<vidix_interleave_t>(static_cast<unsigned>(a)|static_cast<unsigned>(b)); }
+inline vidix_interleave_t operator&(vidix_interleave_t a, vidix_interleave_t b) { return static_cast<vidix_interleave_t>(static_cast<unsigned>(a)&static_cast<unsigned>(b)); }
+inline vidix_interleave_t operator^(vidix_interleave_t a, vidix_interleave_t b) { return static_cast<vidix_interleave_t>(static_cast<unsigned>(a)^static_cast<unsigned>(b)); }
+inline vidix_interleave_t operator|=(vidix_interleave_t a, vidix_interleave_t b) { return (a=static_cast<vidix_interleave_t>(static_cast<unsigned>(a)|static_cast<unsigned>(b))); }
+inline vidix_interleave_t operator&=(vidix_interleave_t a, vidix_interleave_t b) { return (a=static_cast<vidix_interleave_t>(static_cast<unsigned>(a)&static_cast<unsigned>(b))); }
+inline vidix_interleave_t operator^=(vidix_interleave_t a, vidix_interleave_t b) { return (a=static_cast<vidix_interleave_t>(static_cast<unsigned>(a)^static_cast<unsigned>(b))); }
+}
+#endif
 
 #define VID_PLAY_MAXFRAMES 1024	/* unreal limitation */
 
@@ -226,7 +303,17 @@ typedef enum vidix_key_op {
   KEYS_OR  =	2,
   KEYS_XOR =	3,
 } vidix_key_op_t;
-
+#ifdef __cplusplus
+extern "C++" {
+inline vidix_key_op_t operator~(vidix_key_op_t a) { return static_cast<vidix_key_op_t>(~static_cast<unsigned>(a)); }
+inline vidix_key_op_t operator|(vidix_key_op_t a, vidix_key_op_t b) { return static_cast<vidix_key_op_t>(static_cast<unsigned>(a)|static_cast<unsigned>(b)); }
+inline vidix_key_op_t operator&(vidix_key_op_t a, vidix_key_op_t b) { return static_cast<vidix_key_op_t>(static_cast<unsigned>(a)&static_cast<unsigned>(b)); }
+inline vidix_key_op_t operator^(vidix_key_op_t a, vidix_key_op_t b) { return static_cast<vidix_key_op_t>(static_cast<unsigned>(a)^static_cast<unsigned>(b)); }
+inline vidix_key_op_t operator|=(vidix_key_op_t a, vidix_key_op_t b) { return (a=static_cast<vidix_key_op_t>(static_cast<unsigned>(a)|static_cast<unsigned>(b))); }
+inline vidix_key_op_t operator&=(vidix_key_op_t a, vidix_key_op_t b) { return (a=static_cast<vidix_key_op_t>(static_cast<unsigned>(a)&static_cast<unsigned>(b))); }
+inline vidix_key_op_t operator^=(vidix_key_op_t a, vidix_key_op_t b) { return (a=static_cast<vidix_key_op_t>(static_cast<unsigned>(a)^static_cast<unsigned>(b))); }
+}
+#endif
 typedef struct vidix_grkey_s
 {
   vidix_ckey_t ckey;		/* app -> driver: color key */
@@ -248,13 +335,33 @@ typedef enum vidix_veq_cap {
   VEQ_CAP_HUE		=	0x00000008UL,
   VEQ_CAP_RGB_INTENSITY =	0x00000010UL,
 } vidix_veq_cap_t;
-
+#ifdef __cplusplus
+extern "C++" {
+inline vidix_veq_cap_t operator~(vidix_veq_cap_t a) { return static_cast<vidix_veq_cap_t>(~static_cast<unsigned>(a)); }
+inline vidix_veq_cap_t operator|(vidix_veq_cap_t a, vidix_veq_cap_t b) { return static_cast<vidix_veq_cap_t>(static_cast<unsigned>(a)|static_cast<unsigned>(b)); }
+inline vidix_veq_cap_t operator&(vidix_veq_cap_t a, vidix_veq_cap_t b) { return static_cast<vidix_veq_cap_t>(static_cast<unsigned>(a)&static_cast<unsigned>(b)); }
+inline vidix_veq_cap_t operator^(vidix_veq_cap_t a, vidix_veq_cap_t b) { return static_cast<vidix_veq_cap_t>(static_cast<unsigned>(a)^static_cast<unsigned>(b)); }
+inline vidix_veq_cap_t operator|=(vidix_veq_cap_t a, vidix_veq_cap_t b) { return (a=static_cast<vidix_veq_cap_t>(static_cast<unsigned>(a)|static_cast<unsigned>(b))); }
+inline vidix_veq_cap_t operator&=(vidix_veq_cap_t a, vidix_veq_cap_t b) { return (a=static_cast<vidix_veq_cap_t>(static_cast<unsigned>(a)&static_cast<unsigned>(b))); }
+inline vidix_veq_cap_t operator^=(vidix_veq_cap_t a, vidix_veq_cap_t b) { return (a=static_cast<vidix_veq_cap_t>(static_cast<unsigned>(a)^static_cast<unsigned>(b))); }
+}
+#endif
 typedef enum vidix_veq_flag {
   VEQ_FLG_ITU_R_BT_601 = 0x00000000, /* ITU-R BT.601 colour space (default) */
   VEQ_FLG_ITU_R_BT_709 = 0x00000001, /* ITU-R BT.709 colour space */
   VEQ_FLG_ITU_MASK     = 0x0000000f,
 } vidix_veq_flag_t;
-
+#ifdef __cplusplus
+extern "C++" {
+inline vidix_veq_flag_t operator~(vidix_veq_flag_t a) { return static_cast<vidix_veq_flag_t>(~static_cast<unsigned>(a)); }
+inline vidix_veq_flag_t operator|(vidix_veq_flag_t a, vidix_veq_flag_t b) { return static_cast<vidix_veq_flag_t>(static_cast<unsigned>(a)|static_cast<unsigned>(b)); }
+inline vidix_veq_flag_t operator&(vidix_veq_flag_t a, vidix_veq_flag_t b) { return static_cast<vidix_veq_flag_t>(static_cast<unsigned>(a)&static_cast<unsigned>(b)); }
+inline vidix_veq_flag_t operator^(vidix_veq_flag_t a, vidix_veq_flag_t b) { return static_cast<vidix_veq_flag_t>(static_cast<unsigned>(a)^static_cast<unsigned>(b)); }
+inline vidix_veq_flag_t operator|=(vidix_veq_flag_t a, vidix_veq_flag_t b) { return (a=static_cast<vidix_veq_flag_t>(static_cast<unsigned>(a)|static_cast<unsigned>(b))); }
+inline vidix_veq_flag_t operator&=(vidix_veq_flag_t a, vidix_veq_flag_t b) { return (a=static_cast<vidix_veq_flag_t>(static_cast<unsigned>(a)&static_cast<unsigned>(b))); }
+inline vidix_veq_flag_t operator^=(vidix_veq_flag_t a, vidix_veq_flag_t b) { return (a=static_cast<vidix_veq_flag_t>(static_cast<unsigned>(a)^static_cast<unsigned>(b))); }
+}
+#endif
 typedef struct vidix_video_eq_s {
   vidix_veq_cap_t cap;	 /* on get_eq should contain capability of
                             equalizer on set_eq should contain using fields */
@@ -290,7 +397,17 @@ typedef enum vidix_interlace_flag {
   /* unknown deinterlacing - use adaptive if it's possible */
   CFG_UNKNOWN_INTERLACING  =	0x0000000f,
 } vidix_interlace_flag_t;
-
+#ifdef __cplusplus
+extern "C++" {
+inline vidix_interlace_flag_t operator~(vidix_interlace_flag_t a) { return static_cast<vidix_interlace_flag_t>(~static_cast<unsigned>(a)); }
+inline vidix_interlace_flag_t operator|(vidix_interlace_flag_t a, vidix_interlace_flag_t b) { return static_cast<vidix_interlace_flag_t>(static_cast<unsigned>(a)|static_cast<unsigned>(b)); }
+inline vidix_interlace_flag_t operator&(vidix_interlace_flag_t a, vidix_interlace_flag_t b) { return static_cast<vidix_interlace_flag_t>(static_cast<unsigned>(a)&static_cast<unsigned>(b)); }
+inline vidix_interlace_flag_t operator^(vidix_interlace_flag_t a, vidix_interlace_flag_t b) { return static_cast<vidix_interlace_flag_t>(static_cast<unsigned>(a)^static_cast<unsigned>(b)); }
+inline vidix_interlace_flag_t operator|=(vidix_interlace_flag_t a, vidix_interlace_flag_t b) { return (a=static_cast<vidix_interlace_flag_t>(static_cast<unsigned>(a)|static_cast<unsigned>(b))); }
+inline vidix_interlace_flag_t operator&=(vidix_interlace_flag_t a, vidix_interlace_flag_t b) { return (a=static_cast<vidix_interlace_flag_t>(static_cast<unsigned>(a)&static_cast<unsigned>(b))); }
+inline vidix_interlace_flag_t operator^=(vidix_interlace_flag_t a, vidix_interlace_flag_t b) { return (a=static_cast<vidix_interlace_flag_t>(static_cast<unsigned>(a)^static_cast<unsigned>(b))); }
+}
+#endif
 typedef struct vidix_deinterlace_s {
   vidix_interlace_flag_t flags;
   unsigned deinterlace_pattern;	/* app -> driver: deinterlace pattern if
@@ -316,8 +433,19 @@ typedef enum vidix_bm_flag {
   /* app -> driver: app uses buffers which are fixed in memory  */
   BM_DMA_FIXED_BUFFS = 2,
   /* block until the transfer is complete */
-  BM_DMA_BLOCK       = 4,       
+  BM_DMA_BLOCK       = 4,
 } vidix_bm_flag_t;
+#ifdef __cplusplus
+extern "C++" {
+inline vidix_bm_flag_t operator~(vidix_bm_flag_t a) { return static_cast<vidix_bm_flag_t>(~static_cast<unsigned>(a)); }
+inline vidix_bm_flag_t operator|(vidix_bm_flag_t a, vidix_bm_flag_t b) { return static_cast<vidix_bm_flag_t>(static_cast<unsigned>(a)|static_cast<unsigned>(b)); }
+inline vidix_bm_flag_t operator&(vidix_bm_flag_t a, vidix_bm_flag_t b) { return static_cast<vidix_bm_flag_t>(static_cast<unsigned>(a)&static_cast<unsigned>(b)); }
+inline vidix_bm_flag_t operator^(vidix_bm_flag_t a, vidix_bm_flag_t b) { return static_cast<vidix_bm_flag_t>(static_cast<unsigned>(a)^static_cast<unsigned>(b)); }
+inline vidix_bm_flag_t operator|=(vidix_bm_flag_t a, vidix_bm_flag_t b) { return (a=static_cast<vidix_bm_flag_t>(static_cast<unsigned>(a)|static_cast<unsigned>(b))); }
+inline vidix_bm_flag_t operator&=(vidix_bm_flag_t a, vidix_bm_flag_t b) { return (a=static_cast<vidix_bm_flag_t>(static_cast<unsigned>(a)&static_cast<unsigned>(b))); }
+inline vidix_bm_flag_t operator^=(vidix_bm_flag_t a, vidix_bm_flag_t b) { return (a=static_cast<vidix_bm_flag_t>(static_cast<unsigned>(a)^static_cast<unsigned>(b))); }
+}
+#endif
 
 typedef struct vidix_dma_s
 {
@@ -340,7 +468,17 @@ typedef enum vidix_fx_type {
   FX_TYPE_BOOLEAN =		0x00000000,
   FX_TYPE_INTEGER =		0x00000001,
 } vidix_fx_type_t;
-
+#ifdef __cplusplus
+extern "C++" {
+inline vidix_fx_type_t operator~(vidix_fx_type_t a) { return static_cast<vidix_fx_type_t>(~static_cast<unsigned>(a)); }
+inline vidix_fx_type_t operator|(vidix_fx_type_t a, vidix_fx_type_t b) { return static_cast<vidix_fx_type_t>(static_cast<unsigned>(a)|static_cast<unsigned>(b)); }
+inline vidix_fx_type_t operator&(vidix_fx_type_t a, vidix_fx_type_t b) { return static_cast<vidix_fx_type_t>(static_cast<unsigned>(a)&static_cast<unsigned>(b)); }
+inline vidix_fx_type_t operator^(vidix_fx_type_t a, vidix_fx_type_t b) { return static_cast<vidix_fx_type_t>(static_cast<unsigned>(a)^static_cast<unsigned>(b)); }
+inline vidix_fx_type_t operator|=(vidix_fx_type_t a, vidix_fx_type_t b) { return (a=static_cast<vidix_fx_type_t>(static_cast<unsigned>(a)|static_cast<unsigned>(b))); }
+inline vidix_fx_type_t operator&=(vidix_fx_type_t a, vidix_fx_type_t b) { return (a=static_cast<vidix_fx_type_t>(static_cast<unsigned>(a)&static_cast<unsigned>(b))); }
+inline vidix_fx_type_t operator^=(vidix_fx_type_t a, vidix_fx_type_t b) { return (a=static_cast<vidix_fx_type_t>(static_cast<unsigned>(a)^static_cast<unsigned>(b))); }
+}
+#endif
 /*
    This structure is introdused to support OEM effects like:
    - sharpness
