@@ -5,7 +5,7 @@ init_functions
 
 # DHA/vidix version number
 VERSION_MAJOR=1
-VERSION_MINOR=0
+VERSION_MINOR=5
 VERSION_MICRO=0
 
 ENABLED_LIST=(
@@ -36,8 +36,10 @@ SYSTYPES_LIST=(
     "build|configure for building on BUILD [guessed]",
     "host|cross-compile to build program to run on HOST [BUILD]",
     "cc|use this C compiler to build PROGRAM|gcc",
+    "cxx|use this C++ compiler to build PROGRAM|g++",
     "as|use this ASSEMBLER to build PROGRAM|as",
     "ld|use this LINKER to build PROGRAM|gcc",
+    "ldxx|use this LINKER to build PROGRAM with C++ sources|g++",
     "ldconfig|use this LDCONFIG to install PROGRAM|ldconfig",
     "install|use this INSTALL to install PROGRAM|install",
     "pkg_config|use this PKG-CONFIG to configure PROGRAM|pkg-config",
@@ -54,7 +56,9 @@ SYSCONF_LIST=(
 EXTRA_LIST=(
     "asflags|add these FLAGS to [\$ASFLAGS=$ASFLAGS]",
     "cflags|add these FLAGS to [\$CFLAGS=$CFLAGS]",
+    "cxxflags|add these FLAGS to [\$CXXFLAGS=$CXXFLAGS]",
     "ldflags|add these FLAGS to [\$LDFLAGS=$LDFLAGS]",
+    "ldxxflags|add these FLAGS to [\$LDXXFLAGS=$LDXXFLAGS]",
     "extralibs|add these LIBS to [\$LIBS=$LIBS]"
 )
 
@@ -66,9 +70,12 @@ ENVIRONMENT_LIST=(
     "MAKE|Make command (example: 'make -j')|make",
     "AS|Assembler command|as",
     "CC|C compiler command (example: 'gcc -m64')|cc",
+    "CXX|C++ compiler command (example: 'g++ -m64')|cxx",
     "AWK|AWK programming language (after names of its inventors: Aho Weinberger Kernighan)",
     "CFLAGS|C compiler flags (example: '-funit-at-a-time')",
+    "CXXFLAGS|C++ compiler flags (example: '-Weffc++')",
     "LDFLAGS|linker flags (example: '-L/opt/lib64')",
+    "LDXXFLAGS|C++ linker flags (example: '-L/opt/lib64')",
     "LIBS|additional libraries (example: 'LIBS=-lacml_mv')",
     "DESTDIR|specifies base of installation"
 )
@@ -211,6 +218,9 @@ print_config HAVE_ config.h config.mak libdl
 fi
 
 test "$debug" != "0" && def_debug='#define VIDIX_DEBUG 1' || def_debug='#undef VIDIX_DEBUG'
+
+CXXFLAGS="$CFLAGS -Weffc++"
+LDXXFLAGS="$LDFLAGS"
 #############################################################################
 echo "Creating config.mak"
 cat >> config.mak << EOF
@@ -221,11 +231,14 @@ CONFDIR = $confdir
 LIBDIR = $libdir
 DESTDIR = $DESTDIR
 OPTFLAGS = $CFLAGS
+OPTXXFLAGS = $CXXFLAGS
 LDFLAGS = $LDFLAGS
+LDXXFLAGS = $LDXXFLAGS
 AR = ar
 CC = $cc
+CXX = $cxx
 AWK = $awk
-LDCONFIG=$ld_config
+LDCONFIG=$ldconfig
 INSTALL=$install
 
 VIDIX_VERSION_MAJOR = $VERSION_MAJOR

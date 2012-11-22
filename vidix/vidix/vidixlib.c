@@ -36,7 +36,9 @@ static char* dlerror(){
 }
 #endif /* WIN32 */
 
-#include "vidixlib.h"
+#include "vidix.h"
+#include "vidix_driver.h"
+
 #include "bswap.h"
 #include "config.h"
 

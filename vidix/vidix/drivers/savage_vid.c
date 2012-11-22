@@ -26,7 +26,7 @@
       Initial version
 
     To Do:
-			
+
 */
 
 
@@ -39,6 +39,7 @@
 #include <math.h>
 
 #include "vidix.h"
+#include "vidix_driver.h"
 #include "fourcc.h"
 #include "libdha/libdha.h"
 #include "libdha/pci_ids.h"

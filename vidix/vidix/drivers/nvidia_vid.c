@@ -4,7 +4,7 @@
    RIVATV (rivatv.sf.net)
    Licence: GPL
    WARNING: THIS DRIVER IS IN BETA STAGE
-   
+
    multi buffer support and TNT2 fixes by Dmitry Baryshkov
 */
 
@@ -19,6 +19,7 @@
 
 
 #include "vidix.h"
+#include "vidix_driver.h"
 #include "fourcc.h"
 #include "libdha/libdha.h"
 #include "libdha/pci_ids.h"

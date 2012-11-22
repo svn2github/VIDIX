@@ -16,14 +16,17 @@
  * several streams simultaneously. (Example: Video capturing and video
  * playback or capturing, video playback, audio encoding and so on).
 */
-#ifndef VIDIXLIB_H
-#define VIDIXLIB_H
+#ifndef __VIDIXLIB_H_INCLUDED
+#define __VIDIXLIB_H_INCLUDED 1
+
+#ifndef __VIDIX_H_INCLUDED
+#error "Never include this file directly. Include <vidix.h> only!"
+#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "vidix.h"
 
 typedef void * VDL_HANDLE;
 

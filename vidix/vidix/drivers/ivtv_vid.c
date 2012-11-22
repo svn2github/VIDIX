@@ -47,11 +47,12 @@
 #include <linux/ivtv.h>
 #include <linux/fb.h>
 
-#include "../vidix.h"
-#include "../fourcc.h"
-#include "../../libdha/libdha.h"
-#include "../../libdha/pci_ids.h"
-#include "../../libdha/pci_names.h"
+#include "vidix.h"
+#include "vidix_driver.h"
+#include "fourcc.h"
+#include "libdha/libdha.h"
+#include "libdha/pci_ids.h"
+#include "libdha/pci_names.h"
 
 #define VIDIX_STATIC ivtv_
 

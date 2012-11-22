@@ -1,5 +1,9 @@
 VIDIX NEWS -- history of user-visible changes.
 
+Version 1.5.0
+
+* Support for C++ was added
+
 Version 1.0.0
 
 * multiple backports from MPlayerHQ by "Benjamin Zores" <ben@geexbox.org>
