@@ -2,8 +2,8 @@
 
 using namespace vidix;
 
-Vidix::Vidix(const char *path,const char *name,unsigned cap,int verbose)
-     :	handle(vdlOpen(path,name,cap,verbose)),
+Vidix::Vidix(const std::string& path,const std::string& name,unsigned cap,int verbose)
+     :	handle(vdlOpen(path.c_str(),name.c_str(),cap,verbose)),
 	cap(*vdlAllocCapabilityS()),
 	fourcc(*vdlAllocFourccS()),
 	playback(*vdlAllocPlaybackS()),
@@ -17,8 +17,8 @@ Vidix::Vidix(const char *path,const char *name,unsigned cap,int verbose)
 {
 }
 
-Vidix::Vidix(const char *name,unsigned cap,int verbose)
-     :	handle(vdlOpen(VIDIX_PATH,name,cap,verbose)),
+Vidix::Vidix(const std::string& name,unsigned cap,int verbose)
+     :	handle(vdlOpen(VIDIX_PATH,name.c_str(),cap,verbose)),
 	cap(*vdlAllocCapabilityS()),
 	fourcc(*vdlAllocFourccS()),
 	playback(*vdlAllocPlaybackS()),

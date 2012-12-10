@@ -2,6 +2,7 @@
 #define __VIDIXLIBXX_H_INCLUDED 1
 
 #include <stdlib.h>
+#include <string>
 
 #include "vidix.h"
 
@@ -9,8 +10,8 @@ namespace vidix {
 
     class Vidix {
 	public:
-	    Vidix(const char *path,const char *name,unsigned cap,int verbose);
-	    Vidix(const char *name=NULL,unsigned cap=TYPE_OUTPUT,int verbose=0);
+	    Vidix(const std::string& path,const std::string& name,unsigned cap,int verbose);
+	    Vidix(const std::string& name="",unsigned cap=TYPE_OUTPUT,int verbose=0);
 	    virtual ~Vidix();
 	
 	    int		is_error() const { return handle==NULL; }
