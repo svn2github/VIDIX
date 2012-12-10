@@ -2,8 +2,43 @@
 
 using namespace vidix;
 
-Vidix::Vidix(const std::string& path,const std::string& name,unsigned cap,int verbose)
-     :	handle(vdlOpen(path.c_str(),name.c_str(),cap,verbose)),
+Vidix& Vidix::operator =(const Vidix& _this) {
+    vdlFreeCapabilityS(&cap);
+    vdlFreeFourccS(&fourcc);
+    vdlFreePlaybackS(&playback);
+    vdlFreeYUVS(&yuv);
+    vdlFreeRectS(&rect);
+    vdlFreeGrKeyS(&grkey);
+    vdlFreeVideoEqS(&video_eq);
+    vdlFreeDeinterlaceS(&deint);
+    vdlFreeDmaS(&dma);
+    vdlFreeOemFxS(&oemfx);
+    vdlClose(handle);
+
+    handle=vdlOpen(_this.path.c_str(),_this.name.c_str(),_this.__cap,_this.__verbose);
+    path=_this.path;
+    name=_this.name;
+    __cap=_this.__cap;
+    __verbose=_this.__verbose;
+    cap=*vdlAllocCapabilityS();
+    fourcc=*vdlAllocFourccS();
+    playback=*vdlAllocPlaybackS();
+    yuv=*vdlAllocYUVS();
+    rect=*vdlAllocRectS();
+    grkey=*vdlAllocGrKeyS();
+    video_eq=*vdlAllocVideoEqS();
+    deint=*vdlAllocDeinterlaceS();
+    dma=*vdlAllocDmaS();
+    oemfx=*vdlAllocOemFxS();
+    return *this;
+}
+
+Vidix::Vidix(const Vidix& _this)
+     :	handle(vdlOpen(_this.path.c_str(),_this.name.c_str(),_this.__cap,_this.__verbose)),
+	path(_this.path),
+	name(_this.name),
+	__cap(_this.__cap),
+	__verbose(_this.__verbose),
 	cap(*vdlAllocCapabilityS()),
 	fourcc(*vdlAllocFourccS()),
 	playback(*vdlAllocPlaybackS()),
@@ -17,8 +52,31 @@ Vidix::Vidix(const std::string& path,const std::string& name,unsigned cap,int ve
 {
 }
 
-Vidix::Vidix(const std::string& name,unsigned cap,int verbose)
-     :	handle(vdlOpen(VIDIX_PATH,name.c_str(),cap,verbose)),
+Vidix::Vidix(const std::string& _path,const std::string& _name,unsigned _cap,int _verbose)
+     :	handle(vdlOpen(_path.c_str(),_name.c_str(),_cap,_verbose)),
+	path(_path),
+	name(_name),
+	__cap(_cap),
+	__verbose(_verbose),
+	cap(*vdlAllocCapabilityS()),
+	fourcc(*vdlAllocFourccS()),
+	playback(*vdlAllocPlaybackS()),
+	yuv(*vdlAllocYUVS()),
+	rect(*vdlAllocRectS()),
+	grkey(*vdlAllocGrKeyS()),
+	video_eq(*vdlAllocVideoEqS()),
+	deint(*vdlAllocDeinterlaceS()),
+	dma(*vdlAllocDmaS()),
+	oemfx(*vdlAllocOemFxS())
+{
+}
+
+Vidix::Vidix(const std::string& _name,unsigned _cap,int _verbose)
+     :	handle(vdlOpen(VIDIX_PATH,_name.c_str(),_cap,_verbose)),
+	path(VIDIX_PATH),
+	name(_name),
+	__cap(_cap),
+	__verbose(_verbose),
 	cap(*vdlAllocCapabilityS()),
 	fourcc(*vdlAllocFourccS()),
 	playback(*vdlAllocPlaybackS()),

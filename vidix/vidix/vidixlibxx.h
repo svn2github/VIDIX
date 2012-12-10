@@ -10,11 +10,13 @@ namespace vidix {
 
     class Vidix {
 	public:
+	    Vidix(const Vidix& _this);
 	    Vidix(const std::string& path,const std::string& name,unsigned cap,int verbose);
 	    Vidix(const std::string& name="",unsigned cap=TYPE_OUTPUT,int verbose=0);
 	    virtual ~Vidix();
 	
 	    int		is_error() const { return handle==NULL; }
+	    Vidix&	operator =(const Vidix& _this);
 
 	    unsigned	version() const;
 	    int		get_capabilities();
@@ -46,7 +48,11 @@ namespace vidix {
 	    vidix_dma_t&	dma;
 	    vidix_oem_fx_t&	oemfx;
 	private:
-	    VDL_HANDLE handle;
+	    VDL_HANDLE	handle;
+	    std::string	path;
+	    std::string	name;
+	    unsigned	__cap;
+	    int		__verbose;
     };
 
 }
